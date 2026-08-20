@@ -22,6 +22,7 @@
 
   let editMode=MODE_MARKERS;
   let independentSlices=[];
+  let independentDirty=false;
   let selectedSlice=0;
   let activeSlice=-1;
   let flashSlice=-1;
@@ -108,6 +109,7 @@
     independentSlices=Array.from({length:count},(_,i)=>(
       {start:markers[i],end:markers[i+1]}
     ));
+    independentDirty=false;
     selectedSlice=count?clamp(selectedSlice,0,count-1):0;
   }
 
@@ -115,6 +117,7 @@
     const count=markerSliceCount();
     if(!count){
       independentSlices=[];
+      independentDirty=false;
       return;
     }
     if(independentSlices.length!==count)cloneMarkerSlices();
@@ -305,7 +308,13 @@
     if(typeof draggingMarker!=="undefined")draggingMarker=-1;
 
     editMode=next;
-    if(editMode===MODE_SLICES)ensureIndependentSlices();
+    if(editMode===MODE_SLICES){
+      // Until the user has actually edited an independent slice, entering
+      // SLICES reflects the latest MARKERS positions. Once edited, toggling
+      // modes preserves that independent state instead of silently resetting it.
+      if(independentDirty)ensureIndependentSlices();
+      else cloneMarkerSlices();
+    }
     activeSlice=-1;
     flashSlice=-1;
     updateModeButton();
@@ -570,6 +579,7 @@
     if(index<0)return;
     const range=independentSlices[index];
     if(moved && range){
+      independentDirty=true;
       stopChopAudition();
       renderedFlip=null;
       renderSampleTimeline();
