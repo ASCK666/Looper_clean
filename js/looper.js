@@ -679,7 +679,7 @@ function deckRate(){
 }
 
 function formatDeckRate(){
-  return `${(deckRate()*100).toFixed(1)}%`;
+  return `${Math.round(deckRate()*100)}%`;
 }
 
 function syncDeckPlaybackRate(){
