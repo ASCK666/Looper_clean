@@ -18,7 +18,7 @@ for control in controls:
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
 
 assert 'class="looper66Skin"' in HTML
-assert './css/base.css?v=looper66-natural-backlight-2' in HTML
+assert './css/base.css?v=looper66-natural-backlight-3' in HTML
 assert './css/clean-ui.css' in HTML
 assert 'assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp' in HTML
 assert 'assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp' in HTML
@@ -66,9 +66,9 @@ assert '.deckHotspot::before' in CSS and '.deckLoadKey::before' in CSS
 assert re.search(r'\.deckHotspot::before\s*\{[^}]*border:0;',CSS)
 assert re.search(r'\.deckLoadKey::before[^\{]*\{[^}]*border:0;',CSS)
 assert re.search(r'\.deckAutoKey::before\s*\{[^}]*border:0;',CSS)
-assert re.search(r'\.deckHotspot::before\s*\{[^}]*mask-image:url\("\.\./assets/looper-ui/looper66-transport\.webp"\);[^}]*mask-size:300% 100%;[^}]*mask-mode:luminance;[^}]*box-shadow:none;[^}]*mix-blend-mode:screen;',CSS)
+assert re.search(r'\.deckHotspot::before\s*\{[^}]*background-image:url\("\.\./assets/looper-ui/looper66-transport\.webp"\);[^}]*background-size:300% 100%;[^}]*box-shadow:none;[^}]*mix-blend-mode:screen;',CSS)
 assert '#playBeat { --transport-light-position:center; }' in CSS
-assert '#autoLooperToggle { --transport-light-position:right; }' in CSS
+assert '#autoLooperToggle { --light-gain:.62;--transport-light-position:right; }' in CSS
 assert re.search(r'\.deckLoadKey::before[^\{]*\{[^}]*box-shadow:none;[^}]*filter:blur\(2px\);',CSS)
 assert 'opacity:.001' not in CSS
 assert 'id="deckPitchModule"' in HTML
