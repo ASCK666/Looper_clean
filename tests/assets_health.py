@@ -12,6 +12,7 @@ EXPECTED_VISUALS = {
     "looper-ui/looper66-mobile-clean-8a95f608.webp",
     "looper-ui/looper66-transport.webp",
     "looper-ui/looper66-crate-cassettes.webp",
+    "looper-ui/looper66-cassette-cradle.webp",
 }
 
 actual_visuals = {
@@ -29,4 +30,4 @@ if missing or unexpected:
         print(f"FAIL: untracked top-level assets: {', '.join(unexpected)}")
     sys.exit(1)
 
-print("OK: asset health — 5 production visuals, no retired deck artwork")
+print("OK: asset health — 6 production visuals, no retired deck artwork")

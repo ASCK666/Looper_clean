@@ -21,7 +21,8 @@ Implementation work must be checked against it at every important milestone.
 Visual references committed with this contract:
 
 - `assets/looper-ui/looper66-desktop-clean-a3d35bc4.webp` (`1086 × 1009`);
-- `assets/looper-ui/looper66-mobile-clean-8a95f608.webp` (`441 × 849`).
+- `assets/looper-ui/looper66-mobile-clean-8a95f608.webp` (`441 × 849`);
+- `assets/looper-ui/looper66-cassette-cradle.webp` (`640 × 122`), support plein du lecteur au premier plan.
 
 These files are the composition, spacing, material and typography references.
 Where a reference conflicts with a behavioural requirement below, the
