@@ -25,7 +25,8 @@ assert re.search(r'id="autoLooperToggle"[^>]*aria-label="Speed Up, plus un pour 
 assert '>SPEED RATE<' not in HTML and '>+1%<' not in HTML
 transport=HTML[HTML.index('<div class="deckTransport"'):HTML.index('<div id="beatImportStatus"')]
 assert transport.index('id="stopBeat"') < transport.index('id="playBeat"') < transport.index('id="autoLooperToggle"')
-assert 'class="deckTransportFaceplate"' in HTML and 'class="deckTransportVisual"' in HTML
+assert 'deckTransportFaceplate' not in HTML+CSS
+assert 'class="deckTransportVisual"' in HTML
 
 crate=HTML[HTML.index('<section class="panel beatCratePanel">'):]
 assert crate.index('id="prevBeat"') < crate.index('id="nextBeat"')
