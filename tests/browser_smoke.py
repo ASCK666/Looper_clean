@@ -53,6 +53,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         handlers=page.evaluate('''() => ['playBeat','stopBeat','loadSampleBtn','kickFolderBtn','autoLooperToggle','deckAutoToggle','importBeatsBtn','importFolderBtn'].map(id=>typeof document.getElementById(id).onclick)''')
         assert all(v=='function' for v in handlers),handlers
         assert page.evaluate("typeof document.getElementById('deckPitch').oninput")=='function'
+        assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='looper66EmptyPlayPulse'
 
         visible=page.evaluate('''() => ['playBeat','stopBeat','prevBeat','nextBeat','autoLooperToggle','deckAutoToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect(),c=getComputedStyle(e);return [id,r.width,r.height,c.display,c.visibility,parseFloat(c.opacity)]})''')
         assert all(v[1]>=44 and v[2]>=44 and v[3]!='none' and v[4]=='visible' and v[5]>.5 for v in visible),visible
@@ -61,6 +62,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         # The cassette display intentionally uppercases its physical label while
         # deckTrack/currentTrack retain the original filename casing.
         page.wait_for_function("document.getElementById('cassetteBeatName').textContent === 'TEST-BEAT.WAV'",timeout=10000)
+        assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='none'
         assert page.evaluate("document.getElementById('deckTrack').textContent === 'test-beat.wav'") is True
         assert page.locator('#library .track').count()==1
         page.click('#playBeat'); page.wait_for_function('deckSource !== null')

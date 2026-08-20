@@ -99,6 +99,7 @@ The following deck controls are real native HTML controls positioned over their
 matching hardware artwork:
 
 - Play;
+- a slow Play pulse only while no beat is loaded, with a static low-light fallback under reduced-motion preferences;
 - Stop;
 - Previous;
 - Next;
@@ -156,8 +157,10 @@ Do not bake any of the following into an asset:
 Assets may contain neutral dark lenses, transparent apertures and alpha masks.
 CSS owns colour, strength, blur, inner and outer glow, transitions, hover,
 focus, pressed, disabled and product-state lighting.
-The active palette is a warm yellow with a compact three-stage falloff; broad
-orange blooms that spill across hardware borders are not permitted.
+The active palette is a warm yellow. Transport lighting reuses the exact
+button crop as a CSS blend layer, so the engraved icon, label and inset trim
+light up without a rectangular colour wash. A weak central falloff supplies
+the reflected light; CSS box outlines and broad orange blooms are not used.
 Interactive HTML overlays must not draw an additional frame or outline over
 the hardware borders already present in the reference artwork.
 
