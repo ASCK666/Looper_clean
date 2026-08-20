@@ -175,8 +175,11 @@ with tempfile.TemporaryDirectory() as td:
         page.set_input_files('#sampleFile',str(sample))
         page.wait_for_function("document.getElementById('chopStatus').textContent.includes('SAMPLE READY')",timeout=10000)
         page.evaluate('''() => {
-          document.getElementById('drumMode').value='off';
-          currentDrumSelection=null;
+          currentDrumSelection={
+            mode:'off',patternId:'OFF',patternName:'OFF',
+            kicks:[],snares:[],ghosts:[],hats:[],hatSteps:[],
+            kickVelocity:{},snareVelocity:{},hatVelocity:{},kick:null,snare:null,hat:null
+          };
           loopGridEvents=new Array(16).fill(0);
           loopGridEvents[0]=1;
           renderLoopGrid();
@@ -223,13 +226,11 @@ with tempfile.TemporaryDirectory() as td:
             hatSwing:0,hatOn:.2,hatOff:.15,snareDelay:0,kickNudge:{},
             kick:{name:'k',buffer:hit},snare:{name:'s',buffer:hit},hat:{name:'h',buffer:hit}
           };
-          document.getElementById('snareReverbOn').checked=true;
-          document.getElementById('snareReverbType').value='plate';
           document.getElementById('snareReverbMix').value='35';
-          document.getElementById('punchMode').value='off';
+          document.getElementById('punchMode').value='0';
           const events=new Array(16).fill(0); events[0]=1; events[8]=1;
           const wet=await renderSequence(events,sampleBuffer,markers,samplePitchRate());
-          document.getElementById('snareReverbOn').checked=false;
+          document.getElementById('snareReverbMix').value='0';
           const dry=await renderSequence(events,sampleBuffer,markers,samplePitchRate());
           let renderMax=0,renderSum=0,wetEnergy=0,dryEnergy=0,finite=true;
           for(let ch=0;ch<2;ch++){
