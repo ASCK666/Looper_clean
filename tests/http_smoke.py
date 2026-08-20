@@ -40,11 +40,11 @@ try:
             )
             assert marker in body, (path, marker)
 
-    deck = "/assets/cassette-mechanism-pixel-v84.png"
+    deck = "/assets/looper-ui/looper66-desktop-target.webp"
     with urlopen(Request(base_url + deck, method="HEAD"), timeout=5) as response:
         assert response.status == 200
-        assert response.headers.get_content_type() == "image/png"
-        assert int(response.headers["Content-Length"]) > 1_000_000
+        assert response.headers.get_content_type() == "image/webp"
+        assert int(response.headers["Content-Length"]) > 80_000
 finally:
     server.shutdown()
     server.server_close()

@@ -41,9 +41,9 @@ for rel in [
     "js/chopper.js",
     "js/drums.js",
     "js/events.js",
-    "assets/cassette-mechanism-pixel-v84.png",
-    "assets/cassette-reel-pixel-v81.png",
     "assets/deck-black-ui-texture.png",
+    "assets/looper-ui/looper66-desktop-target.webp",
+    "assets/looper-ui/looper66-mobile-target.webp",
 ]:
     require(f"file {rel}", (ROOT / rel).is_file())
 
