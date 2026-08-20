@@ -55,9 +55,16 @@ with sync_playwright() as p:
         assert geo['punch']['top'] < geo['volume']['bottom'] and geo['punch']['bottom'] > geo['volume']['top'], (width,geo)
         assert geo['vinyl']['left'] >= geo['punch']['right']-2, (width,geo)
         assert geo['vinyl']['top'] < geo['punch']['bottom'] and geo['vinyl']['bottom'] > geo['punch']['top'], (width,geo)
-        # NEW DRUMS remains directly beside the REVERB knob in the editor action row.
-        assert geo['newDrums']['left'] >= geo['reverb']['right']-2, (width,geo)
-        assert geo['newDrums']['top'] < geo['reverb']['bottom'] and geo['newDrums']['bottom'] > geo['reverb']['top'], (width,geo)
+        # Desktop/tablet keeps NEW DRUMS beside REVERB. Phone uses the deliberate
+        # second row so all four Drum controls fit without overlap.
+        if width>430:
+            assert geo['newDrums']['left'] >= geo['reverb']['right']-2, (width,geo)
+            assert geo['newDrums']['top'] < geo['reverb']['bottom'] and geo['newDrums']['bottom'] > geo['reverb']['top'], (width,geo)
+        else:
+            assert geo['newDrums']['top'] >= geo['reverb']['bottom']+8, (width,geo)
+            overlap_x=max(0,min(geo['newDrums']['right'],geo['reverb']['right'])-max(geo['newDrums']['left'],geo['reverb']['left']))
+            overlap_y=max(0,min(geo['newDrums']['bottom'],geo['reverb']['bottom'])-max(geo['newDrums']['top'],geo['reverb']['top']))
+            assert overlap_x<=0 or overlap_y<=0, (width,geo)
 
         page.locator('#snareReverbMix').scroll_into_view_if_needed()
         page.wait_for_timeout(20)
