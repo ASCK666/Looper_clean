@@ -1,0 +1,118 @@
+/* chopper-200826: compact Drum controls built on the existing range-knob system. */
+
+#chopper .samplerScreenModule {
+  grid-template-columns: minmax(0,1fr) 52px 68px 52px 52px !important;
+  grid-template-areas:
+    "actions actions actions actions actions"
+    "title pitch tempo volume punch"
+    "wave wave wave wave wave"
+    "info info info info info" !important;
+}
+
+#chopper .punchKnob {
+  --knob-pct: 33.333;
+  grid-area: punch !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+#chopper .controlPanel {
+  grid-template-columns: minmax(0,1fr) !important;
+  grid-template-areas:
+    "title"
+    "current"
+    "editor" !important;
+}
+
+#chopper .drumEditHead {
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+#chopper .drumEditActions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px !important;
+}
+
+#chopper .drumQuickActions {
+  grid-area: auto !important;
+  display: flex !important;
+  width: auto !important;
+  grid-template-columns: none !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+#chopper .drumQuickActions .drumReverbKnob {
+  grid-area: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+#chopper .drumQuickActions .snareFxHead {
+  display: block !important;
+  margin: 0 !important;
+}
+
+#chopper .drumQuickActions .fxToggle {
+  display: block !important;
+  margin: 0 0 4px !important;
+  color: #9ca6ad !important;
+  font: 800 8px/1 var(--font-mono) !important;
+  letter-spacing: .6px;
+  text-align: center;
+  cursor: default;
+}
+
+#chopper .drumQuickActions .sampleKnobControl {
+  width: 42px;
+  height: 42px;
+}
+
+#chopper .drumQuickActions #newDrums {
+  align-self: center;
+  min-height: 34px !important;
+  padding-inline: 12px !important;
+  white-space: nowrap;
+}
+
+#chopper .drumQuickActions .sampleKnobReadout {
+  min-width: 42px;
+}
+
+@media (max-width:760px) {
+  #chopper .samplerScreenModule {
+    grid-template-columns: minmax(0,1fr) 40px 56px 40px 40px !important;
+  }
+
+  #chopper .drumEditActions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width:430px) {
+  #chopper .samplerScreenModule {
+    grid-template-columns: minmax(0,1fr) 36px 50px 36px 36px !important;
+    column-gap: 3px !important;
+  }
+
+  #chopper .drumQuickActions {
+    gap: 6px !important;
+  }
+
+  #chopper .drumQuickActions .sampleKnobControl {
+    width: 38px;
+    height: 38px;
+  }
+}
