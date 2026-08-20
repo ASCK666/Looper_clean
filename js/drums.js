@@ -185,13 +185,7 @@ async function setFallbackDrumFolder(kind,fileList){
 }
 
 async function refreshDrumsAfterFolderChange(kind,count,origin){
-  // A folder selection should have an audible result immediately.
-  // Preserve the current groove family, but reroll the sound files now.
-  if($("drumMode").value==="off"){
-    $("drumStatus").textContent=`${kind.toUpperCase()} • ${origin} • ${count} SOUNDS • READY`;
-    return;
-  }
-
+  // Folder changes stay on the AUTO groove path while rerolling sound files.
   const wasPlaying=isLoopPlaying;
   const modeBefore=lastPreviewMode;
 
@@ -640,16 +634,9 @@ function updateDrumSelectionUI(){
 
 async function generateDrumSelection(forceDifferent=false){
   await ensureAudio();
-  const requested=$("drumMode").value;
+  const requested="auto";
   const previous=currentDrumSelection;
   const previousSignature=drumSelectionSignature(previous);
-
-  if(requested==="off"){
-    currentDrumSelection={mode:"off",patternId:"OFF",patternName:"OFF",kicks:[],snares:[],ghosts:[],hats:[],hatSteps:[],kickVelocity:{},snareVelocity:{},hatVelocity:{},kick:null,snare:null,hat:null};
-    updateDrumSelectionUI();
-    return currentDrumSelection;
-  }
-
   const density=sampleBuffer ? sampleDensity(sampleBuffer) : .5;
   const rate=44100;
 
@@ -705,8 +692,16 @@ async function ensureDrumSelection(){
   return currentDrumSelection;
 }
 
+const PUNCH_MODE_NAMES=["off","warm","knock","hard"];
+
+function punchModeName(){
+  const raw=Number($("punchMode")?.value);
+  const index=Number.isFinite(raw)?clamp(Math.round(raw),0,PUNCH_MODE_NAMES.length-1):1;
+  return PUNCH_MODE_NAMES[index]||"warm";
+}
+
 function punchSettings(){
-  const mode=$("punchMode")?.value||"warm";
+  const mode=punchModeName();
   const presets={
     off:{
       mode:"off"
@@ -810,21 +805,15 @@ function makePunchMaster(offline){
 }
 
 function refreshPunchUI(){
-  const mode=$("punchMode").value;
-  const descriptions={
-    off:"OFF • aucun traitement master.",
-    warm:"WARM • glue très légère, transitoires préservées, safety limiter.",
-    knock:"KNOCK • plus d'impact sans écraser le bus sample + drums.",
-    hard:"HARD • compression audible mais nettement moins destructive qu'avant."
-  };
-  $("punchDesc").textContent=descriptions[mode]||descriptions.knock;
+  $("punchDesc").textContent=punchModeName().toUpperCase();
 }
 
 function snareReverbSettings(){
+  const mix=clamp((Number($("snareReverbMix").value)||0)/100,0,.70);
   return {
-    on:$("snareReverbOn").checked,
-    type:$("snareReverbType").value,
-    mix:clamp((Number($("snareReverbMix").value)||0)/100,0,.70)
+    on:mix>0,
+    type:"plate",
+    mix
   };
 }
 
