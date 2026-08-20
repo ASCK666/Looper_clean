@@ -12,7 +12,7 @@ EXPECTED_VISUALS = {
     "looper-ui/looper66-mobile-clean-8a95f608.webp",
     "looper-ui/looper66-transport.webp",
     "looper-ui/looper66-crate-cassettes.webp",
-    "looper-ui/looper66-cassette-cradle.webp",
+    "looper-ui/looper66-cassette-bay-b10ab679.png",
 }
 
 actual_visuals = {

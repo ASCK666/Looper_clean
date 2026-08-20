@@ -55,7 +55,7 @@ with contextlib.ExitStack() as stack:
         assert len(info['layers'])==6,info
         assert [layer[0] for layer in info['layers']]==[
             'cassetteReel cassetteReelLeft','cassetteReel cassetteReelRight',
-            'cassetteBeatName','cassetteSupportForeground',
+            'cassetteBeatName','cassetteBayForeground',
             'cassetteCssLight','cassetteGlass'
         ],info
         assert all(c['display']!='none' and c['width']>=44 and c['height']>=44 for c in info['controls']),info

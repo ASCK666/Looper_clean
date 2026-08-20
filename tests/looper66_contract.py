@@ -31,7 +31,7 @@ assert 'class="deckTransportVisual"' in HTML
 crate=HTML[HTML.index('<section class="panel beatCratePanel">'):]
 assert crate.index('id="prevBeat"') < crate.index('id="nextBeat"')
 
-ordered=['cassetteReelLeft','cassetteReelRight','cassetteBeatName','cassetteSupportForeground','cassetteCssLight','cassetteGlass']
+ordered=['cassetteReelLeft','cassetteReelRight','cassetteBeatName','cassetteBayForeground','cassetteCssLight','cassetteGlass']
 positions=[HTML.index(token) for token in ordered]
 assert positions==sorted(positions),positions
 assert HTML.count('class="cassetteReel ')==2
@@ -64,11 +64,12 @@ assert 'pitchModule.style.setProperty("--pitch-x"' in LOOPER
 assert 'pitchModule.style.setProperty("--pitch-y"' in LOOPER
 assert 'pitchControl.setAttribute("aria-valuetext"' in LOOPER
 assert 'cassetteShell' not in HTML+CSS
-assert HTML.count('class="cassetteSupportForeground"')==1
+assert HTML.count('class="cassetteBayForeground"')==1
 assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
 assert '.cassetteGlass { position:absolute;z-index:4;' in CSS
-assert '.cassetteSupportForeground { position:absolute;z-index:5;' in CSS
-assert 'looper66-cassette-cradle.webp' in CSS
+assert '.cassetteBayForeground { position:absolute;z-index:5;inset:0;' in CSS
+assert 'looper66-cassette-bay-b10ab679.png' in CSS
+assert 'cassetteSupportForeground' not in HTML+CSS
 assert 'clip-path:circle(44%)' in CSS
 assert 'transform-origin:50% 50%' in CSS
 assert 'animation:looper66ReelSpin var(--supply-reel-cycle)' in CSS
@@ -90,7 +91,7 @@ references={
     'looper66-mobile-clean-8a95f608.webp':((441,849),'8a95f608533cda45732d38261294e4e3591c0d9fa0817cebd72211bf7c37ae11'),
     'looper66-transport.webp':((750,124),'ce7acecc81f0c112ae104d4035a334c6a3aba3b7940f9a62014b99b009fc6376'),
     'looper66-crate-cassettes.webp':((560,62),'12256e2ec27d0a2976ce0a15184f578a04034c5318bbff8819deab05d0d6e3c9'),
-    'looper66-cassette-cradle.webp':((640,122),'3bc412f8723c8f79eeda17f2888eeabe5c7b4cb48fd73b11d488c7af72390bc5'),
+    'looper66-cassette-bay-b10ab679.png':((793,496),'b10ab6796ed411b1633b7c81f8cbdc213c249e4499ffc92ec9e373bcb2c5c245'),
 }
 for name,(expected_size,expected_sha) in references.items():
     path=ROOT/'assets/looper-ui'/name

@@ -8,7 +8,7 @@ html=(ROOT/'index.html').read_text(encoding='utf-8')
 for val in re.findall(r'\b(?:src|href)=["\']([^"\']+)["\']', html):
     if val.startswith(('http://','https://','data:','#','mailto:')):
         continue
-    target=(ROOT/val.lstrip('./')).resolve()
+    target=(ROOT/val.split('?',1)[0].split('#',1)[0].lstrip('./')).resolve()
     if not target.exists():
         problems.append(f'HTML missing: {val} -> {target}')
 

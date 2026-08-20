@@ -1046,8 +1046,8 @@ a, .blue {
 .looper66Shell .cassetteReelLeft { left:24.26%;background-size:1724% 1602%;background-position:55.67% 21.82%; }
 .looper66Shell .cassetteReelRight { left:60.03%;background-size:1724% 1602%;background-position:71.51% 21.82%;animation-duration:var(--takeup-reel-cycle); }
 .looper66Shell .cassetteBeatName { position:absolute;z-index:3;top:17.5%;left:22%;width:56%;overflow:hidden;color:#cdbd9f;font:700 clamp(7px,1vw,15px)/1 var(--font-mono);letter-spacing:.05em;text-align:center;text-overflow:ellipsis;white-space:nowrap;text-shadow:1px 1px 0 #000;pointer-events:none; }
-.looper66Shell .cassetteGlass { position:absolute;z-index:4;inset:4% 3% 6%;border:0;background:linear-gradient(151deg,rgba(215,225,224,.11) 0 2%,rgba(255,255,255,.025) 2% 18%,transparent 18% 61%,rgba(202,211,209,.065) 61% 63%,transparent 63%),linear-gradient(25deg,rgba(10,9,8,.09),transparent 42% 72%,rgba(255,255,255,.035));box-shadow:inset 0 0 24px rgba(0,0,0,.34),inset 0 1px rgba(224,218,205,.12);pointer-events:none; }
-.looper66Shell .cassetteSupportForeground { position:absolute;z-index:5;left:0;right:0;bottom:0;height:30%;background:url("../assets/looper-ui/looper66-cassette-cradle.webp") center bottom/100% 100% no-repeat;filter:brightness(.82) saturate(.72);pointer-events:none; }
+.looper66Shell .cassetteGlass { position:absolute;z-index:4;inset:16.5% 9.6% 28.6%;clip-path:polygon(0 0,100% 0,100% 90%,94% 100%,6% 100%,0 90%);border:0;background:linear-gradient(151deg,rgba(215,225,224,.11) 0 2%,rgba(255,255,255,.025) 2% 18%,transparent 18% 61%,rgba(202,211,209,.065) 61% 63%,transparent 63%),linear-gradient(25deg,rgba(10,9,8,.09),transparent 42% 72%,rgba(255,255,255,.035));box-shadow:inset 0 0 24px rgba(0,0,0,.34),inset 0 1px rgba(224,218,205,.12);pointer-events:none; }
+.looper66Shell .cassetteBayForeground { position:absolute;z-index:5;inset:0;background:url("../assets/looper-ui/looper66-cassette-bay-b10ab679.png") center/100% 100% no-repeat;filter:brightness(.78) saturate(.65);pointer-events:none; }
 .looper66Shell .cassetteCssLight { position:absolute;z-index:6;inset:0;opacity:0;background:radial-gradient(circle at 35% 3%,rgba(255,152,15,.66),transparent 16%),radial-gradient(circle at 67% 3%,rgba(255,152,15,.66),transparent 16%),radial-gradient(ellipse at 50% 42%,rgba(255,152,15,.17),transparent 64%);box-shadow:inset 0 0 22px rgba(255,152,15,.2);mix-blend-mode:screen;transition:opacity .18s ease;pointer-events:none; }
 .looper66Shell .cassetteDeck.loaded .cassetteCssLight { opacity:calc(.18 * var(--backlight-opacity)); }
 .looper66Shell .cassetteDeck.playing .cassetteCssLight { opacity:calc(.86 * var(--backlight-opacity)); }
@@ -1117,8 +1117,6 @@ a, .blue {
   .looper66Shell .cassetteReelLeft { left:23.38%;background-size:775.2% 1492.4%;background-position:31.13% 32.55%; }
   .looper66Shell .cassetteReelRight { left:59.24%;background-size:775.2% 1492.4%;background-position:66.52% 32.55%; }
   .looper66Shell .cassetteBeatName { top:17%;left:20%;width:60%;font-size:clamp(8px,2.7vw,12px); }
-  .looper66Shell .cassetteSupportForeground { height:29%; }
-
   .looper66Shell .deckTransportVisual,.looper66Shell .deckTransport { top:37.45%;left:7%;width:86%;height:5.6%; }
   .looper66Shell .deckHotspot { min-height:44px; }
 

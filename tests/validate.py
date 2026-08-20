@@ -46,7 +46,7 @@ for rel in [
     "assets/looper-ui/looper66-mobile-clean-8a95f608.webp",
     "assets/looper-ui/looper66-transport.webp",
     "assets/looper-ui/looper66-crate-cassettes.webp",
-    "assets/looper-ui/looper66-cassette-cradle.webp",
+    "assets/looper-ui/looper66-cassette-bay-b10ab679.png",
 ]:
     require(f"file {rel}", (ROOT / rel).is_file())
 
