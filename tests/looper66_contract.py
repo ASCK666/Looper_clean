@@ -23,6 +23,9 @@ assert 'assets/looper-ui/looper66-mobile-target.webp' in HTML
 assert '>LOAD LIBRARY<' in HTML and '>LOAD BEAT<' in HTML
 assert re.search(r'id="autoLooperToggle"[\s\S]*?<strong>SPEED RATE</strong>',HTML)
 assert not re.search(r'id="autoLooperToggle"[^>]*>[\s\S]*?\+\d',HTML)
+transport=HTML[HTML.index('<div class="deckTransport"'):HTML.index('<div id="beatImportStatus"')]
+assert transport.index('id="stopBeat"') < transport.index('id="playBeat"') < transport.index('id="autoLooperToggle"')
+assert 'class="deckTransportFaceplate"' in HTML and 'class="deckTransportVisual"' in HTML
 
 crate=HTML[HTML.index('<section class="panel beatCratePanel">'):]
 assert crate.index('id="prevBeat"') < crate.index('id="nextBeat"')
@@ -61,11 +64,13 @@ assert HTML.count('class="cassetteSupportForeground"')==1
 assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
 assert '.cassetteSupportForeground { position:absolute;z-index:4;' in CSS
 assert '.cassetteGlass { position:absolute;z-index:6;' in CSS
-assert 'clip-path:circle(48%)' in CSS
+assert 'clip-path:circle(44%)' in CSS
 assert 'transform-origin:50% 50%' in CSS
 assert 'animation:looper66ReelSpin var(--supply-reel-cycle)' in CSS
 assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
 assert 'animation-direction:reverse' not in CSS
+assert re.search(r'\.deckHotspot\s*\{[^}]*background:transparent;[^}]*box-shadow:none;',CSS)
+assert 'grid-template-columns:repeat(var(--rack-columns,3),calc((100% - .9%)/3))' in CSS
 
 retired=('deckFaceplate','crateFaceplate','tapeCounter','cassetteDoorEject','cassetteCavity','cassetteTapePath')
 for name in retired:

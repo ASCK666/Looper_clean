@@ -112,9 +112,18 @@
               <button id="importBeatsBtn" class="deckLoadKey" type="button"><span class="deckKeyLamp" aria-hidden="true"></span><strong>LOAD BEAT</strong></button>
             </aside>
 
+            <span class="deckTransportFaceplate" aria-hidden="true"></span>
+            <div class="deckTransportVisual" aria-hidden="true">
+              <span class="deckControlFace"><span>■</span><strong>STOP</strong></span>
+              <span class="deckControlFace"><span>▶</span><strong>PLAY</strong></span>
+              <span class="deckControlFace deckRateFace">
+                <strong>SPEED RATE</strong>
+                <span class="deckRateVisualSegments"><i></i><i></i><i></i><i></i><i></i></span>
+              </span>
+            </div>
             <div class="deckTransport" role="group" aria-label="Transport du Looper">
-              <button id="playBeat" class="deckHotspot" type="button" aria-label="Lecture"><span aria-hidden="true">▶</span><strong>PLAY</strong></button>
               <button id="stopBeat" class="deckHotspot" type="button" aria-label="Stop"><span aria-hidden="true">■</span><strong>STOP</strong></button>
+              <button id="playBeat" class="deckHotspot" type="button" aria-label="Lecture"><span aria-hidden="true">▶</span><strong>PLAY</strong></button>
               <button id="autoLooperToggle" class="deckHotspot deckRateHotspot" type="button" aria-label="Choisir le Speed Rate" aria-pressed="false">
                 <strong>SPEED RATE</strong>
                 <span class="deckRateSegments" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
