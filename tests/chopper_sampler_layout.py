@@ -31,15 +31,19 @@ with sync_playwright() as p:
 
         data=page.evaluate('''() => {
           const box=s=>document.querySelector(s).getBoundingClientRect().toJSON();
+          const boxes=sel=>[...document.querySelectorAll(sel)].map(x=>({id:x.id,...x.getBoundingClientRect().toJSON()}));
           const ids=sel=>[...document.querySelectorAll(sel)].map(x=>x.id);
           const upper=document.querySelector('.samplerUpperDeck');
           const wrap=document.querySelector('.loopGridWrap');
+          const current=getComputedStyle(document.querySelector('.currentDrums'));
+          const editor=getComputedStyle(document.querySelector('.drumEditBox'));
           return {
-            upperChildren:[...upper.children].map(x=>x.classList.contains('samplerControlModule')?'control':x.classList.contains('samplerScreenModule')?'screen':'other'),
-            control:box('.samplerControlModule'),
-            screen:box('.samplerScreenModule'),
-            controlActions:ids('#chopper .samplerActionRow > .btn'),
-            transport:ids('#chopper .samplerDisplayActions > .btn'),
+            upperChildren:[...upper.children].map(x=>x.classList.contains('samplerScreenModule')?'screen':'other'),
+            controlCount:document.querySelectorAll('.samplerControlModule').length,
+            actionOrder:ids('#chopper .chopperActionStrip > .btn'),
+            actions:boxes('#chopper .chopperActionStrip > .btn'),
+            actionStrip:box('.chopperActionStrip'),
+            fine:box('.advancedBox'),
             title:box('.samplerScreenModule > .stableTitle'),
             pitch:box('.samplePitchKnob'),
             tempo:box('.sampleTempoControl'),
@@ -49,6 +53,9 @@ with sync_playwright() as p:
             punchType:document.querySelector('#punchMode').type,
             punchValue:document.querySelector('#punchMode').value,
             punchPct:getComputedStyle(document.querySelector('.punchKnob')).getPropertyValue('--knob-pct').trim(),
+            descriptions:document.querySelectorAll('#chopper .samplerTopRail,#chopper .sampleConditionHelp,#chopper .samplerModuleHint,#chopper .spaceHint,#chopper .samplerControlLegend,#chopper .drumEditHead .help').length,
+            currentBorder:current.borderTopWidth,
+            editorBorder:editor.borderTopWidth,
             timeline:box('#sampleTimelineCanvas'),
             matrix:box('#loopGrid'),
             preview:box('#drumPatternPreview'),
@@ -61,12 +68,18 @@ with sync_playwright() as p:
           };
         }''')
 
-        assert data['upperChildren']==['control','screen'],data
-        assert data['control']['bottom']<=data['screen']['top']+2,data
-        assert abs(data['control']['left']-data['screen']['left'])<2,data
-        assert abs(data['control']['right']-data['screen']['right'])<2,data
-        assert data['controlActions']==['playDrumsOnly','autoMarkers'],data
-        assert data['transport']==['previewFlip','loadSampleBtn','stopFlip','addFlipLibrary'],data
+        assert data['upperChildren']==['screen'],data
+        assert data['controlCount']==0,data
+        assert data['actionOrder']==['addFlipLibrary','stopFlip','previewFlip','playDrumsOnly','autoMarkers','loadSampleBtn'],data
+        assert data['fine']['top']>=data['actionStrip']['bottom']-2,data
+        assert data['descriptions']==0,data
+        assert data['currentBorder']=='0px' and data['editorBorder']=='0px',data
+
+        if width>=820:
+            first=data['actions'][0]
+            last=data['actions'][-1]
+            assert all(a['top']<first['bottom'] and a['bottom']>first['top'] for a in data['actions']),data
+            assert last['id']=='loadSampleBtn' and last['right']>=max(a['right'] for a in data['actions'])-1,data
 
         # Header row: title | pitch | tempo | sample volume | punch.
         assert data['title']['right']<=data['pitch']['left']+2,data
@@ -104,4 +117,4 @@ with sync_playwright() as p:
 
     browser.close()
 
-print('OK: Chopper sampler layout — PUNCH beside SAMPLE VOL, aligned sample/grid/drum ruler and responsive layout')
+print('OK: Chopper sampler layout — flat action strip, FINE SETTINGS below, PUNCH beside SAMPLE VOL and responsive aligned sequence')
