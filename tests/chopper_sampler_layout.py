@@ -70,7 +70,7 @@ with sync_playwright() as p:
 
         assert data['upperChildren']==['screen'],data
         assert data['controlCount']==0,data
-        assert data['actionOrder']==['addFlipLibrary','stopFlip','previewFlip','playDrumsOnly','autoMarkers','loadSampleBtn'],data
+        assert data['actionOrder']==['loadSampleBtn','autoMarkers','playDrumsOnly','previewFlip','stopFlip','addFlipLibrary'],data
         assert data['fine']['top']>=data['actionStrip']['bottom']-2,data
         assert data['descriptions']==0,data
         assert data['currentBorder']=='0px' and data['editorBorder']=='0px',data
@@ -79,7 +79,8 @@ with sync_playwright() as p:
             first=data['actions'][0]
             last=data['actions'][-1]
             assert all(a['top']<first['bottom'] and a['bottom']>first['top'] for a in data['actions']),data
-            assert last['id']=='loadSampleBtn' and last['right']>=max(a['right'] for a in data['actions'])-1,data
+            assert first['id']=='loadSampleBtn' and first['left']<=min(a['left'] for a in data['actions'])+1,data
+            assert last['id']=='addFlipLibrary' and last['right']>=max(a['right'] for a in data['actions'])-1,data
 
         # Header row: title | pitch | tempo | sample volume | punch.
         assert data['title']['right']<=data['pitch']['left']+2,data
@@ -117,4 +118,4 @@ with sync_playwright() as p:
 
     browser.close()
 
-print('OK: Chopper sampler layout — flat action strip, FINE SETTINGS below, PUNCH beside SAMPLE VOL and responsive aligned sequence')
+print('OK: Chopper sampler layout — LOAD/AUTO/DRUMS/PLAY/STOP/SAVE, FINE SETTINGS below, flattened chrome and responsive aligned sequence')
