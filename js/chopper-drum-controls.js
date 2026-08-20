@@ -13,8 +13,8 @@
   actionStrip.setAttribute("role","group");
   actionStrip.setAttribute("aria-label","Actions du Chopper");
 
-  // Left -> right exactly as requested: LOAD SAMPLE | AUTO CHOP | DRUMS | PLAY | STOP | SAVE.
-  for(const id of ["loadSampleBtn","autoMarkers","playDrumsOnly","previewFlip","stopFlip","addFlipLibrary"]){
+  // Left -> right. LOAD SAMPLE is intentionally the rightmost action.
+  for(const id of ["addFlipLibrary","stopFlip","previewFlip","playDrumsOnly","autoMarkers","loadSampleBtn"]){
     const button=document.getElementById(id);
     if(button)actionStrip.appendChild(button);
   }
