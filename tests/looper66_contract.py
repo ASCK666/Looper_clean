@@ -18,7 +18,7 @@ for control in controls:
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
 
 assert 'class="looper66Skin"' in HTML
-assert './css/base.css?v=looper66-pitch-clean-1' in HTML
+assert './css/base.css?v=looper66-yellow-backlight-1' in HTML
 assert './css/clean-ui.css' in HTML
 assert 'assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp' in HTML
 assert 'assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp' in HTML
@@ -56,6 +56,8 @@ assert 'grid-template-columns:repeat(3,minmax(0,1fr))' in CSS
 assert '@media (max-width:680px)' in CSS
 assert '--light-strength' in CSS and 'var(--deck-amber)' in CSS
 assert '--backlight-opacity:1' in CSS
+assert '--backlight-yellow:255,205,64' in CSS
+assert '0 0 19px rgba(255,152,15' not in CSS
 assert '.deckHotspot::before' in CSS and '.deckLoadKey::before' in CSS
 assert re.search(r'\.deckHotspot::before\s*\{[^}]*border:0;',CSS)
 assert re.search(r'\.deckLoadKey::before[^\{]*\{[^}]*border:0;',CSS)
