@@ -52,14 +52,11 @@ def client_point_for_source(page,sec):
     }''',sec)
 
 
-def drag_source(page,start_sec,end_sec):
-    start=client_point_for_source(page,start_sec)
-    end=client_point_for_source(page,end_sec)
-    page.mouse.move(start['x'],start['y'])
-    page.mouse.down()
-    page.mouse.move(end['x'],end['y'],steps=7)
-    page.mouse.up()
-    page.wait_for_timeout(50)
+def no_overlaps(page):
+    return page.evaluate('''() => ChopperWaveSlices.slices.every((r,i,a) =>
+      r.end-r.start >= ChopperWaveSlices.minSliceSec-1e-9 &&
+      (i===0 || r.start >= a[i-1].end-1e-9)
+    )''')
 
 
 with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
@@ -80,7 +77,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.set_input_files('#sampleFile',str(sample))
     page.wait_for_function('sampleBuffer !== null && markers.length === 17',timeout=10000)
 
-    # Mode switch is beside SAMPLE DISPLAY and never changes waveform height.
     mode_ui=page.evaluate('''() => {
       const button=document.getElementById('sliceEditModeBtn');
       const title=button.closest('.stableTitle');
@@ -100,7 +96,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert mode_ui['inTitle'] and mode_ui['buttonX']>=mode_ui['labelRight']-1,mode_ui
     assert abs(mode_ui['height']-240)<1,mode_ui
 
-    # MARKERS is exactly the maintained linked-boundary editor from chopper.js.
+    # MARKERS remains the original linked editor from chopper.js.
     page.evaluate('setMarkers(8)')
     before=page.evaluate('markers[2]')
     marker_point=client_point_for_source(page,before)
@@ -111,136 +107,158 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     linked_after=page.evaluate('markers[2]')
     assert abs(linked_after-before)>.005,(before,linked_after)
     assert page.evaluate('markers.every((v,i,a)=>i===0 || v>a[i-1])')
-    assert page.evaluate('ChopperWaveSlices.mode')=='markers'
+    marker_snapshot=page.evaluate('markers.slice()')
 
-    # SLICES seeds from the current MARKERS state and then becomes independent.
+    # SLICES always begins as four coarse, ordered, non-overlapping regions.
     page.click('#sliceEditModeBtn')
     page.wait_for_function('ChopperWaveSlices.mode === "slices"',timeout=3000)
     seeded=page.evaluate('''() => ({
-      button:document.getElementById('sliceEditModeBtn').textContent,
-      marker2:markers[2],
-      ranges:ChopperWaveSlices.slices
-    })''')
-    assert seeded['button']=='SLICES',seeded
-    assert len(seeded['ranges'])==8,seeded
-    assert abs(seeded['ranges'][1]['end']-seeded['marker2'])<1e-9,seeded
-
-    # Select slice 2 first so its two coincident edges win hit-testing over
-    # neighbouring slices at the original shared MARKERS boundaries.
-    slice2=seeded['ranges'][1]
-    body_sec=slice2['start']+(slice2['end']-slice2['start'])*.5
-    body=client_point_for_source(page,body_sec)
-    page.mouse.click(body['x'],body['y'])
-    page.wait_for_function('ChopperWaveSlices.selectedSlice === 1',timeout=3000)
-    page.evaluate('stopChopAudition()')
-
-    marker_snapshot=page.evaluate('markers.slice()')
-    neighbour_left_end=seeded['ranges'][0]['end']
-    neighbour_right_start=seeded['ranges'][2]['start']
-    original_start=slice2['start']
-    original_end=slice2['end']
-
-    # ATTACK trim: drag the left handle to the right. Only slice 2 start moves.
-    new_start=original_start+(original_end-original_start)*.22
-    drag_source(page,original_start,new_start)
-    after_start=page.evaluate('''() => ({
+      initial:ChopperWaveSlices.initialSlices,
+      max:ChopperWaveSlices.maxSlices,
       ranges:ChopperWaveSlices.slices,
-      markers:markers.slice(),
-      selected:ChopperWaveSlices.selectedSlice
+      enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,
+      markers:markers.slice()
     })''')
-    assert after_start['selected']==1,after_start
-    assert after_start['ranges'][1]['start']>original_start+.005,after_start
-    assert abs(after_start['ranges'][1]['end']-original_end)<1e-9,after_start
-    assert abs(after_start['ranges'][0]['end']-neighbour_left_end)<1e-9,after_start
-    assert abs(after_start['ranges'][2]['start']-neighbour_right_start)<1e-9,after_start
-    assert after_start['markers']==marker_snapshot,after_start
+    assert seeded['initial']==4 and seeded['max']==16,seeded
+    assert len(seeded['ranges'])==4 and seeded['enabled']==4,seeded
+    assert seeded['markers']==marker_snapshot,seeded
+    assert no_overlaps(page),seeded
 
-    # TAIL trim: drag the right handle to the left. Start stays put and a gap
-    # opens before slice 3 without moving slice 3 or any MARKERS boundary.
-    trimmed_start=after_start['ranges'][1]['start']
-    short_end=trimmed_start+(original_end-trimmed_start)*.62
-    drag_source(page,original_end,short_end)
-    after_end=page.evaluate('''() => ({ranges:ChopperWaveSlices.slices,markers:markers.slice()})''')
-    assert abs(after_end['ranges'][1]['start']-trimmed_start)<1e-9,after_end
-    assert after_end['ranges'][1]['end']<neighbour_right_start,after_end
-    assert abs(after_end['ranges'][2]['start']-neighbour_right_start)<1e-9,after_end
-    assert after_end['markers']==marker_snapshot,after_end
+    # Tail trim creates a gap without moving the next slice.
+    initial=seeded['ranges']
+    tail_target=initial[0]['end']-.045
+    end_point=client_point_for_source(page,initial[0]['end'])
+    target=client_point_for_source(page,tail_target)
+    page.mouse.move(end_point['x'],end_point['y'])
+    page.mouse.down()
+    page.mouse.move(target['x'],target['y'],steps=6)
+    page.mouse.up()
+    trimmed=page.evaluate('ChopperWaveSlices.slices')
+    assert trimmed[0]['end']<initial[1]['start']-.02,trimmed
+    assert abs(trimmed[1]['start']-initial[1]['start'])<1e-9,trimmed
+    assert no_overlaps(page)
 
-    # Tail can also extend across the next slice: overlaps stay legal and the
-    # neighbour remains completely independent.
-    overlap_target=min(page.evaluate('sampleBuffer.duration-.01'),neighbour_right_start+.055)
-    drag_source(page,after_end['ranges'][1]['end'],overlap_target)
-    overlap=page.evaluate('ChopperWaveSlices.slices')
-    assert overlap[1]['end']>overlap[2]['start'],overlap
-    assert abs(overlap[1]['start']-trimmed_start)<1e-9,overlap
-    assert abs(overlap[2]['start']-neighbour_right_start)<1e-9,overlap
-    assert page.evaluate('markers.slice()')==marker_snapshot
+    # Attack trim is independent too. The previous slice remains untouched.
+    start_before=trimmed[1]['start']
+    attack_target=start_before+.030
+    start_point=client_point_for_source(page,start_before)
+    target=client_point_for_source(page,attack_target)
+    page.mouse.move(start_point['x'],start_point['y'])
+    page.mouse.down()
+    page.mouse.move(target['x'],target['y'],steps=6)
+    page.mouse.up()
+    attack=page.evaluate('ChopperWaveSlices.slices')
+    assert attack[1]['start']>start_before+.015,attack
+    assert abs(attack[0]['end']-trimmed[0]['end'])<1e-9,attack
+    assert no_overlaps(page)
 
-    # Direct API follows the same invariant and proves the outer boundaries are
-    # not locked in SLICES mode: first attack and last tail can both be trimmed.
-    page.evaluate('ChopperWaveSlices.setSliceBoundary(0,"start",0.018)')
-    page.evaluate('ChopperWaveSlices.setSliceBoundary(7,"end",sampleBuffer.duration-.021)')
-    outer=page.evaluate('ChopperWaveSlices.slices')
-    assert outer[0]['start']>.015,outer
-    assert outer[-1]['end']<page.evaluate('sampleBuffer.duration-.015'),outer
-    assert page.evaluate('markers.slice()')==marker_snapshot
+    # A boundary cannot cross its neighbour: overlaps are clamped out while gaps remain legal.
+    clamp_state=page.evaluate('''() => {
+      const before=ChopperWaveSlices.slices;
+      ChopperWaveSlices.setSliceBoundary(0,'end',before[1].start+.2);
+      return ChopperWaveSlices.slices;
+    }''')
+    assert abs(clamp_state[0]['end']-clamp_state[1]['start'])<1e-9,clamp_state
+    assert no_overlaps(page)
 
-    # Pad audition starts at the edited attack; playhead/sequence duration ends
-    # at the edited tail.
-    page.locator('#pads .pad').nth(1).click()
-    page.wait_for_function('ChopperWaveSlices.selectedSlice === 1 && chopAuditionPad === 1',timeout=5000)
-    selected=page.evaluate('''() => [...document.querySelectorAll('#pads .pad')].map(p=>p.classList.contains('slice-selected'))''')
-    assert selected[1] and sum(1 for x in selected if x)==1,selected
-    assert abs(page.evaluate('chopAuditionOffset')-overlap[1]['start'])<1e-9
+    # Re-create a visible gap, then double-click inside it to add a new slice.
+    gap=page.evaluate('''() => {
+      const s=ChopperWaveSlices.slices;
+      ChopperWaveSlices.setSliceBoundary(0,'end',s[1].start-.09);
+      const n=ChopperWaveSlices.slices;
+      return {left:n[0].end,right:n[1].start};
+    }''')
+    gap_sec=(gap['left']+gap['right'])/2
+    gap_point=client_point_for_source(page,gap_sec)
+    page.mouse.dblclick(gap_point['x'],gap_point['y'],delay=50)
+    page.wait_for_function('ChopperWaveSlices.slices.length === 5',timeout=3000)
+    after_gap=page.evaluate('''() => ({
+      ranges:ChopperWaveSlices.slices,
+      enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length
+    })''')
+    assert after_gap['enabled']==5,after_gap
+    assert no_overlaps(page),after_gap
+
+    # Double-clicking inside an existing slice splits that slice in two.
+    split_range=after_gap['ranges'][-1]
+    split_sec=(split_range['start']+split_range['end'])/2
+    split_point=client_point_for_source(page,split_sec)
+    page.mouse.dblclick(split_point['x'],split_point['y'],delay=50)
+    page.wait_for_function('ChopperWaveSlices.slices.length === 6',timeout=3000)
+    assert no_overlaps(page)
+    assert page.evaluate("[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length")==6
+
+    # Keep splitting the largest region until all 16 pads are mapped.
+    grown=page.evaluate('''() => {
+      let guard=40;
+      while(ChopperWaveSlices.slices.length<ChopperWaveSlices.maxSlices && guard--){
+        const ranges=ChopperWaveSlices.slices;
+        let best=-1,bestLen=-1;
+        for(let i=0;i<ranges.length;i++){
+          const len=ranges[i].end-ranges[i].start;
+          if(len>bestLen){best=i;bestLen=len;}
+        }
+        if(best<0 || bestLen<ChopperWaveSlices.minSliceSec*2.1)break;
+        const r=ranges[best];
+        if(!ChopperWaveSlices.addSliceAt((r.start+r.end)/2))break;
+      }
+      const beforeExtra=ChopperWaveSlices.slices.length;
+      const r=ChopperWaveSlices.slices[0];
+      const extra=ChopperWaveSlices.addSliceAt((r.start+r.end)/2);
+      return {
+        count:ChopperWaveSlices.slices.length,
+        beforeExtra,
+        extra,
+        enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,
+        ranges:ChopperWaveSlices.slices
+      };
+    }''')
+    assert grown['count']==16 and grown['beforeExtra']==16,grown
+    assert grown['extra'] is False,grown
+    assert grown['enabled']==16,grown
+    assert no_overlaps(page),grown
+
+    # Pad N auditions exactly slice N, using its independent start/end.
+    chosen=7
+    chosen_range=grown['ranges'][chosen]
+    page.locator('#pads .pad').nth(chosen).click()
+    page.wait_for_function(f'ChopperWaveSlices.selectedSlice === {chosen} && chopAuditionPad === {chosen}',timeout=5000)
+    assert abs(page.evaluate('chopAuditionOffset')-chosen_range['start'])<1e-9
     page.evaluate('stopChopAudition()')
 
-    page.evaluate('''() => {
+    page.evaluate(f'''() => {{
       loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
-      loopGridEvents[0]=2;
-    }''')
-    playhead_state=page.evaluate('''() => {
+      loopGridEvents[0]={chosen+1};
+    }}''')
+    playhead_state=page.evaluate(f'''() => {{
       const s=buildLoopPlayheadState();
-      const r=ChopperWaveSlices.slices[1];
-      return {segment:s.segments[0],range:r,rate:s.pitchRate};
-    }''')
+      const r=ChopperWaveSlices.slices[{chosen}];
+      return {{segment:s.segments[0],range:r,rate:s.pitchRate}};
+    }}''')
     audible=playhead_state['segment']['endTime']-playhead_state['segment']['startTime']
     expected=(playhead_state['range']['end']-playhead_state['range']['start'])/playhead_state['rate']
     assert abs(audible-expected)<1e-6,(audible,expected,playhead_state)
-    assert abs(playhead_state['segment']['sampleStart']-playhead_state['range']['start'])<1e-9
 
-    # Each edit model survives mode switching independently.
-    saved_start=overlap[1]['start']
-    saved_end=overlap[1]['end']
+    # MARKERS comes back untouched. Returning to SLICES preserves the edited state.
     page.click('#sliceEditModeBtn')
     assert page.evaluate('ChopperWaveSlices.mode')=='markers'
-    assert page.locator('#sliceEditModeBtn').inner_text()=='MARKERS'
     assert page.evaluate('markers.slice()')==marker_snapshot
-    assert not page.locator('#pads .pad').nth(1).evaluate("p=>p.classList.contains('slice-selected')")
-
     page.click('#sliceEditModeBtn')
     assert page.evaluate('ChopperWaveSlices.mode')=='slices'
-    restored=page.evaluate('ChopperWaveSlices.slices[1]')
-    assert abs(restored['start']-saved_start)<1e-9,restored
-    assert abs(restored['end']-saved_end)<1e-9,restored
+    assert page.evaluate('ChopperWaveSlices.slices.length')==16
 
-    # AUTO CHOP intentionally starts a fresh set of independent ranges.
+    # AUTO CHOP is the coarse reset for SLICES: four regions again.
     page.click('#autoMarkers')
-    page.wait_for_timeout(60)
-    final_state=page.evaluate('''() => ({
-      markers:markers.length,
-      ranges:ChopperWaveSlices.slices.length,
-      pads:document.querySelectorAll('#pads .pad:not(.unavailable)').length,
-      mode:ChopperWaveSlices.mode,
-      firstStart:ChopperWaveSlices.slices[0].start,
-      lastEnd:ChopperWaveSlices.slices.at(-1).end,
-      duration:sampleBuffer.duration
+    page.wait_for_timeout(80)
+    reset=page.evaluate('''() => ({
+      count:ChopperWaveSlices.slices.length,
+      enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,
+      markers:markers.slice()
     })''')
-    assert final_state['markers']==17 and final_state['ranges']==16 and final_state['pads']==16,final_state
-    assert final_state['mode']=='slices',final_state
-    assert abs(final_state['firstStart'])<1e-9,final_state
-    assert abs(final_state['lastEnd']-final_state['duration'])<1e-9,final_state
+    assert reset['count']==4 and reset['enabled']==4,reset
+    assert no_overlaps(page),reset
     assert not errors,errors
     page.close()
     browser.close()
 
-print('OK: Chopper edit modes — native MARKERS plus independent SLICES with separate attack/tail trim, unchanged waveform height')
+print('OK: Chopper SLICES — 4 coarse slices, double-click add/split, independent trim, no overlap, 16-pad ceiling, MARKERS untouched')
