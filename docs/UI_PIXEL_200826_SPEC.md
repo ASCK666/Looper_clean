@@ -20,8 +20,8 @@ Implementation work must be checked against it at every important milestone.
 
 Visual references committed with this contract:
 
-- `assets/looper-ui/looper66-desktop-clean-a3d35bc4.webp` (`1086 × 1009`);
-- `assets/looper-ui/looper66-mobile-clean-8a95f608.webp` (`441 × 849`);
+- `assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp` (`1086 × 1009`);
+- `assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp` (`441 × 849`);
 - `assets/looper-ui/looper66-cassette-bay-b10ab679.png` (`793 × 496`), habitacle complet au premier plan : charnière et cadre supérieur, montants latéraux, traverse de maintien inférieure et ouverture transparente. Son PNG alpha fingerprinté évite tout fond clair ou ancien asset mis en cache.
 
 These files are the composition, spacing, material and typography references.

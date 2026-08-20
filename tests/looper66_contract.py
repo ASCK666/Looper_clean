@@ -18,9 +18,10 @@ for control in controls:
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
 
 assert 'class="looper66Skin"' in HTML
-assert './css/base.css?v=looper66-bay-img-1' in HTML
-assert 'assets/looper-ui/looper66-desktop-clean-a3d35bc4.webp' in HTML
-assert 'assets/looper-ui/looper66-mobile-clean-8a95f608.webp' in HTML
+assert './css/base.css?v=looper66-pitch-clean-1' in HTML
+assert './css/clean-ui.css' in HTML
+assert 'assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp' in HTML
+assert 'assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp' in HTML
 assert '>LOAD LIBRARY<' in HTML and '>LOAD BEAT<' in HTML
 assert re.search(r'id="autoLooperToggle"[^>]*aria-label="Speed Up, plus un pour cent toutes les huit boucles"',HTML)
 assert '>SPEED RATE<' not in HTML and '>+1%<' not in HTML
@@ -81,6 +82,7 @@ assert 'animation-direction:reverse' not in CSS
 assert re.search(r'\.deckHotspot\s*\{[^}]*background:transparent;[^}]*box-shadow:none;',CSS)
 assert re.search(r'\.deckReadout\s*\{[^}]*border:0;[^}]*box-shadow:none;',CSS)
 assert re.search(r'\.deckPitchModule\s*\{[^}]*border:0;[^}]*box-shadow:none;',CSS)
+assert '.deckPitchModule::before' not in CSS
 assert '#looper #deckPitch:focus { outline:0!important;' in CSS
 assert 'filter:none!important;-webkit-tap-highlight-color:transparent' in CSS
 assert 'grid-template-columns:repeat(var(--rack-columns,3),calc((100% - .9%)/3))' in CSS
@@ -90,8 +92,8 @@ for name in retired:
     assert name not in HTML+CSS+LOOPER+EVENTS,name
 
 references={
-    'looper66-desktop-clean-a3d35bc4.webp':((1086,1009),'a3d35bc4724438bdb3a30f627e7621134ad32b8e1983588c4f7c260a66d9c9b8'),
-    'looper66-mobile-clean-8a95f608.webp':((441,849),'8a95f608533cda45732d38261294e4e3591c0d9fa0817cebd72211bf7c37ae11'),
+    'looper66-desktop-pitch-clean-1e6d4f36.webp':((1086,1009),'1e6d4f360d7b6382a6bfeab0559aaaf505080ff6ef6e6bff7467175dd696e548'),
+    'looper66-mobile-pitch-clean-c034fcbb.webp':((441,849),'c034fcbb8d60de005240f9a339af9a51d5dd25f66c6fdb81209c2d93052ef02b'),
     'looper66-transport.webp':((750,124),'ce7acecc81f0c112ae104d4035a334c6a3aba3b7940f9a62014b99b009fc6376'),
     'looper66-crate-cassettes.webp':((560,62),'12256e2ec27d0a2976ce0a15184f578a04034c5318bbff8819deab05d0d6e3c9'),
     'looper66-cassette-bay-b10ab679.png':((793,496),'b10ab6796ed411b1633b7c81f8cbdc213c249e4499ffc92ec9e373bcb2c5c245'),

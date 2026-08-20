@@ -86,7 +86,7 @@ with contextlib.ExitStack() as stack:
           center_y=(reel['y']+reel['height']/2-info['workspace']['y'])/info['workspace']['height']*1009
           assert abs(center_x-expected_x)<1 and abs(center_y-expected_y)<1,(center_x,center_y)
         assert info['rackSlots']==9,info
-        assert info['title']=='NO BEAT LOADED' and info['skin'].endswith('looper66-desktop-clean-a3d35bc4.webp'),info
+        assert info['title']=='NO BEAT LOADED' and info['skin'].endswith('looper66-desktop-pitch-clean-1e6d4f36.webp'),info
         assert not info['appErrors'] and not page_errors and not failed,(info['appErrors'],page_errors,failed)
 
         page.locator('#looper').screenshot(path=str(ARTIFACTS/'looper66-render.png'))
