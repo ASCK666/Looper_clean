@@ -121,33 +121,43 @@
   align-items: center !important;
   justify-content: flex-end;
   flex-wrap: wrap;
-  column-gap: 24px !important;
-  row-gap: 14px !important;
+  gap: 0 !important;
 }
 
+/* Four explicit columns prevent the resolution select from swallowing the row. */
 #chopper .drumQuickActions {
   grid-area: auto !important;
-  display: flex !important;
-  width: auto !important;
-  grid-template-columns: none !important;
+  display: grid !important;
+  grid-template-columns: 92px 64px max-content max-content !important;
+  column-gap: 24px !important;
+  row-gap: 14px !important;
+  width: max-content !important;
+  max-width: 100%;
   align-items: center !important;
-  gap: 24px !important;
-  padding-block: 4px;
+  justify-items: start;
+  padding-block: 6px;
+  overflow: visible;
 }
 
 #chopper .drumQuickActions #drumEditView {
-  flex: 0 0 auto;
+  width: 92px !important;
+  min-width: 92px !important;
+  max-width: 92px !important;
   margin: 0 !important;
+  justify-self: start;
 }
 
 #chopper .drumQuickActions .drumReverbKnob {
   grid-area: auto !important;
+  width: 64px !important;
+  min-width: 64px !important;
   margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
+  justify-self: center;
 }
 
 #chopper .drumQuickActions .snareFxHead {
@@ -170,16 +180,14 @@
   height: 42px;
 }
 
-#chopper .drumQuickActions #newDrums {
+#chopper .drumQuickActions #newDrums,
+#chopper .drumQuickActions #clearDrumEdits {
   align-self: center;
+  justify-self: start;
   min-height: 34px !important;
+  margin: 0 !important;
   padding-inline: 12px !important;
   white-space: nowrap;
-}
-
-#chopper .drumEditActions #clearDrumEdits {
-  margin: 0 !important;
-  align-self: center;
 }
 
 #chopper .drumQuickActions .sampleKnobReadout {
@@ -391,12 +399,22 @@
 
   #chopper .drumEditActions {
     justify-content: flex-start;
-    column-gap: 18px !important;
-    row-gap: 14px !important;
   }
 
   #chopper .drumQuickActions {
-    gap: 18px !important;
+    grid-template-columns: 86px 60px max-content max-content !important;
+    column-gap: 18px !important;
+  }
+
+  #chopper .drumQuickActions #drumEditView {
+    width: 86px !important;
+    min-width: 86px !important;
+    max-width: 86px !important;
+  }
+
+  #chopper .drumQuickActions .drumReverbKnob {
+    width: 60px !important;
+    min-width: 60px !important;
   }
 }
 
@@ -411,13 +429,11 @@
     gap: 5px;
   }
 
+  /* Two clean rows are preferable to overlapping four controls on a phone. */
   #chopper .drumQuickActions {
-    gap: 16px !important;
-  }
-
-  #chopper .drumEditActions {
-    column-gap: 16px !important;
-    row-gap: 14px !important;
+    grid-template-columns: 86px 60px !important;
+    column-gap: 18px !important;
+    row-gap: 16px !important;
   }
 
   #chopper .drumQuickActions .sampleKnobControl {
