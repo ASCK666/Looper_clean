@@ -8,8 +8,8 @@ ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "assets"
 EXPECTED_VISUALS = {
     "deck-black-ui-texture.png",
-    "looper-ui/looper66-desktop-target.webp",
-    "looper-ui/looper66-mobile-target.webp",
+    "looper-ui/looper66-desktop-clean-a3d35bc4.webp",
+    "looper-ui/looper66-mobile-clean-8a95f608.webp",
     "looper-ui/looper66-transport.webp",
     "looper-ui/looper66-crate-cassettes.webp",
 }

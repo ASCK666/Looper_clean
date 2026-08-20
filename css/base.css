@@ -991,7 +991,7 @@ a, .blue {
   background:#050504;
 }
 .looper66Workspace {
-  --looper-skin-image:url("../assets/looper-ui/looper66-desktop-target.webp");
+  --looper-skin-image:url("../assets/looper-ui/looper66-desktop-clean-a3d35bc4.webp");
   position:relative;
   display:block!important;
   width:100%;
@@ -1100,7 +1100,7 @@ a, .blue {
 
 @media (max-width:680px) {
   .looper66Shell { width:min(100%,441px); }
-  .looper66Workspace { --looper-skin-image:url("../assets/looper-ui/looper66-mobile-target.webp");aspect-ratio:441/1120; }
+  .looper66Workspace { --looper-skin-image:url("../assets/looper-ui/looper66-mobile-clean-8a95f608.webp");aspect-ratio:441/1120; }
   .looper66Skin img { width:100%;height:auto; }
   .looper66Workspace::after { content:"";position:absolute;z-index:0;top:75.8%;right:0;bottom:0;left:0;border-right:9px solid #16130f;border-left:9px solid #16130f;background:linear-gradient(180deg,#0b0b09,#060605),var(--deck-texture);background-size:auto,256px 256px;box-shadow:inset 0 0 0 2px #33291f; }
 

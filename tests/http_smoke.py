@@ -40,7 +40,7 @@ try:
             )
             assert marker in body, (path, marker)
 
-    deck = "/assets/looper-ui/looper66-desktop-target.webp"
+    deck = "/assets/looper-ui/looper66-desktop-clean-a3d35bc4.webp"
     with urlopen(Request(base_url + deck, method="HEAD"), timeout=5) as response:
         assert response.status == 200
         assert response.headers.get_content_type() == "image/webp"

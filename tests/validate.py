@@ -42,8 +42,8 @@ for rel in [
     "js/drums.js",
     "js/events.js",
     "assets/deck-black-ui-texture.png",
-    "assets/looper-ui/looper66-desktop-target.webp",
-    "assets/looper-ui/looper66-mobile-target.webp",
+    "assets/looper-ui/looper66-desktop-clean-a3d35bc4.webp",
+    "assets/looper-ui/looper66-mobile-clean-8a95f608.webp",
     "assets/looper-ui/looper66-transport.webp",
     "assets/looper-ui/looper66-crate-cassettes.webp",
 ]:
