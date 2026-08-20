@@ -18,6 +18,7 @@ for control in controls:
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
 
 assert 'class="looper66Skin"' in HTML
+assert './css/base.css?v=looper66-bay-img-1' in HTML
 assert 'assets/looper-ui/looper66-desktop-clean-a3d35bc4.webp' in HTML
 assert 'assets/looper-ui/looper66-mobile-clean-8a95f608.webp' in HTML
 assert '>LOAD LIBRARY<' in HTML and '>LOAD BEAT<' in HTML
@@ -65,10 +66,12 @@ assert 'pitchModule.style.setProperty("--pitch-y"' in LOOPER
 assert 'pitchControl.setAttribute("aria-valuetext"' in LOOPER
 assert 'cassetteShell' not in HTML+CSS
 assert HTML.count('class="cassetteBayForeground"')==1
+assert re.search(r'<img\b[^>]*class="cassetteBayForeground"[^>]*src="assets/looper-ui/looper66-cassette-bay-b10ab679\.png"',HTML)
 assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
 assert '.cassetteGlass { position:absolute;z-index:4;' in CSS
 assert '.cassetteBayForeground { position:absolute;z-index:5;inset:0;' in CSS
-assert 'looper66-cassette-bay-b10ab679.png' in CSS
+assert re.search(r'\.cassetteBayForeground\s*\{[^}]*display:block;[^}]*width:100%;[^}]*height:100%;[^}]*object-fit:fill;',CSS)
+assert 'looper66-cassette-bay-b10ab679.png' not in CSS
 assert 'cassetteSupportForeground' not in HTML+CSS
 assert 'clip-path:circle(44%)' in CSS
 assert 'transform-origin:50% 50%' in CSS

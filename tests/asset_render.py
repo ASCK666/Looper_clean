@@ -30,12 +30,20 @@ with contextlib.ExitStack() as stack:
         page.goto(f'http://127.0.0.1:{server.server_address[1]}/index.html',wait_until='networkidle',timeout=30000)
         page.wait_for_function('window.__SP?.ready === true',timeout=10000)
         page.wait_for_function("document.querySelectorAll('.cassetteReel').length === 2",timeout=10000)
+        page.wait_for_function("""() => {
+          const bay=document.querySelector('.cassetteBayForeground');
+          return bay instanceof HTMLImageElement && bay.complete && bay.naturalWidth===793 && bay.naturalHeight===496;
+        }""",timeout=10000)
 
         info=page.evaluate('''() => {
           const ids=['prevBeat','playBeat','stopBeat','nextBeat','autoLooperToggle','deckAutoToggle','deckPitch','importFolderBtn','importBeatsBtn'];
           const rect=id=>document.getElementById(id).getBoundingClientRect().toJSON();
           return {
             appErrors:window.__SP.errors,
+            bay:(()=>{
+              const image=document.querySelector('.cassetteBayForeground');
+              return {tag:image.tagName,complete:image.complete,naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight,src:image.getAttribute('src')};
+            })(),
             layers:[...document.querySelectorAll('.cassetteMechanism > *')].map(layer=>[layer.className,getComputedStyle(layer).zIndex]),
             controls:ids.map(id=>({id,...rect(id),display:getComputedStyle(document.getElementById(id)).display})),
             transport:['stopBeat','playBeat','autoLooperToggle'].map(rect),
@@ -58,6 +66,10 @@ with contextlib.ExitStack() as stack:
             'cassetteBeatName','cassetteBayForeground',
             'cassetteCssLight','cassetteGlass'
         ],info
+        assert info['bay']=={
+            'tag':'IMG','complete':True,'naturalWidth':793,'naturalHeight':496,
+            'src':'assets/looper-ui/looper66-cassette-bay-b10ab679.png'
+        },info
         assert all(c['display']!='none' and c['width']>=44 and c['height']>=44 for c in info['controls']),info
         sizes={(round(rect['width'],1),round(rect['height'],1)) for rect in info['transport']}
         assert len(sizes)==1,sizes
