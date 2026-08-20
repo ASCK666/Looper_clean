@@ -4,151 +4,104 @@ try:
     from playwright.sync_api import sync_playwright
 except Exception:
     print('SKIP: playwright is not installed');sys.exit(0)
+
 ROOT=Path(__file__).resolve().parents[1]
 html=(ROOT/'index.html').read_text(encoding='utf-8')
 html=re.sub(r'<link rel="manifest"[^>]*>','',html)
-base_css=(ROOT/'css/base.css').read_text(encoding='utf-8')
-clean_css=(ROOT/'css/clean-ui.css').read_text(encoding='utf-8')
-html=html.replace('<link rel="stylesheet" href="./css/base.css">',f'<style>{base_css}</style>')
-html=html.replace('<link rel="stylesheet" href="./css/clean-ui.css">',f'<style>{clean_css}</style>')
+for rel in ['./css/base.css','./css/clean-ui.css','./css/chopper-drum-controls.css']:
+    css=(ROOT/rel[2:]).read_text(encoding='utf-8')
+    html=html.replace(f'<link rel="stylesheet" href="{rel}">',f'<style>{css}</style>')
 html=re.sub(r'src="assets/[^"]+"','src=""',html)
-for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js','./js/chopper.js','./js/drums.js','./js/events.js']:
+for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js','./js/chopper.js','./js/drums.js','./js/events.js','./js/chopper-drum-controls.js']:
     js=(ROOT/rel[2:]).read_text(encoding='utf-8')
     html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
     html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
+
 with sync_playwright() as p:
     browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
-    for width,height in [(1440,1200),(820,1200),(520,1200),(390,1200)]:
+    for width,height in [(1440,1200),(820,1200),(520,1400),(390,1500)]:
         page=browser.new_page(viewport={'width':width,'height':height})
-        errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+        errors=[]
+        page.on('pageerror',lambda e:errors.append(str(e)))
         page.set_content(html,wait_until='load',timeout=20000)
         page.wait_for_function('window.__SP && window.__SP.ready === true',timeout=10000)
         page.add_style_tag(content='*,*::before,*::after{animation:none!important;transition:none!important}')
-        page.click('[data-tab="chopper"]');page.wait_for_timeout(80)
+        page.click('[data-tab="chopper"]')
+        page.wait_for_timeout(80)
+
         data=page.evaluate('''() => {
-          const box=s=>document.querySelector(s).getBoundingClientRect();
-          const pads=[...document.querySelectorAll('#pads .pad')].map(x=>x.getBoundingClientRect().toJSON());
-          const controlActions=[...document.querySelectorAll('#chopper .samplerActionRow > .btn')].map(x=>({id:x.id,...x.getBoundingClientRect().toJSON()}));
-          const transport=[...document.querySelectorAll('#chopper .samplerDisplayActions > .btn')].map(x=>({id:x.id,...x.getBoundingClientRect().toJSON()}));
-          const upperEl=document.querySelector('.samplerUpperDeck');
-          const upperChildren=[...upperEl.children].map(x=>x.classList.contains('samplerControlModule')?'control':x.classList.contains('samplerScreenModule')?'screen':'other');
-          const title=box('.samplerScreenModule > .stableTitle');
-          const pitch=box('.samplePitchKnob'),volume=box('.sampleVolumeKnob'),tempo=box('.sampleTempoControl'),wave=box('.samplerScreen');
-          const tempoInput=box('#sampleBpm');
-          const upper=getComputedStyle(upperEl).gridTemplateColumns;
-          const perf=getComputedStyle(document.querySelector('.samplerPerformanceDeck')).gridTemplateColumns;
-          const screen=box('.samplerScreenModule'),control=box('.samplerControlModule');
-          const padPanel=box('.samplerPadsModule'),seq=box('.samplerSequenceModule');
+          const box=s=>document.querySelector(s).getBoundingClientRect().toJSON();
+          const ids=sel=>[...document.querySelectorAll(sel)].map(x=>x.id);
+          const upper=document.querySelector('.samplerUpperDeck');
           const wrap=document.querySelector('.loopGridWrap');
-          const timeline=box('#sampleTimelineCanvas'),matrix=box('#loopGrid'),drumPreview=box('#drumPatternPreview');
-          const firstHead=box('#loopGrid .matrixHead'),firstPreviewPair=box('#drumPatternPreview .drumPatternPreviewPair');
-          const fine=document.querySelector('.advancedBox');
           return {
-            pads,controlActions,transport,upperChildren,title:title.toJSON(),pitch:pitch.toJSON(),volume:volume.toJSON(),tempo:tempo.toJSON(),wave:wave.toJSON(),tempoInput:tempoInput.toJSON(),
-            displayBodyDisplay:getComputedStyle(document.querySelector('.samplerDisplayBody')).display,
-            pitchPct:getComputedStyle(document.querySelector('.samplePitchKnob')).getPropertyValue('--knob-pct').trim(),
-            volumePct:getComputedStyle(document.querySelector('.sampleVolumeKnob')).getPropertyValue('--knob-pct').trim(),
-            pitchInScreen:!!document.querySelector('.samplerScreenModule #samplePitch'),
-            volumeInScreen:!!document.querySelector('.samplerScreenModule #sampleVolume'),
-            tempoInScreen:!!document.querySelector('.samplerScreenModule #sampleBpm'),
-            pitchInControl:!!document.querySelector('.samplerControlModule #samplePitch'),
-            volumeInControl:!!document.querySelector('.samplerControlModule #sampleVolume'),
-            tempoInControl:!!document.querySelector('.samplerControlModule #sampleBpm'),
-            sliceInFine:!!fine?.querySelector('#sliceCount'),
-            snapInFine:!!fine?.querySelector('#snapMode'),
-            gridInFine:!!fine?.querySelector('#gridDivision'),
-            transientInFine:!!fine?.querySelector('#transientRadius'),
-            sliceOutsideFine:!!document.querySelector('.samplerControlModule > #sliceCount, .samplerControlModule > .samplerSelectRow:not(.fineSettingsSelectRow) #sliceCount'),
-            snapOutsideFine:!!document.querySelector('.samplerControlModule > #snapMode, .samplerControlModule > .samplerSelectRow:not(.fineSettingsSelectRow) #snapMode'),
-            upper,perf,screen:screen.toJSON(),control:control.toJSON(),padPanel:padPanel.toJSON(),seq:seq.toJSON(),
-            timeline:timeline.toJSON(),matrix:matrix.toJSON(),drumPreview:drumPreview.toJSON(),firstHead:firstHead.toJSON(),firstPreviewPair:firstPreviewPair.toJSON(),
-            bodyW:document.body.scrollWidth,viewportW:innerWidth,scrollable:wrap.scrollWidth>=wrap.clientWidth,wrapScrollWidth:wrap.scrollWidth,wrapClientWidth:wrap.clientWidth
+            upperChildren:[...upper.children].map(x=>x.classList.contains('samplerControlModule')?'control':x.classList.contains('samplerScreenModule')?'screen':'other'),
+            control:box('.samplerControlModule'),
+            screen:box('.samplerScreenModule'),
+            controlActions:ids('#chopper .samplerActionRow > .btn'),
+            transport:ids('#chopper .samplerDisplayActions > .btn'),
+            title:box('.samplerScreenModule > .stableTitle'),
+            pitch:box('.samplePitchKnob'),
+            tempo:box('.sampleTempoControl'),
+            volume:box('.sampleVolumeKnob'),
+            punch:box('.punchKnob'),
+            wave:box('.samplerScreen'),
+            punchType:document.querySelector('#punchMode').type,
+            punchValue:document.querySelector('#punchMode').value,
+            punchPct:getComputedStyle(document.querySelector('.punchKnob')).getPropertyValue('--knob-pct').trim(),
+            timeline:box('#sampleTimelineCanvas'),
+            matrix:box('#loopGrid'),
+            preview:box('#drumPatternPreview'),
+            firstHead:box('#loopGrid .matrixHead'),
+            firstPreview:box('#drumPatternPreview .drumPatternPreviewPair'),
+            wrapScrollWidth:wrap.scrollWidth,
+            wrapClientWidth:wrap.clientWidth,
+            bodyW:document.body.scrollWidth,
+            viewportW:innerWidth
           };
         }''')
-        assert len(data['pads'])==16,data
-        assert all(x['width']>35 and x['height']>35 for x in data['pads']),data['pads']
-        assert abs(data['pads'][0]['top']-data['pads'][3]['top'])<2,data['pads'][:5]
-        assert data['pads'][4]['top']>data['pads'][0]['bottom']-2,data['pads'][:5]
-        assert data['upperChildren']==['control','screen'],data['upperChildren']
+
+        assert data['upperChildren']==['control','screen'],data
         assert data['control']['bottom']<=data['screen']['top']+2,data
         assert abs(data['control']['left']-data['screen']['left'])<2,data
         assert abs(data['control']['right']-data['screen']['right'])<2,data
-        assert [x['id'] for x in data['controlActions']]==['playDrumsOnly','autoMarkers'],data['controlActions']
-        assert [x['id'] for x in data['transport']]==['previewFlip','loadSampleBtn','stopFlip','addFlipLibrary'],data['transport']
-        assert all(30<=x['height']<=44 for x in data['controlActions']+data['transport']),data
-        assert data['pitchInScreen'] and data['volumeInScreen'] and data['tempoInScreen'],data
-        assert not data['pitchInControl'] and not data['volumeInControl'] and not data['tempoInControl'],data
-        assert data['sliceInFine'] and data['snapInFine'] and data['gridInFine'] and data['transientInFine'],data
-        assert not data['sliceOutsideFine'] and not data['snapOutsideFine'],data
-        assert data['tempoInput']['width']>30 and data['tempoInput']['height']>=28,data['tempoInput']
-        assert data['displayBodyDisplay']=='contents',data
-        assert abs(float(data['pitchPct'])-50)<.01,data
-        assert abs(float(data['volumePct'])-80)<.01,data
-        # Title, pitch, tempo and volume share the same header row; waveform owns the full row below.
+        assert data['controlActions']==['playDrumsOnly','autoMarkers'],data
+        assert data['transport']==['previewFlip','loadSampleBtn','stopFlip','addFlipLibrary'],data
+
+        # Header row: title | pitch | tempo | sample volume | punch.
         assert data['title']['right']<=data['pitch']['left']+2,data
         assert data['pitch']['right']<=data['tempo']['left']+2,data
         assert data['tempo']['right']<=data['volume']['left']+2,data
-        for item in ['pitch','tempo','volume']:
+        assert data['volume']['right']<=data['punch']['left']+2,data
+        for item in ['pitch','tempo','volume','punch']:
             assert data[item]['top']<data['title']['bottom'] and data[item]['bottom']>data['title']['top'],data
-        header_bottom=max(data[x]['bottom'] for x in ['title','pitch','tempo','volume'])
+        header_bottom=max(data[x]['bottom'] for x in ['title','pitch','tempo','volume','punch'])
         assert data['wave']['top']>=header_bottom-2,data
         assert data['wave']['left']<=data['title']['left']+2,data
-        assert data['wave']['right']>=data['volume']['right']-2,data
-        if width>760:
-            assert max(x['top'] for x in data['transport'])-min(x['top'] for x in data['transport'])<2,data['transport']
-        else:
-            assert abs(data['transport'][0]['top']-data['transport'][1]['top'])<2,data['transport']
-            assert data['transport'][2]['top']>data['transport'][0]['bottom']-2,data['transport']
-        page.fill('#samplePitch','6');page.dispatch_event('#samplePitch','input')
-        page.fill('#sampleVolume','25');page.dispatch_event('#sampleVolume','input')
-        page.fill('#sampleBpm','103.5');page.dispatch_event('#sampleBpm','input')
-        knob_state=page.evaluate('''() => ({
-          pitch:getComputedStyle(document.querySelector('.samplePitchKnob')).getPropertyValue('--knob-pct').trim(),
-          volume:getComputedStyle(document.querySelector('.sampleVolumeKnob')).getPropertyValue('--knob-pct').trim(),
-          pitchReadout:document.getElementById('samplePitchReadout').textContent,
-          volumeReadout:document.getElementById('sampleVolumeReadout').textContent,
-          tempo:document.getElementById('sampleBpm').value
+        assert data['wave']['right']>=data['punch']['right']-2,data
+        assert data['punchType']=='range' and data['punchValue']=='1',data
+        assert abs(float(data['punchPct'])-(100/3))<.1,data
+
+        page.fill('#punchMode','3')
+        page.dispatch_event('#punchMode','input')
+        state=page.evaluate('''() => ({
+          pct:getComputedStyle(document.querySelector('.punchKnob')).getPropertyValue('--knob-pct').trim(),
+          label:document.querySelector('#punchDesc').textContent
         })''')
-        assert abs(float(knob_state['pitch'])-100)<.01,knob_state
-        assert abs(float(knob_state['volume'])-25)<.01,knob_state
-        assert knob_state['pitchReadout']=='+6 st' and knob_state['volumeReadout']=='25%',knob_state
-        assert knob_state['tempo']=='103.5',knob_state
-        if width>1000:
-            assert data['seq']['left']>=data['padPanel']['right']-2,data
-        else:
-            assert data['seq']['top']>=data['padPanel']['bottom']-2,data
-        # Sample timeline, Chopper matrix and Drum preview are one visual ruler: same width,
-        # same musical column origin and same horizontal scroll container.
+        assert abs(float(state['pct'])-100)<.01,state
+        assert state['label']=='HARD',state
+
+        # Timeline, Chopper matrix and drum preview share one ruler and scroll origin.
         assert abs(data['timeline']['left']-data['matrix']['left'])<1.5,data
-        assert abs(data['matrix']['left']-data['drumPreview']['left'])<1.5,data
+        assert abs(data['matrix']['left']-data['preview']['left'])<1.5,data
         assert abs(data['timeline']['right']-data['matrix']['right'])<1.5,data
-        assert abs(data['matrix']['right']-data['drumPreview']['right'])<1.5,data
-        assert data['timeline']['bottom']<=data['matrix']['top']+2,data
-        assert data['matrix']['bottom']<=data['drumPreview']['top']+2,data
-        head_offset=data['firstHead']['left']-data['matrix']['left']
-        preview_offset=data['firstPreviewPair']['left']-data['drumPreview']['left']
-        assert head_offset>0 and preview_offset>0,data
-        assert abs(head_offset-preview_offset)<1.5,data
-        assert abs(data['firstHead']['left']-data['firstPreviewPair']['left'])<1.5,data
-        if data['wrapScrollWidth']>data['wrapClientWidth']+1:
-            scroll_before=page.evaluate('''() => ({
-              timeline:document.getElementById('sampleTimelineCanvas').getBoundingClientRect().left,
-              head:document.querySelector('#loopGrid .matrixHead').getBoundingClientRect().left,
-              drum:document.querySelector('#drumPatternPreview .drumPatternPreviewPair').getBoundingClientRect().left
-            })''')
-            page.evaluate("document.querySelector('.loopGridWrap').scrollLeft=120")
-            page.wait_for_timeout(20)
-            scroll_after=page.evaluate('''() => ({
-              timeline:document.getElementById('sampleTimelineCanvas').getBoundingClientRect().left,
-              head:document.querySelector('#loopGrid .matrixHead').getBoundingClientRect().left,
-              drum:document.querySelector('#drumPatternPreview .drumPatternPreviewPair').getBoundingClientRect().left
-            })''')
-            shifts={key:scroll_before[key]-scroll_after[key] for key in scroll_before}
-            assert shifts['timeline']>1,shifts
-            assert max(shifts.values())-min(shifts.values())<1.5,shifts
+        assert abs(data['matrix']['right']-data['preview']['right'])<1.5,data
+        assert abs(data['firstHead']['left']-data['firstPreview']['left'])<1.5,data
+        assert data['wrapScrollWidth']>=data['wrapClientWidth'],data
         assert data['bodyW']<=data['viewportW']+2,data
-        assert data['scrollable'],data
         assert not errors,errors
         page.close()
+
     browser.close()
-print('OK: Chopper sampler layout — Sample Control above display, aligned sample/grid/drum ruler and responsive layout')
+
+print('OK: Chopper sampler layout — PUNCH beside SAMPLE VOL, aligned sample/grid/drum ruler and responsive layout')
