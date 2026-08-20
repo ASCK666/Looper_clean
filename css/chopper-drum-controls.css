@@ -463,3 +463,72 @@
     max-width:100% !important;
   }
 }
+
+/* looper-next SLICES hierarchy: neutral at rest, amber only for intent/action. */
+#chopper #waveCanvas[data-edit-mode="slices"] {
+  filter: saturate(.30) sepia(.08) brightness(.92) contrast(1.05);
+}
+
+#chopper #waveCanvas[data-edit-mode="slices"] + #playheadCanvas {
+  filter: saturate(.16) sepia(.04) brightness(1.22) contrast(1.08);
+}
+
+#chopper.screen .chopModeToggle {
+  color: #c7b89f !important;
+  border-color: #514b42 !important;
+  background: linear-gradient(180deg,#181612,#0c0a08) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025) !important;
+}
+
+#chopper.screen .chopModeToggle[data-mode="slices"] {
+  color: #e5d5b9 !important;
+  border-color: #8b6d45 !important;
+  background: linear-gradient(180deg,#211a12,#100d09) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035),0 0 7px rgba(226,173,95,.07) !important;
+}
+
+#chopper.screen #waveCanvas[data-edit-mode="slices"]:focus {
+  outline-color: rgba(232,219,194,.48) !important;
+}
+
+/* In SLICES mode, unused pads fall back to a dark hardware surface instead of
+   all sixteen keys carrying the same amber halo. */
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active) {
+  color: #b9aa92 !important;
+  border-color: #474038 !important;
+  background: linear-gradient(180deg,#191713 0%,#11100d 52%,#090806 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.026),
+    0 5px 9px rgba(0,0,0,.32) !important;
+}
+
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active):hover {
+  color: #d4c3a7 !important;
+  border-color: #6d5d49 !important;
+  background: linear-gradient(180deg,#211d17 0%,#15120e 52%,#0b0907 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.035),
+    0 0 7px rgba(196,171,131,.06),
+    0 5px 9px rgba(0,0,0,.32) !important;
+}
+
+#chopper.screen .pad.slice-selected:not(.hit):not(.active) {
+  color: #ead9bc !important;
+  border-color: #9a7038 !important;
+  background:
+    radial-gradient(circle at 50% 115%,rgba(226,173,95,.12),transparent 62%),
+    linear-gradient(180deg,#332416 0%,#21170f 52%,#100b08 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.045),
+    inset 0 -8px 16px rgba(226,173,95,.045),
+    0 0 9px rgba(226,173,95,.12),
+    0 5px 9px rgba(0,0,0,.32) !important;
+}
+
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad.unavailable:not(.hit):not(.active) {
+  color: #6f685d !important;
+  border-color: #302c27 !important;
+  background: linear-gradient(180deg,#12110f,#090806) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.015),0 4px 7px rgba(0,0,0,.28) !important;
+  opacity: .58;
+}
