@@ -46,6 +46,14 @@
   if(fineSettings)screen.insertBefore(fineSettings,actionStrip.nextSibling);
   screen.appendChild(statusStrip);
 
+  // Keep resolution and snare reverb on the same compact hardware row.
+  const drumQuickActions=root.querySelector(".drumQuickActions");
+  const drumEditView=document.getElementById("drumEditView");
+  if(drumQuickActions && drumEditView){
+    drumQuickActions.insertBefore(drumEditView,drumQuickActions.firstChild);
+    drumQuickActions.setAttribute("aria-label","Résolution, snare reverb et génération de batterie");
+  }
+
   // Hidden inputs remain available to their existing handlers after the old
   // control frame is removed.
   for(const id of ["sampleFile","waveZoom"]){
