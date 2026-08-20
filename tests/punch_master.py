@@ -37,24 +37,28 @@ with sync_playwright() as p:
           const volume=document.querySelector('.sampleVolumeKnob').getBoundingClientRect();
           const punch=document.querySelector('.punchKnob').getBoundingClientRect();
           const punchInput=document.querySelector('#punchMode').getBoundingClientRect();
+          const vinyl=document.querySelector('.vinylKnob').getBoundingClientRect();
+          const vinylInput=document.querySelector('#vinylAmount').getBoundingClientRect();
           const reverb=document.querySelector('.drumReverbKnob').getBoundingClientRect();
           const newDrums=document.querySelector('#newDrums').getBoundingClientRect();
           const punchHit=document.elementFromPoint(punchInput.left+punchInput.width/2,punchInput.top+punchInput.height/2);
+          const vinylHit=document.elementFromPoint(vinylInput.left+vinylInput.width/2,vinylInput.top+vinylInput.height/2);
           return {
-            volume:volume.toJSON(),punch:punch.toJSON(),reverb:reverb.toJSON(),newDrums:newDrums.toJSON(),
-            punchHit:punchHit&&punchHit.id
+            volume:volume.toJSON(),punch:punch.toJSON(),vinyl:vinyl.toJSON(),reverb:reverb.toJSON(),newDrums:newDrums.toJSON(),
+            punchHit:punchHit&&punchHit.id,vinylHit:vinylHit&&vinylHit.id
           };
         }""")
         assert geo['punchHit']=='punchMode', (width,geo)
-        # PUNCH belongs to the sample header immediately after SAMPLE VOL.
+        assert geo['vinylHit']=='vinylAmount', (width,geo)
+        # PUNCH follows SAMPLE VOL; VINYL follows PUNCH on the same header row.
         assert geo['punch']['left'] >= geo['volume']['right']-2, (width,geo)
         assert geo['punch']['top'] < geo['volume']['bottom'] and geo['punch']['bottom'] > geo['volume']['top'], (width,geo)
+        assert geo['vinyl']['left'] >= geo['punch']['right']-2, (width,geo)
+        assert geo['vinyl']['top'] < geo['punch']['bottom'] and geo['vinyl']['bottom'] > geo['punch']['top'], (width,geo)
         # NEW DRUMS remains directly beside the REVERB knob in the editor action row.
         assert geo['newDrums']['left'] >= geo['reverb']['right']-2, (width,geo)
         assert geo['newDrums']['top'] < geo['reverb']['bottom'] and geo['newDrums']['bottom'] > geo['reverb']['top'], (width,geo)
 
-        # Hit-test REVERB only after scrolling it into the viewport. At narrow
-        # widths it sits below the fold while PUNCH remains in the sample header.
         page.locator('#snareReverbMix').scroll_into_view_if_needed()
         page.wait_for_timeout(20)
         reverb_hit=page.evaluate("""() => {
@@ -83,6 +87,16 @@ with sync_playwright() as p:
     page.click('[data-tab="chopper"]')
     assert page.locator('#masterVuVertical').count()==0
     assert page.locator('#vu').count()==1
+
+    vinyl=page.locator('#vinylAmount')
+    assert vinyl.get_attribute('type')=='range'
+    assert vinyl.get_attribute('min')=='0'
+    assert vinyl.get_attribute('max')=='100'
+    assert vinyl.get_attribute('step')=='1'
+    assert vinyl.input_value()=='0'
+    assert page.locator('#vinylAmountReadout').inner_text()=='OFF'
+    settings=page.evaluate('ChopperVinyl.settings()')
+    assert settings['amount']==0, settings
 
     page.evaluate('ensureAudio()')
     box=page.locator('#masterVolume').bounding_box()
@@ -115,6 +129,7 @@ with sync_playwright() as p:
       markers=[0,.5,1,1.5];
       sampleConditionProfile={label:'CLEAN',trimDb:0,highPassHz:30,bodyCutDb:0,rmsDb:-10,crestDb:10,peakDb:-.1,clippingRatio:0,lowMidRatio:0};
       document.getElementById('sampleBpm').value='90';
+      document.getElementById('vinylAmount').value='0';
       currentDrumSelection={
         mode:'off',patternId:'OFF',patternName:'OFF',
         kicks:[],snares:[],ghosts:[],hats:[],hatSteps:[],
@@ -136,11 +151,34 @@ with sync_playwright() as p:
         }
         stats[name]={rms:Math.sqrt(sum/n),peak,checksum};
       }
-      return stats;
+
+      // VINYL at zero must preserve the existing render path; at 65% it must
+      // produce a measurably different master (tone + wow/flutter + surface noise).
+      document.getElementById('punchMode').value='0';
+      document.getElementById('vinylAmount').value='0';
+      const dry=await renderSequence(ev,sampleBuffer,markers,samplePitchRate());
+      document.getElementById('vinylAmount').value='65';
+      const wet=await renderSequence(ev,sampleBuffer,markers,samplePitchRate());
+      let diff=0,wetChecksum=0,dryChecksum=0,count=0;
+      for(let c=0;c<dry.numberOfChannels;c++){
+        const a=dry.getChannelData(c),b=wet.getChannelData(c);
+        const n=Math.min(a.length,b.length,44100);
+        for(let i=0;i<n;i++){
+          const delta=a[i]-b[i];
+          diff+=delta*delta;
+          dryChecksum+=Math.abs(a[i])*(i+1)*(c+1);
+          wetChecksum+=Math.abs(b[i])*(i+1)*(c+1);
+          count++;
+        }
+      }
+      return {stats,vinyl:{mse:diff/Math.max(1,count),dryChecksum,wetChecksum}};
     }""")
-    assert abs(result['off']['checksum']-result['warm']['checksum']) > 100, result
-    assert abs(result['warm']['checksum']-result['knock']['checksum']) > 10, result
-    assert abs(result['knock']['checksum']-result['hard']['checksum']) > 1, result
+    stats=result['stats']
+    assert abs(stats['off']['checksum']-stats['warm']['checksum']) > 100, stats
+    assert abs(stats['warm']['checksum']-stats['knock']['checksum']) > 10, stats
+    assert abs(stats['knock']['checksum']-stats['hard']['checksum']) > 1, stats
+    assert result['vinyl']['mse'] > 1e-7, result['vinyl']
+    assert abs(result['vinyl']['dryChecksum']-result['vinyl']['wetChecksum']) > 100, result['vinyl']
 
     page.evaluate("renderedFlip={stale:true}; isLoopPlaying=false")
     page.evaluate("""() => {
@@ -154,8 +192,23 @@ with sync_playwright() as p:
     assert page.locator('#punchDesc').inner_text() == 'KNOCK'
     assert 'PUNCH KNOCK' in page.locator('#chopStatus').inner_text().upper()
 
+    page.evaluate("renderedFlip={stale:true}; isLoopPlaying=false")
+    page.evaluate("""() => {
+      const el=document.getElementById('vinylAmount');
+      el.value='55';
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+      el.dispatchEvent(new Event('change',{bubbles:true}));
+    }""")
+    page.wait_for_timeout(50)
+    assert page.evaluate('renderedFlip===null') is True
+    assert page.locator('#vinylAmountReadout').inner_text() == '55%'
+    assert abs(float(page.evaluate("getComputedStyle(document.querySelector('.vinylKnob')).getPropertyValue('--knob-pct')"))-55)<.01
+    page.fill('#vinylAmount','0')
+    page.dispatch_event('#vinylAmount','input')
+    assert page.locator('#vinylAmountReadout').inner_text() == 'OFF'
+
     assert not errors, errors
     page.close()
     browser.close()
 
-print('OK: PUNCH/MASTER — PUNCH beside SAMPLE VOL, REVERB beside NEW DRUMS, clickable controls, real master gain and four real audio preset differences')
+print('OK: PUNCH/MASTER/VINYL — compact knobs, real master gain, four PUNCH presets and deterministic boom-bap vinyl processing')
