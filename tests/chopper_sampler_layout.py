@@ -37,6 +37,7 @@ with sync_playwright() as p:
           const wrap=document.querySelector('.loopGridWrap');
           const current=getComputedStyle(document.querySelector('.currentDrums'));
           const editor=getComputedStyle(document.querySelector('.drumEditBox'));
+          const gridWrap=getComputedStyle(wrap);
           return {
             upperChildren:[...upper.children].map(x=>x.classList.contains('samplerScreenModule')?'screen':'other'),
             controlCount:document.querySelectorAll('.samplerControlModule').length,
@@ -53,9 +54,10 @@ with sync_playwright() as p:
             punchType:document.querySelector('#punchMode').type,
             punchValue:document.querySelector('#punchMode').value,
             punchPct:getComputedStyle(document.querySelector('.punchKnob')).getPropertyValue('--knob-pct').trim(),
-            descriptions:document.querySelectorAll('#chopper .samplerTopRail,#chopper .sampleConditionHelp,#chopper .samplerModuleHint,#chopper .spaceHint,#chopper .samplerControlLegend,#chopper .drumEditHead .help').length,
-            currentBorder:current.borderTopWidth,
+            descriptions:document.querySelectorAll('#chopper .samplerTopRail,#chopper .sampleConditionHelp,#chopper .samplerModuleHint,#chopper .spaceHint,#chopper .samplerControlLegend,#chopper .drumEditHead .help,#chopper .titleMeta').length,
+            currentDisplay:current.display,
             editorBorder:editor.borderTopWidth,
+            gridWrapBorder:gridWrap.borderTopWidth,
             timeline:box('#sampleTimelineCanvas'),
             matrix:box('#loopGrid'),
             preview:box('#drumPatternPreview'),
@@ -70,16 +72,18 @@ with sync_playwright() as p:
 
         assert data['upperChildren']==['screen'],data
         assert data['controlCount']==0,data
-        assert data['actionOrder']==['addFlipLibrary','stopFlip','previewFlip','playDrumsOnly','autoMarkers','loadSampleBtn'],data
+        assert data['actionOrder']==['loadSampleBtn','autoMarkers','playDrumsOnly','previewFlip','stopFlip','addFlipLibrary'],data
         assert data['fine']['top']>=data['actionStrip']['bottom']-2,data
         assert data['descriptions']==0,data
-        assert data['currentBorder']=='0px' and data['editorBorder']=='0px',data
+        assert data['currentDisplay']=='none',data
+        assert data['editorBorder']=='0px' and data['gridWrapBorder']=='0px',data
 
         if width>=820:
             first=data['actions'][0]
             last=data['actions'][-1]
             assert all(a['top']<first['bottom'] and a['bottom']>first['top'] for a in data['actions']),data
-            assert last['id']=='loadSampleBtn' and last['right']>=max(a['right'] for a in data['actions'])-1,data
+            assert first['id']=='loadSampleBtn' and first['left']<=min(a['left'] for a in data['actions'])+1,data
+            assert last['id']=='addFlipLibrary' and last['right']>=max(a['right'] for a in data['actions'])-1,data
 
         # Header row: title | pitch | tempo | sample volume | punch.
         assert data['title']['right']<=data['pitch']['left']+2,data
@@ -117,4 +121,4 @@ with sync_playwright() as p:
 
     browser.close()
 
-print('OK: Chopper sampler layout — SAVE/STOP/PLAY/DRUMS/AUTO/LOAD, FINE SETTINGS below, flattened chrome and responsive aligned sequence')
+print('OK: Chopper sampler layout — clean action strip, hidden drum summary, stripped descriptions and flat internal chrome')
