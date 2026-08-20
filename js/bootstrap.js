@@ -349,6 +349,7 @@ if("caches" in window){
 // looper-next feature modules are loaded after the maintained defer scripts so
 // they can extend the existing Chopper engine without changing its base files.
 window.addEventListener("DOMContentLoaded",()=>{
+  if(location.protocol==="about:" || location.protocol==="data:")return;
   if(window.ChopperWaveSlices || document.querySelector('script[data-chopper-wave-slices="1"]'))return;
   const script=document.createElement("script");
   script.src="./js/chopper-wave-slices.js";
