@@ -18,7 +18,7 @@ for control in controls:
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
 
 assert 'class="looper66Skin"' in HTML
-assert './css/base.css?v=looper66-natural-backlight-3' in HTML
+assert './css/base.css?v=looper66-natural-backlight-4' in HTML
 assert './css/clean-ui.css' in HTML
 assert 'assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp' in HTML
 assert 'assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp' in HTML
@@ -52,9 +52,9 @@ assert 'animation-play-state:paused' in CSS
 assert '.cassetteDeck.playing .cassetteReel { animation-play-state:running; }' in CSS
 assert '@keyframes looper66ReelSpin' in CSS
 assert '@keyframes looper66EmptyPlayPulse' in CSS
-assert '.cassetteDeck:not(.loaded) #playBeat::before { animation:looper66EmptyPlayPulse 3.6s ease-in-out infinite; }' in CSS
+assert '.cassetteDeck:not(.loaded) #playBeat::before { animation:looper66EmptyPlayPulse 6s ease-in-out infinite; }' in CSS
 assert '@keyframes looper66EmptyPlayAuraPulse' in CSS
-assert '.cassetteDeck:not(.loaded) #playBeat::after { animation:looper66EmptyPlayAuraPulse 3.6s ease-in-out infinite; }' in CSS
+assert '.cassetteDeck:not(.loaded) #playBeat::after { animation:looper66EmptyPlayAuraPulse 6s ease-in-out infinite; }' in CSS
 assert '@media (prefers-reduced-motion:reduce)' in CSS
 assert 'grid-template-columns:repeat(3,minmax(0,1fr))' in CSS
 assert '@media (max-width:680px)' in CSS
