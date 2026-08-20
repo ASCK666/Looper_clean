@@ -13,8 +13,8 @@
   actionStrip.setAttribute("role","group");
   actionStrip.setAttribute("aria-label","Actions du Chopper");
 
-  // Left -> right. LOAD SAMPLE is intentionally the rightmost action.
-  for(const id of ["addFlipLibrary","stopFlip","previewFlip","playDrumsOnly","autoMarkers","loadSampleBtn"]){
+  // Left -> right exactly as requested.
+  for(const id of ["loadSampleBtn","autoMarkers","playDrumsOnly","previewFlip","stopFlip","addFlipLibrary"]){
     const button=document.getElementById(id);
     if(button)actionStrip.appendChild(button);
   }
@@ -26,7 +26,15 @@
   statusStrip.className="chopperStatusStrip";
   if(chopStatus)statusStrip.appendChild(chopStatus);
   if(saveStatus){
-    if(saveStatus.textContent.includes("SAVE rend"))saveStatus.textContent="READY";
+    // Keep save feedback available when something happens, but do not show a
+    // permanent explanatory sentence / duplicate READY state.
+    if(saveStatus.textContent.includes("SAVE rend"))saveStatus.textContent="";
+    const syncSaveStatus=()=>{
+      const text=saveStatus.textContent.trim();
+      saveStatus.hidden=!text || text==="READY";
+    };
+    syncSaveStatus();
+    new MutationObserver(syncSaveStatus).observe(saveStatus,{childList:true,subtree:true,characterData:true});
     statusStrip.appendChild(saveStatus);
   }
 
@@ -43,7 +51,7 @@
 
   root.querySelector(".samplerTopRail")?.remove();
   root.querySelector(".sampleConditionHelp")?.remove();
-  root.querySelectorAll(".samplerModuleHint,.spaceHint,.samplerControlLegend,.drumEditHead .help").forEach(node=>node.remove());
+  root.querySelectorAll(".samplerModuleHint,.spaceHint,.samplerControlLegend,.drumEditHead .help,.titleMeta").forEach(node=>node.remove());
   root.querySelector(".samplerDisplayActions")?.remove();
   controls.remove();
 })();
