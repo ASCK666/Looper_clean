@@ -345,3 +345,14 @@ if("caches" in window){
     .then(keys=>Promise.all(keys.filter(key=>key.startsWith("scratch-practice-")).map(key=>caches.delete(key))))
     .catch(error=>console.warn("Scratch Practice cache cleanup failed:",error));
 }
+
+// looper-next feature modules are loaded after the maintained defer scripts so
+// they can extend the existing Chopper engine without changing its base files.
+window.addEventListener("DOMContentLoaded",()=>{
+  if(window.ChopperWaveSlices || document.querySelector('script[data-chopper-wave-slices="1"]'))return;
+  const script=document.createElement("script");
+  script.src="./js/chopper-wave-slices.js";
+  script.dataset.chopperWaveSlices="1";
+  script.onerror=()=>window.__SP.report("CHOPPER WAVE SLICES",new Error("Slice editor failed to load"));
+  document.body.appendChild(script);
+},{once:true});
