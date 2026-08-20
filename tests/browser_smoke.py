@@ -78,6 +78,9 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
 
         page.locator('#deckPitch').evaluate("el=>{el.value='4.5';el.dispatchEvent(new Event('input',{bubbles:true}))}")
         assert page.locator('#deckPitchReadout').inner_text()=='+4.5%'
+        assert page.locator('#deckPitch').get_attribute('aria-valuetext')=='+4.5%'
+        pitch_position=page.locator('.deckPitchModule').evaluate("el=>[el.style.getPropertyValue('--pitch-x'),el.style.getPropertyValue('--pitch-y')]")
+        assert pitch_position==['63.31%','30.94%'],pitch_position
         assert page.locator('#deckAutoToggle').get_attribute('aria-pressed')=='false'
         page.locator('#deckPitch').evaluate("el=>{el.value='0';el.dispatchEvent(new Event('input',{bubbles:true}))}")
         page.click('#autoLooperToggle')

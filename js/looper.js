@@ -687,7 +687,9 @@ function refreshAutoLooperCompact(){
   const speed=$("deckSpeedReadout");
   const auto=$("deckAutoReadout");
   const autoButton=$("deckAutoToggle");
+  const pitchControl=$("deckPitch");
   const pitchReadout=$("deckPitchReadout");
+  const pitchModule=$("deckPitchModule");
   if(!btn || !status) return;
 
   // Compact cassette tape moves at 4.75 cm/s. Keep the visual reels tied to
@@ -707,7 +709,14 @@ function refreshAutoLooperCompact(){
   if(autoButton)autoButton.setAttribute("aria-pressed",autoLooperEnabledState ? "true" : "false");
   if(speed)speed.textContent=formatDeckRate();
   if(auto)auto.textContent=autoLooperEnabledState ? "ON" : "OFF";
-  if(pitchReadout)pitchReadout.textContent=`${looperPitchPercent>0?"+":""}${looperPitchPercent.toFixed(1)}%`;
+  const pitchLabel=`${looperPitchPercent>0?"+":""}${looperPitchPercent.toFixed(1)}%`;
+  if(pitchReadout)pitchReadout.textContent=pitchLabel;
+  if(pitchControl)pitchControl.setAttribute("aria-valuetext",pitchLabel);
+  if(pitchModule){
+    const pitchProgress=(looperPitchPercent+8)/16;
+    pitchModule.style.setProperty("--pitch-x",`${(18+pitchProgress*58).toFixed(2)}%`);
+    pitchModule.style.setProperty("--pitch-y",`${(70-pitchProgress*50).toFixed(2)}%`);
+  }
 
   status.textContent=looperSpeedRateLevel
     ? `+${looperSpeedRateLevel}% • ${autoLooperLoopCount}/${AUTO_LOOP_BATCH}`

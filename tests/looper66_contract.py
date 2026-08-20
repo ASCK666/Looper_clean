@@ -48,6 +48,15 @@ assert '@media (prefers-reduced-motion:reduce)' in CSS
 assert 'grid-template-columns:repeat(3,1fr)' in CSS
 assert '@media (max-width:680px)' in CSS
 assert '--light-strength' in CSS and 'var(--deck-amber)' in CSS
+assert '--backlight-opacity:1' in CSS
+assert '.deckHotspot::before' in CSS and '.deckLoadKey::before' in CSS
+assert 'opacity:.001' not in CSS
+assert 'id="deckPitchModule"' in HTML
+assert 'pitchModule.style.setProperty("--pitch-x"' in LOOPER
+assert 'pitchModule.style.setProperty("--pitch-y"' in LOOPER
+assert 'pitchControl.setAttribute("aria-valuetext"' in LOOPER
+assert HTML.count('class="cassetteLayer cassetteShell"')==1
+assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;[^}]*background:#050504;',CSS)
 
 retired=('deckFaceplate','crateFaceplate','tapeCounter','cassetteDoorEject','cassetteCavity','cassetteTapePath','cassetteSupport')
 for name in retired:
