@@ -38,6 +38,12 @@ with sync_playwright() as p:
           const current=getComputedStyle(document.querySelector('.currentDrums'));
           const editor=getComputedStyle(document.querySelector('.drumEditBox'));
           const gridWrap=getComputedStyle(wrap);
+          const chopStatus=document.querySelector('#chopStatus');
+          const firstPad=document.querySelector('#pads .pad');
+          const idlePadShadow=firstPad?getComputedStyle(firstPad).boxShadow:'';
+          if(firstPad)firstPad.classList.add('active');
+          const activePadShadow=firstPad?getComputedStyle(firstPad).boxShadow:'';
+          if(firstPad)firstPad.classList.remove('active');
           return {
             upperChildren:[...upper.children].map(x=>x.classList.contains('samplerScreenModule')?'screen':'other'),
             controlCount:document.querySelectorAll('.samplerControlModule').length,
@@ -58,6 +64,11 @@ with sync_playwright() as p:
             currentDisplay:current.display,
             editorBorder:editor.borderTopWidth,
             gridWrapBorder:gridWrap.borderTopWidth,
+            chopStatusText:chopStatus.textContent.trim(),
+            chopStatusHidden:chopStatus.hidden,
+            padCount:document.querySelectorAll('#pads .pad').length,
+            idlePadShadow,
+            activePadShadow,
             timeline:box('#sampleTimelineCanvas'),
             matrix:box('#loopGrid'),
             preview:box('#drumPatternPreview'),
@@ -77,6 +88,10 @@ with sync_playwright() as p:
         assert data['descriptions']==0,data
         assert data['currentDisplay']=='none',data
         assert data['editorBorder']=='0px' and data['gridWrapBorder']=='0px',data
+        assert data['chopStatusText']=='' and data['chopStatusHidden'] is True,data
+        assert data['padCount']==16,data
+        assert data['idlePadShadow']!='none' and data['activePadShadow']!='none',data
+        assert data['idlePadShadow']!=data['activePadShadow'],data
 
         if width>=820:
             first=data['actions'][0]
@@ -121,4 +136,4 @@ with sync_playwright() as p:
 
     browser.close()
 
-print('OK: Chopper sampler layout — clean action strip, hidden drum summary, stripped descriptions and flat internal chrome')
+print('OK: Chopper sampler layout — no idle READY, amber pad backlight, clean chrome and responsive layout')
