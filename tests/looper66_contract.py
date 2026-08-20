@@ -78,8 +78,8 @@ for name in retired:
     assert name not in HTML+CSS+LOOPER+EVENTS,name
 
 references={
-    'looper66-desktop-target.webp':((1086,1009),'7ccc3220f58d2779992085566836809f0ae5c34af0f13ce8b3d537f14f96e240'),
-    'looper66-mobile-target.webp':((441,849),'da92e13829331565e4b15c12e48c4e0f14bee796cef0e977eb3a13cb43fef144'),
+    'looper66-desktop-target.webp':((1086,1009),'a3d35bc4724438bdb3a30f627e7621134ad32b8e1983588c4f7c260a66d9c9b8'),
+    'looper66-mobile-target.webp':((441,849),'8a95f608533cda45732d38261294e4e3591c0d9fa0817cebd72211bf7c37ae11'),
     'looper66-transport.webp':((750,124),'ce7acecc81f0c112ae104d4035a334c6a3aba3b7940f9a62014b99b009fc6376'),
     'looper66-crate-cassettes.webp':((560,62),'12256e2ec27d0a2976ce0a15184f578a04034c5318bbff8819deab05d0d6e3c9'),
 }
