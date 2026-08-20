@@ -444,4 +444,22 @@
     width: 38px;
     height: 38px;
   }
+
+  /* Put the control bank below EDIT GROOVE and size both columns by their
+     widest child so NEW DRUMS / CLEAR DRUMS never overlap at phone widths. */
+  #chopper .drumEditHead {
+    display:block !important;
+  }
+
+  #chopper .drumEditActions {
+    width:100% !important;
+    margin-top:8px !important;
+    justify-content:flex-start !important;
+  }
+
+  #chopper .drumQuickActions {
+    grid-template-columns:max-content max-content !important;
+    width:max-content !important;
+    max-width:100% !important;
+  }
 }
