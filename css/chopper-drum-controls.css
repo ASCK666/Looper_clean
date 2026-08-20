@@ -1,5 +1,19 @@
 /* chopper-200826: compact Drum controls built on the existing range-knob system. */
 
+#chopper {
+  --chopper-bg: #080604;
+  --chopper-surface: #100c08;
+  --chopper-surface-hi: #17110c;
+  --chopper-border: #4b3928;
+  --chopper-border-hot: #765a34;
+  --chopper-border-bright: #9a7038;
+  --chopper-text: #dcc8a9;
+  --chopper-muted: #8f795d;
+  --chopper-amber: #e2ad5f;
+  --chopper-amber-hot: #f0b45f;
+  --chopper-active: #80552c;
+}
+
 #chopper .samplerScreenModule {
   grid-template-columns: minmax(0,1fr) 52px 68px 52px 52px !important;
   grid-template-areas:
@@ -68,7 +82,7 @@
 #chopper .drumQuickActions .fxToggle {
   display: block !important;
   margin: 0 0 4px !important;
-  color: #9ca6ad !important;
+  color: var(--chopper-muted) !important;
   font: 800 8px/1 var(--font-mono) !important;
   letter-spacing: .6px;
   text-align: center;
@@ -89,6 +103,151 @@
 
 #chopper .drumQuickActions .sampleKnobReadout {
   min-width: 42px;
+}
+
+/* Looper palette skin: same machine family, Chopper layout stays unchanged. */
+#chopper .samplerDeck {
+  color: var(--chopper-text) !important;
+  background:
+    linear-gradient(180deg,rgba(226,173,95,.035),transparent 14%),
+    linear-gradient(180deg,#15110d,var(--chopper-bg) 72%),
+    var(--deck-texture) !important;
+  background-size: auto,auto,256px 256px !important;
+  background-repeat: no-repeat,no-repeat,repeat !important;
+  background-blend-mode: normal,normal,soft-light !important;
+}
+
+#chopper .panel {
+  border-color: var(--chopper-border) !important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.018),rgba(0,0,0,.18)),
+    var(--deck-texture) !important;
+  background-size: auto,256px 256px !important;
+  background-repeat: no-repeat,repeat !important;
+  background-color: var(--chopper-surface) !important;
+  background-blend-mode: normal,soft-light !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.02),0 10px 22px rgba(0,0,0,.22) !important;
+}
+
+#chopper .stableTitle,
+#chopper .compactTitle,
+#chopper .currentDrumsTitle {
+  color: var(--chopper-text) !important;
+}
+
+#chopper .titleMeta,
+#chopper label,
+#chopper .help {
+  color: var(--chopper-muted) !important;
+}
+
+#chopper input,
+#chopper select,
+#chopper .status {
+  color: #e5d6bd !important;
+  border-color: #493722 !important;
+  background: #0b0805 !important;
+}
+
+#chopper input:focus,
+#chopper select:focus {
+  outline-color: var(--chopper-border-hot) !important;
+  border-color: var(--chopper-border-hot) !important;
+  box-shadow: 0 0 0 2px rgba(226,173,95,.09) !important;
+}
+
+#chopper .btn {
+  color: #d8c6aa !important;
+  border-color: #514131 !important;
+  background: linear-gradient(180deg,#1b1712,#0d0a07) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025),0 3px 7px rgba(0,0,0,.24) !important;
+}
+
+#chopper .btn:hover {
+  color: #f3dfba !important;
+  border-color: var(--chopper-border-hot) !important;
+  background: linear-gradient(180deg,#251b11,#110d08) !important;
+}
+
+#chopper .btn.primary,
+#chopper .btn.blue,
+#chopper .btn.good {
+  color: #ffe0a5 !important;
+  border-color: var(--chopper-border-bright) !important;
+  background: linear-gradient(180deg,#4b321d,#24170e) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04),0 0 12px rgba(226,173,95,.12) !important;
+}
+
+#chopper .wavewrap.largeWave,
+#chopper .loopGridWrap,
+#chopper .drumEditBox,
+#chopper .currentDrums {
+  border-color: #4a3826 !important;
+  background: linear-gradient(180deg,#0d0906,#050403) !important;
+  box-shadow: inset 0 0 0 1px rgba(226,173,95,.025),inset 0 8px 18px rgba(0,0,0,.28) !important;
+}
+
+#chopper .sampleKnob {
+  color: var(--chopper-muted) !important;
+}
+
+#chopper .sampleKnobFace {
+  border-color: #584128 !important;
+  background: radial-gradient(circle at 34% 28%,#44331f 0,#24190f 40%,#0b0805 74%,#030201 100%) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.055),0 6px 12px rgba(0,0,0,.4) !important;
+}
+
+#chopper .sampleKnobFace:after {
+  background: var(--chopper-amber) !important;
+  box-shadow: 0 0 7px rgba(226,173,95,.58) !important;
+}
+
+#chopper .sampleKnobReadout {
+  color: #e1c99e !important;
+}
+
+#chopper .pad,
+#chopper .drumEditStep,
+#chopper .matrixCell,
+#chopper .matrixRowLabel,
+#chopper .matrixHead,
+#chopper .matrixCorner {
+  color: #b9a488 !important;
+  border-color: #493927 !important;
+  background: linear-gradient(180deg,#1b1712,#0d0a07) !important;
+}
+
+#chopper .pad:hover,
+#chopper .drumEditStep:hover,
+#chopper .matrixCell:hover {
+  border-color: var(--chopper-border-hot) !important;
+}
+
+#chopper .pad.hit,
+#chopper .pad.active,
+#chopper .drumEditStep.active.kick,
+#chopper .drumEditStep.active.snare,
+#chopper .drumEditStep.active.hat,
+#chopper .matrixCell.active {
+  color: #fff0d0 !important;
+  border-color: var(--chopper-border-bright) !important;
+  background: linear-gradient(145deg,#8a5d2e,var(--chopper-active) 58%,#2c1b10) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.05),0 0 11px rgba(226,173,95,.13) !important;
+}
+
+#chopper .drumPatternPreviewLabel {
+  color: #a78b67 !important;
+}
+
+#chopper .drumPatternPreviewStep {
+  border-color: #453522 !important;
+  background: #0b0805 !important;
+}
+
+#chopper .drumPatternPreviewStep.active {
+  border-color: var(--chopper-border-bright) !important;
+  background: var(--chopper-active) !important;
+  box-shadow: 0 0 7px rgba(226,173,95,.10) !important;
 }
 
 @media (max-width:760px) {
