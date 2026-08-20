@@ -97,7 +97,7 @@ function pulseCassetteDoor(){
 
 $("cassetteDoorEject").onclick=(ev)=>{
   ev.stopPropagation();
-  if(deckSource)stopDeck();
+  stopDeck();
   pulseCassetteDoor();
   openFilePicker("beatFiles");
 };
@@ -126,7 +126,7 @@ $("beatFiles").onchange=()=>handleBeatImport($("beatFiles").files,"IMPORT");
 $("beatFolder").onchange=()=>handleBeatImport($("beatFolder").files,"FOLDER IMPORT");
 $("librarySearch").oninput=()=>refreshLibrary(false);
 $("libraryOrder").onchange=()=>refreshLibrary(false);
-const deckTransportControlIds=["prevBeat","playBeat","stopBeat","nextBeat","autoLooperToggle"];
+const deckTransportControlIds=["prevBeat","playBeat","stopBeat","nextBeat","autoLooperToggle","deckAutoToggle","deckPitch"];
 deckTransportControlIds.forEach(id=>{
   $(id)?.addEventListener("click",ev=>ev.stopPropagation());
 });
@@ -144,6 +144,8 @@ function runLooperAction(label,action){
 }
 
 $("autoLooperToggle").onclick=toggleAutoLooper;
+$("deckAutoToggle").onclick=toggleDeckAuto;
+$("deckPitch").oninput=event=>setLooperPitch(event.currentTarget.value);
 $("playBeat").onclick=()=>runLooperAction("PLAY",playDeck);
 $("stopBeat").onclick=()=>stopDeck();
 $("prevBeat").onclick=()=>runLooperAction("PREV",()=>selectRelative(-1));
@@ -288,8 +290,7 @@ document.addEventListener("keydown",async ev=>{
   ev.preventDefault();
 
   if($("looper")?.classList.contains("active")){
-    if(deckSource)stopDeck();
-    else await playDeck();
+    await toggleDeckPlayback();
     return;
   }
 

@@ -7,6 +7,7 @@ steps=[
   ['tests/dead_code.py'],
   ['tests/assets_health.py'],
   ['tests/validate.py'],
+  ['tests/looper66_contract.py'],
   ['tests/js_health.py'],
   ['tests/core_unit.js'],
   ['tests/regression_v63.py'],

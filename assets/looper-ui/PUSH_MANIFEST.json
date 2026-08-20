@@ -1,22 +1,17 @@
 {
-  "branch": "faceplate-190826",
-  "destination": "assets/looper-ui/cassette-tape-path.png",
-  "size": [
-    1536,
-    1024
-  ],
-  "alpha_bbox": [
-    704,
-    284,
-    840,
-    382
-  ],
-  "sha256": "d07df8c970ca8a497d36814c9be6d6433cf383b9b18e61f2b7fe18ea727bc3a6",
-  "layer_position": "above cassette-cavity, below rotating reel assets",
-  "notes": [
-    "static tape strands; do not rotate this layer",
-    "behind cassette shell",
-    "lower ends disappear before/under foreground support",
-    "faceplate.webp unchanged"
-  ]
+  "branch": "ui-pixel-200826",
+  "geometry": {
+    "full_layers": [586, 337],
+    "reels": [154, 154]
+  },
+  "lighting": "css-only",
+  "assets": {
+    "cassette-cavity-off.png": "1296c0266518fc59db98e662241492e38d75aa779a904d19c2cb37fb21d8ad53",
+    "cassette-tape-path-off.png": "33567835d61b482ab36c0926d13e935afa9be58421fc654d74f22af3f678e4e4",
+    "cassette-reel-left-off.png": "400d9248756d196d69c1cd3f85dfe7ea36a98250d81521a10c80509359821764",
+    "cassette-reel-right-off.png": "d0c6fd34aed6478fe74784632c8fc8048e7155706aff83cfcb3e1b176a900da1",
+    "cassette-shell-off.png": "c4459dfb90e6d01d76a0a37cd2b3f6e0149e13121bb173a8e966a223be60c991",
+    "cassette-support-off.png": "5172589d480f5cbe49e506af0d2c7ebec8528046ae2c0b4117b71e1233aa4d0e",
+    "cassette-glass-off.png": "116dead2bdc15188b37af1f25ad44993c5c30e2e0b5efe5d443c7cee6245fae9"
+  }
 }

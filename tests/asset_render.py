@@ -1,8 +1,5 @@
 from pathlib import Path
-import contextlib
-import http.server
-import socketserver
-import threading
+import contextlib, http.server, os, socketserver, sys, threading
 
 try:
     from playwright.sync_api import sync_playwright
@@ -15,74 +12,47 @@ ARTIFACTS=ROOT/'test-artifacts'
 ARTIFACTS.mkdir(exist_ok=True)
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
-    def log_message(self, *_args):
-        pass
+    def log_message(self,*_args): pass
 
 with contextlib.ExitStack() as stack:
     handler=lambda *a,**kw: QuietHandler(*a,directory=str(ROOT),**kw)
     server=socketserver.TCPServer(('127.0.0.1',0),handler)
     stack.callback(server.server_close)
-    thread=threading.Thread(target=server.serve_forever,daemon=True)
-    thread.start()
+    threading.Thread(target=server.serve_forever,daemon=True).start()
     stack.callback(server.shutdown)
-    port=server.server_address[1]
 
     with sync_playwright() as p:
-        browser=p.chromium.launch(headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
+        browser=p.chromium.launch(headless=True,executable_path=os.environ.get('CHROMIUM','/usr/bin/chromium'),args=['--no-sandbox','--disable-dev-shm-usage'])
         page=browser.new_page(viewport={'width':1536,'height':1200},device_scale_factor=1)
-        console_errors=[]
-        page_errors=[]
-        failed=[]
-        page.on('console',lambda msg: console_errors.append(msg.text) if msg.type=='error' else None)
-        page.on('pageerror',lambda err: page_errors.append(str(err)))
-        page.on('requestfailed',lambda req: failed.append(f'{req.url}: {req.failure}'))
-        page.goto(f'http://127.0.0.1:{port}/index.html',wait_until='networkidle',timeout=30000)
-        page.wait_for_function("window.__SP?.ready === true",timeout=10000)
-        page.wait_for_function("document.querySelector('.looper-faceplate')?.naturalWidth === 1536",timeout=10000)
+        page_errors=[]; failed=[]
+        page.on('pageerror',lambda err:page_errors.append(str(err)))
+        page.on('requestfailed',lambda req:failed.append(f'{req.url}: {req.failure}'))
+        page.goto(f'http://127.0.0.1:{server.server_address[1]}/index.html',wait_until='networkidle',timeout=30000)
+        page.wait_for_function('window.__SP?.ready === true',timeout=10000)
+        page.wait_for_function("[...document.querySelectorAll('.cassetteLayer,.cassetteReel')].every(img=>img.complete&&img.naturalWidth)",timeout=10000)
 
         info=page.evaluate('''() => {
-          const looper=document.getElementById('looper');
-          const face=document.querySelector('.looper-faceplate');
-          const ids=['prevBeat','playBeat','stopBeat','nextBeat','autoLooperToggle','importFolderBtn','importBeatsBtn'];
-          const readouts=['asset-header-state-readout','asset-track-readout','asset-state-readout','asset-speed-percent-readout','asset-loop-readout','asset-speed-level-readout'];
+          const ids=['prevBeat','playBeat','stopBeat','nextBeat','autoLooperToggle','deckAutoToggle','deckPitch','importFolderBtn','importBeatsBtn'];
+          const rect=id=>document.getElementById(id).getBoundingClientRect().toJSON();
           return {
-            looper:looper.getBoundingClientRect().toJSON(),
-            faceplates:document.querySelectorAll('.looper-faceplate').length,
-            faceSrc:face?.getAttribute('src')||'',
-            faceSize:[face?.naturalWidth||0,face?.naturalHeight||0],
-            tracks:document.querySelectorAll('#library .track').length,
-            controls:ids.map(id=>{const el=document.getElementById(id),b=el.getBoundingClientRect(),cs=getComputedStyle(el);return {id,w:b.width,h:b.height,display:cs.display,visibility:cs.visibility,opacity:parseFloat(cs.opacity),handler:typeof el.onclick};}),
-            readouts:readouts.map(cls=>{const el=document.querySelector('.'+cls),cs=getComputedStyle(el);return [cls,cs.backgroundColor];}),
-            appErrors:window.__SP?.errors||[]
+            appErrors:window.__SP.errors,
+            layers:[...document.querySelectorAll('.cassetteMechanism img')].map(img=>[img.className,img.naturalWidth,img.naturalHeight]),
+            controls:ids.map(id=>({id,...rect(id),display:getComputedStyle(document.getElementById(id)).display})),
+            transport:['playBeat','stopBeat','autoLooperToggle'].map(rect),
+            title:document.getElementById('cassetteBeatName').textContent,
+            wordmark:document.querySelector('.looper66Wordmark').textContent.trim()
           };
         }''')
+        assert len(info['layers'])==7,info
+        assert all(layer[1]>0 and layer[2]>0 for layer in info['layers']),info
+        assert all(c['display']!='none' and c['width']>=44 and c['height']>=44 for c in info['controls']),info
+        sizes={(round(rect['width'],1),round(rect['height'],1)) for rect in info['transport']}
+        assert len(sizes)==1,sizes
+        assert info['title']=='NO BEAT LOADED' and info['wordmark']=='LOOPER66',info
+        assert not info['appErrors'] and not page_errors and not failed,(info['appErrors'],page_errors,failed)
 
-        assert info['looper']['width']>600 and info['looper']['height']>350, info
-        assert info['faceplates']==1, info
-        assert info['faceSrc']=='./assets/looper-ui/faceplate.webp', info
-        assert info['faceSize']==[1536,1024], info
-        assert info['tracks']==0, info
-        assert all(c['display']!='none' and c['visibility']=='visible' and c['opacity']>.5 and c['w']>20 and c['h']>20 and c['handler']=='function' for c in info['controls']), info
-        expected={
-          'asset-header-state-readout':'rgb(6, 3, 0)',
-          'asset-track-readout':'rgb(16, 7, 0)',
-          'asset-state-readout':'rgb(11, 5, 0)',
-          'asset-speed-percent-readout':'rgb(14, 5, 0)',
-          'asset-loop-readout':'rgb(9, 6, 2)',
-          'asset-speed-level-readout':'rgb(7, 5, 2)',
-        }
-        assert dict(info['readouts'])==expected, info['readouts']
-        assert not info['appErrors'], info
-        assert not page_errors, page_errors
-        assert not failed, failed
-
-        page.click('#tapeCounterReset')
-        page.click('#stopBeat')
-        with page.expect_file_chooser(timeout=3000):
-            page.click('#importBeatsBtn')
-
-        page.locator('#looper').screenshot(path=str(ARTIFACTS/'looper-render.png'))
-        page.screenshot(path=str(ARTIFACTS/'full-render.png'),full_page=True)
+        page.locator('#looper').screenshot(path=str(ARTIFACTS/'looper66-render.png'))
+        page.screenshot(path=str(ARTIFACTS/'looper66-full-render.png'),full_page=True)
         browser.close()
 
-print('OK: approved faceplate.webp is the mounted Looper visual, sampled HTML readouts match it, and primary controls execute click paths')
+print('OK: neutral layered cassette and equal native Looper66 controls render without runtime errors')

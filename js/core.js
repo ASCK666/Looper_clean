@@ -6,22 +6,9 @@
 const $ = id => document.getElementById(id);
 let ctx = null;
 let liveBus = null;
-let deckSource = null;
-let deckBuffer = null;
-let currentTrack = null;
 let masterAnalyser = null;
 let meterAnimationRAF = 0;
 const meterPeakHold = new Map();
-let deckOutputGain = null;
-let autoLooperEnabledState = false;
-let autoLooperTimer = null;
-let autoLooperLastCtxTime = 0;
-let autoLooperSourceSeconds = 0;
-let autoLooperLoopCount = 0;
-let autoLooperSpeedPercent = 100;
-let tapeCounterUnits = 0;
-let tapeCounterTimer = null;
-let tapeCounterLastCtxTime = 0;
 
 let sampleBuffer = null;
 let sampleName = "";

@@ -1,103 +1,26 @@
-# Looper faceplate editing convention
+# Looper66 cassette asset convention
 
-`assets/looper-ui/faceplate.webp` is the single visual source of truth for the Looper.
+The Looper66 deck is HTML/CSS. Raster files in this directory are limited to
+the cassette cavity, mechanism, shell, support, glass and reels.
 
-## Rules
+## Production rules
 
-1. **Never regenerate the whole faceplate for a local correction.**
-   - Use the current repository version of `faceplate.webp` as the input.
-   - Prefer deterministic/local editing: mask, inpainting, clone/texture repair, or another explicitly bounded operation.
+1. Keep every production cassette source neutral and unlit. Active amber/green
+   light, halos, colored reflections and state intensity belong to CSS only.
+2. Keep the cassette assembly layered, from back to front: cavity, tape path,
+   reels, shell, label/title, CSS light, foreground support, glass.
+3. Reels stay behind the shell and glass. Animation may rotate the complete
+   reel images but must never promote them above the cassette.
+4. Keep runtime text out of PNG files. The beat title is the HTML element
+   `#cassetteBeatName`; the source label is otherwise blank except `SIDE A`.
+5. Preserve the shared `586 x 337` crop for full cassette layers. Preserve the
+   `154 x 154` reel geometry and fixed centers used by `css/base.css`.
+6. Do not bake an active button, Speed Rate level or playback state into an
+   asset. Native HTML controls own interaction and CSS owns every state.
+7. Use deterministic, bounded image edits for production assets. Generative
+   output may inform a mockup but is not a drop-in production replacement.
+8. Inspect changed layers at native resolution, run `python3 tools/test_all.py`,
+   and inspect the desktop/mobile browser screenshots before merge.
 
-2. **Every edit must have an explicit allowed region.**
-   - Define the smallest possible pixel mask/rectangle/polygon before editing.
-   - The operation must not modify pixels outside that allowed region.
-   - After encoding the final WebP, decode it again and verify that the number of changed pixels outside the allowed mask is exactly `0`.
-
-3. **Preserve the asset geometry.**
-   - Keep the canvas at exactly `1536 x 1024` unless a separate change explicitly approves a new geometry.
-   - Do not crop, resize, stretch, rotate, or reframe the faceplate during a local retouch.
-
-4. **Preserve unrelated visual details exactly.**
-   - Do not alter buttons, labels, screws, Beat Crate, cassette geometry, lighting, glow, texture, chrome, glass, or any other area unless that area is explicitly part of the requested edit.
-   - Do not "improve" adjacent areas opportunistically.
-
-5. **Do not replace the faceplate with a newly generated approximation.**
-   - Generative image output may be used only as a disposable visual reference when explicitly requested.
-   - It must not silently replace `faceplate.webp` or become the new production master.
-
-6. **Keep dynamic UI content out of the baked asset when practical.**
-   - Values that change at runtime (track title, transport state, counters, speed values, etc.) should be rendered by HTML/CSS/JS over the faceplate.
-   - The corresponding asset area should contain only the static panel/material needed underneath the runtime content.
-
-7. **One visual purpose per commit.**
-   - Keep each asset retouch isolated in its own commit when practical.
-   - The commit message must describe the exact repaired/cleaned region.
-
-8. **Verify visually before merge.**
-   - Inspect the edited asset at native resolution.
-   - If the change affects the runtime Looper appearance, run the browser/UI checks and inspect the resulting screenshot manually.
-   - Green CI alone is not considered visual approval.
-
-9. **Do not merge automatically.**
-   - Asset edits stay on a branch/PR until the visual result has been reviewed.
-
-## Cassette reconstruction constraints
-
-The cassette may be rebuilt, but the surrounding deck is locked. The reconstruction must preserve the current composition, placement, scale, depth relationship and visual integration of the cassette within the existing deck.
-
-### Deck geometry is immutable
-
-- Do not change any other part of the deck while rebuilding the cassette.
-- All existing deck positions and dimensions must remain exactly where they are and at the same size.
-- Do not move, resize, crop, stretch, reframe, repaint, relight or reinterpret adjacent deck elements to make the cassette fit.
-- The cassette itself must remain in the same location and at the same apparent scale as the current approved composition.
-- Preserve the current recessed placement: the cassette remains inserted into its holder, including the existing occlusion of its lower portion by the deck/support.
-- No opportunistic redesign, layout adjustment or creative geometry change is allowed outside the explicitly approved cassette work.
-
-### Required cassette layer architecture
-
-Build the cassette as separate composited layers rather than one baked static object. From back to front:
-
-1. **Animated cassette mechanism**
-   - Contains the complete rotating reel/hub mechanisms that support the magnetic tape, not only a cross, spoke or decorative center glyph.
-   - The tape follows its physically coherent path, including the lower path through the cassette mechanism.
-   - The lower tape path may exist in the mechanism layer while remaining visually hidden by the cassette shell; it must not be exposed merely to make the animation visible.
-   - Rotation must read as the cassette mechanism turning behind the shell.
-
-2. **Transparent cassette shell**
-   - The cassette shell is a complete transparent/translucent plastic body placed in front of the mechanism.
-   - It is not a shell with a large central hole cut through it; the mechanism is seen through the transparent plastic.
-   - Preserve the shell's material cues, reflections, tint and depth so the mechanism reads through plastic rather than through an empty opening.
-   - Preserve the white cassette label area as part of the shell/static artwork.
-   - Do not bake the cassette/track name into the shell artwork.
-
-3. **Cassette name in HTML/CSS**
-   - Render the cassette/track name dynamically in HTML/CSS over the white label area.
-   - Keep the label text independent from the static shell asset so runtime content can change without regenerating imagery.
-
-4. **CSS-controlled cassette backlight**
-   - Reproduce the currently approved cassette/deck backlighting rather than inventing a new lighting treatment.
-   - Implement the controllable light component in CSS where practical so it can support explicit on/off states and transitions.
-   - The off state must preserve the underlying cassette/deck appearance; the on state adds only the approved backlight effect.
-
-5. **Deck glass above the cassette assembly**
-   - The deck glass/window remains above the mechanism, shell, label text and cassette lighting in the final visual stack.
-   - Preserve the existing glass appearance, reflections, tint, texture and geometry unless a separate change explicitly targets the glass itself.
-
-### Composition requirement
-
-The purpose of the layered reconstruction is to make the cassette mechanism animatable while preserving the approved deck exactly. The final assembled result must occupy the same visual footprint as the current cassette and must not cause any movement, resizing or alteration elsewhere in the deck.
-
-## Recommended safety check
-
-For a local edit, keep a copy of the decoded image before modification and a binary mask of the approved region. After saving and decoding the new `faceplate.webp`, compare the two pixel arrays and fail the edit if any changed pixel lies outside the mask.
-
-Pseudo-check:
-
-```python
-changed = np.any(after != before, axis=2)
-outside = changed & (allowed_mask == 0)
-assert outside.sum() == 0
-```
-
-This convention is intentionally strict: local Looper asset work must be surgical and reversible.
+The original full-canvas extraction files remain as reversible source material.
+The `*-off.png` files are the neutral, cropped runtime assets.
