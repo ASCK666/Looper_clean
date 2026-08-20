@@ -71,6 +71,8 @@ assert 'animation:looper66ReelSpin var(--supply-reel-cycle)' in CSS
 assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
 assert 'animation-direction:reverse' not in CSS
 assert re.search(r'\.deckHotspot\s*\{[^}]*background:transparent;[^}]*box-shadow:none;',CSS)
+assert '#looper #deckPitch:focus { outline:0!important;' in CSS
+assert 'filter:none!important;-webkit-tap-highlight-color:transparent' in CSS
 assert 'grid-template-columns:repeat(var(--rack-columns,3),calc((100% - .9%)/3))' in CSS
 
 retired=('deckFaceplate','crateFaceplate','tapeCounter','cassetteDoorEject','cassetteCavity','cassetteTapePath')
