@@ -23,6 +23,7 @@ def geometry(page):
     return page.evaluate('''() => {
       const box=s=>document.querySelector(s).getBoundingClientRect().toJSON();
       return {
+        resolution:box('#drumEditView'),
         reverb:box('.drumReverbKnob'),
         newDrums:box('#newDrums'),
         quick:box('.drumQuickActions'),
@@ -77,7 +78,8 @@ with sync_playwright() as p:
         assert page.evaluate('snareReverbSettings().on') is True
         assert abs(page.evaluate('snareReverbSettings().mix')-.40)<1e-9
 
-        # Groove choice is AUTO-only; NEW DRUMS and REVERB share one compact group.
+        # Resolution, REVERB and NEW DRUMS share one compact hardware row.
+        assert page.evaluate('document.querySelector("#drumEditView").closest(".drumQuickActions") === document.querySelector("#snareReverbMix").closest(".drumQuickActions")')
         assert page.evaluate('document.querySelector("#newDrums").closest(".drumQuickActions") === document.querySelector("#snareReverbMix").closest(".drumQuickActions")')
         assert 'drumMode' not in page.evaluate('generateDrumSelection.toString()')
 
@@ -105,6 +107,8 @@ with sync_playwright() as p:
         assert abs(reverb_pct-50)<.01
 
         g=geometry(page)
+        assert g['resolution']['right'] <= g['reverb']['left']+2, g
+        assert g['resolution']['top'] < g['reverb']['bottom'] and g['resolution']['bottom'] > g['reverb']['top'], g
         assert g['newDrums']['left'] >= g['reverb']['right']-2, g
         assert g['newDrums']['top'] < g['reverb']['bottom'] and g['newDrums']['bottom'] > g['reverb']['top'], g
         assert g['punch']['left'] >= g['volume']['right']-2, g
@@ -115,4 +119,4 @@ with sync_playwright() as p:
 
     browser.close()
 
-print('OK: Drum UI — AUTO grooves, inline PLATE reverb + NEW DRUMS, four-step PUNCH knob and responsive placement')
+print('OK: Drum UI — 8TH/16TH inline with PLATE reverb + NEW DRUMS, AUTO grooves and four-step PUNCH')
