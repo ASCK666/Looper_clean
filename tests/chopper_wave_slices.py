@@ -96,7 +96,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert mode_ui['inTitle'] and mode_ui['buttonX']>=mode_ui['labelRight']-1,mode_ui
     assert abs(mode_ui['height']-240)<1,mode_ui
 
-    # MARKERS remains the original linked editor from chopper.js.
     page.evaluate('setMarkers(8)')
     before=page.evaluate('markers[2]')
     marker_point=client_point_for_source(page,before)
@@ -109,7 +108,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert page.evaluate('markers.every((v,i,a)=>i===0 || v>a[i-1])')
     marker_snapshot=page.evaluate('markers.slice()')
 
-    # SLICES always begins as four coarse, ordered, non-overlapping regions.
     page.click('#sliceEditModeBtn')
     page.wait_for_function('ChopperWaveSlices.mode === "slices"',timeout=3000)
     seeded=page.evaluate('''() => ({
@@ -124,7 +122,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert seeded['markers']==marker_snapshot,seeded
     assert no_overlaps(page),seeded
 
-    # Tail trim creates a gap without moving the next slice.
     initial=seeded['ranges']
     tail_target=initial[0]['end']-.045
     end_point=client_point_for_source(page,initial[0]['end'])
@@ -138,7 +135,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert abs(trimmed[1]['start']-initial[1]['start'])<1e-9,trimmed
     assert no_overlaps(page)
 
-    # Attack trim is independent too. The previous slice remains untouched.
     start_before=trimmed[1]['start']
     attack_target=start_before+.030
     start_point=client_point_for_source(page,start_before)
@@ -152,7 +148,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert abs(attack[0]['end']-trimmed[0]['end'])<1e-9,attack
     assert no_overlaps(page)
 
-    # A boundary cannot cross its neighbour: overlaps are clamped out while gaps remain legal.
     clamp_state=page.evaluate('''() => {
       const before=ChopperWaveSlices.slices;
       ChopperWaveSlices.setSliceBoundary(0,'end',before[1].start+.2);
@@ -161,7 +156,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert abs(clamp_state[0]['end']-clamp_state[1]['start'])<1e-9,clamp_state
     assert no_overlaps(page)
 
-    # Re-create a visible gap, then double-click inside it to add a new slice.
     gap=page.evaluate('''() => {
       const s=ChopperWaveSlices.slices;
       ChopperWaveSlices.setSliceBoundary(0,'end',s[1].start-.09);
@@ -179,7 +173,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert after_gap['enabled']==5,after_gap
     assert no_overlaps(page),after_gap
 
-    # Double-clicking inside an existing slice splits that slice in two.
     split_range=after_gap['ranges'][-1]
     split_sec=(split_range['start']+split_range['end'])/2
     split_point=client_point_for_source(page,split_sec)
@@ -188,7 +181,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert no_overlaps(page)
     assert page.evaluate("[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length")==6
 
-    # Keep splitting the largest region until all 16 pads are mapped.
     grown=page.evaluate('''() => {
       let guard=40;
       while(ChopperWaveSlices.slices.length<ChopperWaveSlices.maxSlices && guard--){
@@ -218,7 +210,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert grown['enabled']==16,grown
     assert no_overlaps(page),grown
 
-    # Pad N auditions exactly slice N, using its independent start/end.
     chosen=7
     chosen_range=grown['ranges'][chosen]
     page.locator('#pads .pad').nth(chosen).click()
@@ -239,7 +230,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     expected=(playhead_state['range']['end']-playhead_state['range']['start'])/playhead_state['rate']
     assert abs(audible-expected)<1e-6,(audible,expected,playhead_state)
 
-    # MARKERS comes back untouched. Returning to SLICES preserves the edited state.
     page.click('#sliceEditModeBtn')
     assert page.evaluate('ChopperWaveSlices.mode')=='markers'
     assert page.evaluate('markers.slice()')==marker_snapshot
@@ -247,7 +237,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert page.evaluate('ChopperWaveSlices.mode')=='slices'
     assert page.evaluate('ChopperWaveSlices.slices.length')==16
 
-    # AUTO CHOP is the coarse reset for SLICES: four regions again.
     page.click('#autoMarkers')
     page.wait_for_timeout(80)
     reset=page.evaluate('''() => ({
