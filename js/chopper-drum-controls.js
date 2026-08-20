@@ -24,19 +24,23 @@
   const saveStatus=document.getElementById("beatSaveStatus");
   const statusStrip=document.createElement("div");
   statusStrip.className="chopperStatusStrip";
-  if(chopStatus)statusStrip.appendChild(chopStatus);
-  if(saveStatus){
-    // Keep save feedback available when something happens, but do not show a
-    // permanent explanatory sentence / duplicate READY state.
-    if(saveStatus.textContent.includes("SAVE rend"))saveStatus.textContent="";
-    const syncSaveStatus=()=>{
-      const text=saveStatus.textContent.trim();
-      saveStatus.hidden=!text || text==="READY";
+
+  const wireStatus=(node,{clearInitial=false}={})=>{
+    if(!node)return;
+    if(clearInitial)node.textContent="";
+    const sync=()=>{
+      const text=node.textContent.trim();
+      node.hidden=!text || text==="READY";
     };
-    syncSaveStatus();
-    new MutationObserver(syncSaveStatus).observe(saveStatus,{childList:true,subtree:true,characterData:true});
-    statusStrip.appendChild(saveStatus);
-  }
+    sync();
+    new MutationObserver(sync).observe(node,{childList:true,subtree:true,characterData:true});
+    statusStrip.appendChild(node);
+  };
+
+  // Keep real action feedback, but remove permanent idle READY labels.
+  wireStatus(chopStatus,{clearInitial:chopStatus?.textContent.trim()==="READY"});
+  if(saveStatus?.textContent.includes("SAVE rend"))saveStatus.textContent="";
+  wireStatus(saveStatus);
 
   screen.insertBefore(actionStrip,screen.firstChild);
   if(fineSettings)screen.insertBefore(fineSettings,actionStrip.nextSibling);
