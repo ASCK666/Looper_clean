@@ -40,12 +40,11 @@ function refreshCassetteUI(){
   const zone=$("looperDropzoneBtn");
   const name=$("cassetteBeatName");
   const readoutTrack=$("deckReadoutTrack");
-  const hint=$("cassetteHint");
   const transportState=$("deckTransportState");
   const speedReadout=$("deckSpeedReadout");
   const speedEcho=$("deckSpeedEcho");
   const autoReadout=$("deckAutoReadout");
-  if(!zone || !name || !hint) return;
+  if(!zone || !name) return;
 
   const currentName=($("deckTrack")?.textContent || "NO BEAT LOADED").trim();
   const displayName=shortName(currentName.toUpperCase(),32);
@@ -62,13 +61,6 @@ function refreshCassetteUI(){
   if(speedReadout)speedReadout.textContent=formattedRate;
   if(speedEcho)speedEcho.textContent=formattedRate;
   if(autoReadout)autoReadout.textContent=autoLooperEnabledState ? "ON" : "OFF";
-  if(!loaded){
-    hint.textContent="LOAD A BEAT";
-  }else if(playing){
-    hint.textContent="PLAYING";
-  }else{
-    hint.textContent="READY • PLAY";
-  }
 }
 
 // V61 stability: IndexedDB can be blocked by browser/privacy context. In that
@@ -823,10 +815,7 @@ function setLooperPitch(value){
 
 async function playDeck(){
   const request=++deckTransportSequence;
-  if(!deckBuffer){
-    $("cassetteHint").textContent="LOAD A BEAT FIRST";
-    return false;
-  }
+  if(!deckBuffer)return false;
 
   const buffer=deckBuffer;
   await ensureAudio();

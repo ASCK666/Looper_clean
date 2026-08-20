@@ -1053,8 +1053,6 @@ a, .blue {
 .looper66Shell .cassetteDeck.playing .cassetteCssLight { opacity:calc(.86 * var(--backlight-opacity)); }
 .looper66Shell .cassetteDeck.playing .cassetteReel { animation-play-state:running; }
 .looper66Shell .cassetteDeck.dragging { box-shadow:inset 0 0 32px rgba(255,152,15,.22); }
-.looper66Shell .cassetteDeckHint { display:none; }
-
 @keyframes looper66ReelSpin { to { transform:rotate(360deg); } }
 
 .looper66Shell .looperImportDock { top:10%;left:86.1%;width:10.1%;height:28.2%;display:grid;grid-template-rows:1fr 1fr;gap:7%; }
