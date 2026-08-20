@@ -40,19 +40,19 @@ with contextlib.ExitStack() as stack:
             controls:ids.map(id=>({id,...rect(id),display:getComputedStyle(document.getElementById(id)).display})),
             transport:['playBeat','stopBeat','autoLooperToggle'].map(rect),
             title:document.getElementById('cassetteBeatName').textContent,
-            wordmark:document.querySelector('.looper66Wordmark').textContent.trim()
+            skin:document.querySelector('.looper66Skin img').getAttribute('src')
           };
         }''')
-        assert len(info['layers'])==7,info
+        assert len(info['layers'])==3,info
         assert all(layer[1]>0 and layer[2]>0 for layer in info['layers']),info
         assert all(c['display']!='none' and c['width']>=44 and c['height']>=44 for c in info['controls']),info
         sizes={(round(rect['width'],1),round(rect['height'],1)) for rect in info['transport']}
         assert len(sizes)==1,sizes
-        assert info['title']=='NO BEAT LOADED' and info['wordmark']=='LOOPER66',info
+        assert info['title']=='NO BEAT LOADED' and info['skin'].endswith('looper66-desktop-v2.webp'),info
         assert not info['appErrors'] and not page_errors and not failed,(info['appErrors'],page_errors,failed)
 
         page.locator('#looper').screenshot(path=str(ARTIFACTS/'looper66-render.png'))
         page.screenshot(path=str(ARTIFACTS/'looper66-full-render.png'),full_page=True)
         browser.close()
 
-print('OK: neutral layered cassette and equal native Looper66 controls render without runtime errors')
+print('OK: Looper66 v2 skins, separate reels and equal native controls render without runtime errors')

@@ -1,19 +1,16 @@
 {
   "branch": "ui-pixel-200826",
   "geometry": {
-    "full_layers": [586, 337],
-    "reels": [154, 154]
+    "desktop": [1536, 1024],
+    "mobile": [941, 1672],
+    "cassette_shell": [1422, 804],
+    "reel": [1048, 1047]
   },
   "lighting": "css-only",
   "assets": {
-    "looper-deck-faceplate-off.webp": "984437f5622767a86627a4c40edfd163dcf8399b9f8e82f156fa7b55a04f4016",
-    "looper-beat-crate-off.webp": "bc13b74b49976cfa3f0e8e1949d0f1898bdb4e8f5d5e85b72938868f111b9de5",
-    "cassette-cavity-off.png": "1296c0266518fc59db98e662241492e38d75aa779a904d19c2cb37fb21d8ad53",
-    "cassette-tape-path-off.png": "33567835d61b482ab36c0926d13e935afa9be58421fc654d74f22af3f678e4e4",
-    "cassette-reel-left-off.png": "400d9248756d196d69c1cd3f85dfe7ea36a98250d81521a10c80509359821764",
-    "cassette-reel-right-off.png": "d0c6fd34aed6478fe74784632c8fc8048e7155706aff83cfcb3e1b176a900da1",
-    "cassette-shell-off.png": "c4459dfb90e6d01d76a0a37cd2b3f6e0149e13121bb173a8e966a223be60c991",
-    "cassette-support-off.png": "5172589d480f5cbe49e506af0d2c7ebec8528046ae2c0b4117b71e1233aa4d0e",
-    "cassette-glass-off.png": "116dead2bdc15188b37af1f25ad44993c5c30e2e0b5efe5d443c7cee6245fae9"
+    "looper66-desktop-v2.webp": "83ad2ae59236a873d9c085e868d5171de29a26434c48d444c14024c069a4a6b3",
+    "looper66-mobile-v2.webp": "65862413cee62fa7108efb7812887d96ccba60bf0d7004c8f715cad821a6d111",
+    "looper66-cassette-shell-v2.webp": "6efba74486ff24d4ab842cfad89fb3582a639eff4765c85fd90e0dba373343f6",
+    "looper66-cassette-reel-v2.webp": "e41fb409c3fe7cbd4cad10a8d2124b225ddeafbcc28a66ff7ce13d4ca5972c01"
   }
 }

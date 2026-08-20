@@ -67,7 +67,7 @@ assert.equal(evaluate("beatSpineTone({id:'same'})>=0 && beatSpineTone({id:'same'
 assert.equal(evaluate("isFolderBeat({source:'beat-folder-cache'})"),true);
 assert.equal(evaluate("isFolderBeat({source:'user-import'})"),false);
 assert.equal(evaluate("MIN_RACK_COLUMNS"),3);
-assert.equal(evaluate("RACK_SLOTS_PER_COLUMN"),4);
+assert.equal(evaluate("RACK_SLOTS_PER_COLUMN"),3);
 assert.equal(evaluate("AUTO_LOOP_BATCH"),8);
 assert.equal(evaluate("relativeTrackIndex([{id:'a'},{id:'b'}],null,1)"),0);
 assert.equal(evaluate("relativeTrackIndex([{id:'a'},{id:'b'}],null,-1)"),1);
@@ -76,9 +76,6 @@ assert.equal(evaluate("visibleLibraryRows([{name:'Zulu',source:'user'},{name:'Al
 assert.equal(evaluate("visibleLibraryRows([{name:'Older',created:1},{name:'Newer',created:2}],'','recent')[0].name"),"Newer");
 assert.equal(evaluate("visibleLibraryRows([{name:'Kick'},{name:'Snare'}],' sna ','name').length"),1);
 assert.equal(evaluate("visibleLibraryRows([{name:'Zulu'},{name:'Alpha'}],'','name').map(row=>row.name).join(',')"),"Alpha,Zulu");
-assert.equal(evaluate("formatTapeCounter(0)"),"0000");
-assert.equal(evaluate("formatTapeCounter(128.9)"),"0128");
-assert.equal(evaluate("formatTapeCounter(10003)"),"0003");
 assert.equal(
   evaluate("[1,2,3,4,5,0].map(()=>{toggleAutoLooper();return looperSpeedRateLevel}).join(',')"),
   "1,2,3,4,5,0"
@@ -110,7 +107,7 @@ blob.arrayBuffer().then(bytes=>{
   assert.equal(ascii(8,4),"WAVE");
   assert.equal(view.getUint32(24,true),8000);
   assert.equal(view.getUint16(22,true),1);
-  console.log("OK: core unit tests — utilities, Speed Rate, pitch, tape counter, crate rows and WAV export");
+  console.log("OK: core unit tests — utilities, Speed Rate, pitch, crate rows and WAV export");
 }).catch(error=>{
   console.error(error);
   process.exitCode=1;

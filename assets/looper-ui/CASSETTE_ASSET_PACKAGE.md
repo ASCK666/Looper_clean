@@ -1,25 +1,20 @@
-# Looper66 neutral cassette package
+# Looper66 v2 production asset package
 
 Runtime files under `assets/looper-ui/`:
 
-- `looper-deck-faceplate-off.webp`
-- `looper-beat-crate-off.webp`
-- `cassette-cavity-off.png`
-- `cassette-tape-path-off.png`
-- `cassette-reel-left-off.png`
-- `cassette-reel-right-off.png`
-- `cassette-shell-off.png`
-- `cassette-support-off.png`
-- `cassette-glass-off.png`
+- `looper66-desktop-v2.webp` — complete horizontal powered-off skin;
+- `looper66-mobile-v2.webp` — dedicated portrait powered-off skin;
+- `looper66-cassette-shell-v2.webp` — transparent shell, label and lower support;
+- `looper66-cassette-reel-v2.webp` — transparent complete tape reel, instantiated twice.
 
-The two Looper skins provide the neutral desktop deck and Beat Crate chassis.
-The five full cassette layers share a transparent `586 x 337` canvas. Each reel is a
-transparent `154 x 154` image. All RGB pixels in this production set are
-grayscale by contract: illumination and state color are added by CSS.
+The two responsive skins provide the neutral deck and Beat Crate chassis. The
+cassette shell and reel have real alpha transparency. Illumination and state
+colour are added exclusively by CSS.
 
-The two tape strands leave the reels toward the lower outside edges. They are
-static mechanism geometry. Complete reel/tape-pack images rotate independently
-behind the cassette shell while playback is active.
+The complete reel/tape-pack image rotates independently in two instances behind
+the shell while playback is active. The shell itself contains the fixed lower
+mechanism and support, so those details remain visible without another runtime
+layer.
 
 The runtime stack is defined directly in `index.html`; state and timing live in
 `js/looper.js`; layout, animation and backlighting live in `css/base.css`.

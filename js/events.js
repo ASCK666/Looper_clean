@@ -57,8 +57,6 @@ $("practiceOverlayClose").onclick=()=>{
   $("practice").classList.remove("overlayOpen");
 };
 
-let cassetteDoorTimer=null;
-
 function openFilePicker(id){
   const input=$(id);
   input.value="";
@@ -82,29 +80,6 @@ async function handleBeatImport(files,label){
   }
 }
 
-function pulseCassetteDoor(){
-  const deck=$("looperDropzoneBtn");
-  if(!deck)return;
-  deck.classList.remove("ejecting");
-  void deck.offsetWidth;
-  deck.classList.add("ejecting");
-  if(cassetteDoorTimer)clearTimeout(cassetteDoorTimer);
-  cassetteDoorTimer=setTimeout(()=>{
-    deck.classList.remove("ejecting");
-    cassetteDoorTimer=null;
-  },760);
-}
-
-$("cassetteDoorEject").onclick=(ev)=>{
-  ev.stopPropagation();
-  stopDeck();
-  pulseCassetteDoor();
-  openFilePicker("beatFiles");
-};
-$("tapeCounterReset").onclick=(ev)=>{
-  ev.stopPropagation();
-  resetTapeCounter();
-};
 $("looperDropzoneBtn").addEventListener("dragover",ev=>{
   ev.preventDefault();
   $("looperDropzoneBtn").classList.add("dragging");
@@ -400,7 +375,6 @@ function safeInit(name,fn){
   ["practice",makePractice],
   ["drum-selection",updateDrumSelectionUI],
   ["auto-looper",refreshAutoLooperCompact],
-  ["tape-counter",refreshTapeCounter],
   ["master-volume",updateMasterVolume],
   ["punch",refreshPunchUI],
   ["loop-grid",renderLoopGrid],

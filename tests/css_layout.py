@@ -34,13 +34,12 @@ with contextlib.ExitStack() as stack:
               return {bodyW:document.body.scrollWidth,viewportW:innerWidth,mechanism:mechanism.toJSON(),controls,workspace:getComputedStyle(document.querySelector('.looper66Workspace')).gridTemplateColumns};
             }''')
             assert metrics['bodyW']<=metrics['viewportW']+2,metrics
-            assert abs(metrics['mechanism']['width']/metrics['mechanism']['height']-586/337)<.03,metrics
+            assert abs(metrics['mechanism']['width']/metrics['mechanism']['height']-1422/804)<.03,metrics
             assert all(c['width']>=44 and c['height']>=44 for c in metrics['controls']),metrics
             if width>=1080:
                 transport=[c for c in metrics['controls'] if c['id'] in ('playBeat','stopBeat','autoLooperToggle')]
                 assert len({(round(c['width']),round(c['height'])) for c in transport})==1,transport
-            if width<=820:
-                assert len(metrics['workspace'].split())==1,metrics
+            assert len(metrics['workspace'].split())==1,metrics
             page.click('[data-tab="chopper"]'); page.wait_for_timeout(60)
             page.click('[data-tab="looper"]'); page.wait_for_timeout(60)
             assert page.locator('#looper.active .cassetteMechanism').count()==1
@@ -48,4 +47,4 @@ with contextlib.ExitStack() as stack:
             page.close()
         browser.close()
 
-print('OK: Looper66 deck, cassette aspect ratio and 44px controls adapt across desktop/tablet/mobile')
+print('OK: Looper66 v2 deck, cassette aspect ratio and 44px controls adapt across desktop/mobile')

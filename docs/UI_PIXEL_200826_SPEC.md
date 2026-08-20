@@ -60,17 +60,15 @@ Implementation work must be checked against it at every important milestone.
 - Render the current beat name exclusively as HTML over the reserved blank label
   field.
 
-Required back-to-front layer order:
+Required back-to-front runtime layer order:
 
-1. deck cavity;
-2. mechanism and tape path;
-3. animated reels;
-4. transparent cassette shell;
-5. blank cassette label;
-6. HTML beat name;
-7. CSS-controlled lighting;
-8. lower cassette support in the foreground;
-9. deck glass.
+1. responsive powered-off deck skin;
+2. two animated complete reel/tape-pack instances;
+3. transparent cassette shell containing the fixed lower mechanism, support and
+   blank label;
+4. HTML beat name;
+5. CSS-controlled lighting;
+6. CSS glass reflection.
 
 The reels must never be composited over the cassette. They rotate behind the
 shell and remain visible through the shell openings or transparency.
@@ -202,4 +200,3 @@ CSS lighting must independently support:
 6. Remove replaced code and asset references.
 7. Run all acceptance checks.
 8. Push the completed branch without merging it.
-
