@@ -22,7 +22,7 @@ Visual references committed with this contract:
 
 - `assets/looper-ui/looper66-desktop-clean-a3d35bc4.webp` (`1086 × 1009`);
 - `assets/looper-ui/looper66-mobile-clean-8a95f608.webp` (`441 × 849`);
-- `assets/looper-ui/looper66-cassette-cradle.webp` (`640 × 122`), support plein du lecteur au premier plan.
+- `assets/looper-ui/looper66-cassette-cradle.webp` (`640 × 122`), support plein du lecteur au premier plan, sans évidement ni perforation.
 
 These files are the composition, spacing, material and typography references.
 Where a reference conflicts with a behavioural requirement below, the
@@ -156,6 +156,8 @@ Do not bake any of the following into an asset:
 Assets may contain neutral dark lenses, transparent apertures and alpha masks.
 CSS owns colour, strength, blur, inner and outer glow, transitions, hover,
 focus, pressed, disabled and product-state lighting.
+Interactive HTML overlays must not draw an additional frame or outline over
+the hardware borders already present in the reference artwork.
 
 CSS lighting must independently support:
 

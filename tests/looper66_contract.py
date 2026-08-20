@@ -55,6 +55,9 @@ assert '@media (max-width:680px)' in CSS
 assert '--light-strength' in CSS and 'var(--deck-amber)' in CSS
 assert '--backlight-opacity:1' in CSS
 assert '.deckHotspot::before' in CSS and '.deckLoadKey::before' in CSS
+assert re.search(r'\.deckHotspot::before\s*\{[^}]*border:0;',CSS)
+assert re.search(r'\.deckLoadKey::before[^\{]*\{[^}]*border:0;',CSS)
+assert re.search(r'\.deckAutoKey::before\s*\{[^}]*border:0;',CSS)
 assert 'opacity:.001' not in CSS
 assert 'id="deckPitchModule"' in HTML
 assert 'pitchModule.style.setProperty("--pitch-x"' in LOOPER
@@ -72,6 +75,8 @@ assert 'animation:looper66ReelSpin var(--supply-reel-cycle)' in CSS
 assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
 assert 'animation-direction:reverse' not in CSS
 assert re.search(r'\.deckHotspot\s*\{[^}]*background:transparent;[^}]*box-shadow:none;',CSS)
+assert re.search(r'\.deckReadout\s*\{[^}]*border:0;[^}]*box-shadow:none;',CSS)
+assert re.search(r'\.deckPitchModule\s*\{[^}]*border:0;[^}]*box-shadow:none;',CSS)
 assert '#looper #deckPitch:focus { outline:0!important;' in CSS
 assert 'filter:none!important;-webkit-tap-highlight-color:transparent' in CSS
 assert 'grid-template-columns:repeat(var(--rack-columns,3),calc((100% - .9%)/3))' in CSS
@@ -85,7 +90,7 @@ references={
     'looper66-mobile-clean-8a95f608.webp':((441,849),'8a95f608533cda45732d38261294e4e3591c0d9fa0817cebd72211bf7c37ae11'),
     'looper66-transport.webp':((750,124),'ce7acecc81f0c112ae104d4035a334c6a3aba3b7940f9a62014b99b009fc6376'),
     'looper66-crate-cassettes.webp':((560,62),'12256e2ec27d0a2976ce0a15184f578a04034c5318bbff8819deab05d0d6e3c9'),
-    'looper66-cassette-cradle.webp':((640,122),'cc97abef0765f107dc3df0d12722d2077d301ff6724d582f5dff69cbe2204ad7'),
+    'looper66-cassette-cradle.webp':((640,122),'3bc412f8723c8f79eeda17f2888eeabe5c7b4cb48fd73b11d488c7af72390bc5'),
 }
 for name,(expected_size,expected_sha) in references.items():
     path=ROOT/'assets/looper-ui'/name
