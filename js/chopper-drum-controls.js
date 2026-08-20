@@ -363,3 +363,285 @@
   globalThis.ChopperVinyl={settings,processRenderedBuffer};
   syncUI();
 })();
+
+// Local folder memory for looper-next. Only four locations are persisted:
+// KICK, SNARE, HAT and the Chopper sample directory. No musical settings,
+// pattern state, knobs or grid data are stored here.
+(() => {
+  const root=document.getElementById("chopper");
+  if(!root || root.dataset.folderPersistenceInstalled==="1")return;
+  root.dataset.folderPersistenceInstalled="1";
+
+  const DB_NAME="scratch-practice-folder-handles";
+  const DB_VERSION=1;
+  const STORE_NAME="handles";
+  const ALLOWED_KEYS=Object.freeze(["kick","snare","hat","sample"]);
+  const DRUM_KEYS=Object.freeze(["kick","snare","hat"]);
+  const memoryHandles=new Map();
+  let dbPromise=null;
+  let sampleDirectoryHandle=null;
+
+  function validKey(key){
+    return ALLOWED_KEYS.includes(key);
+  }
+
+  function openFolderDb(){
+    if(dbPromise)return dbPromise;
+    dbPromise=new Promise((resolve,reject)=>{
+      if(!globalThis.indexedDB){
+        reject(new Error("IndexedDB unavailable"));
+        return;
+      }
+      let request;
+      try{ request=indexedDB.open(DB_NAME,DB_VERSION); }
+      catch(error){ reject(error); return; }
+      request.onupgradeneeded=()=>{
+        const db=request.result;
+        if(!db.objectStoreNames.contains(STORE_NAME))db.createObjectStore(STORE_NAME,{keyPath:"id"});
+      };
+      request.onsuccess=()=>resolve(request.result);
+      request.onerror=()=>reject(request.error||new Error("Folder database open failed"));
+      request.onblocked=()=>reject(new Error("Folder database blocked"));
+    });
+    dbPromise.catch(()=>{ dbPromise=null; });
+    return dbPromise;
+  }
+
+  async function saveHandle(key,handle){
+    if(!validKey(key) || !handle)return false;
+    memoryHandles.set(key,handle);
+    try{
+      const db=await openFolderDb();
+      await new Promise((resolve,reject)=>{
+        const tx=db.transaction(STORE_NAME,"readwrite");
+        tx.objectStore(STORE_NAME).put({id:key,handle});
+        tx.oncomplete=()=>resolve();
+        tx.onerror=()=>reject(tx.error||new Error("Folder save failed"));
+        tx.onabort=()=>reject(tx.error||new Error("Folder save aborted"));
+      });
+    }catch(error){
+      // FileSystemHandle cloning is browser-specific. Session memory remains a
+      // safe fallback without breaking the Chopper when persistence is blocked.
+      console.warn(`Folder persistence (${key}):`,error?.message||error);
+    }
+    return true;
+  }
+
+  async function readHandle(key){
+    if(!validKey(key))return null;
+    if(memoryHandles.has(key))return memoryHandles.get(key);
+    try{
+      const db=await openFolderDb();
+      const row=await new Promise((resolve,reject)=>{
+        const tx=db.transaction(STORE_NAME,"readonly");
+        const request=tx.objectStore(STORE_NAME).get(key);
+        request.onsuccess=()=>resolve(request.result||null);
+        request.onerror=()=>reject(request.error||new Error("Folder read failed"));
+      });
+      const handle=row?.handle||null;
+      if(handle)memoryHandles.set(key,handle);
+      return handle;
+    }catch(error){
+      console.warn(`Folder restore (${key}):`,error?.message||error);
+      return null;
+    }
+  }
+
+  async function removeHandle(key){
+    if(!validKey(key))return false;
+    memoryHandles.delete(key);
+    try{
+      const db=await openFolderDb();
+      await new Promise((resolve,reject)=>{
+        const tx=db.transaction(STORE_NAME,"readwrite");
+        tx.objectStore(STORE_NAME).delete(key);
+        tx.oncomplete=()=>resolve();
+        tx.onerror=()=>reject(tx.error||new Error("Folder delete failed"));
+      });
+    }catch{}
+    if(key==="sample")sampleDirectoryHandle=null;
+    return true;
+  }
+
+  async function queryReadPermission(handle){
+    if(!handle)return "denied";
+    if(typeof handle.queryPermission!=="function")return "granted";
+    try{return await handle.queryPermission({mode:"read"});}
+    catch{return "denied";}
+  }
+
+  async function requestReadPermission(handle){
+    if(!handle)return "denied";
+    let permission=await queryReadPermission(handle);
+    if(permission==="granted")return permission;
+    if(typeof handle.requestPermission!=="function")return permission;
+    try{return await handle.requestPermission({mode:"read"});}
+    catch{return "denied";}
+  }
+
+  async function scanDrumDirectory(handle){
+    const entries=[];
+    for await(const entry of handle.values()){
+      if(entry.kind==="file" && audioExt.test(entry.name)){
+        entries.push(entry);
+        if(entries.length>=MAX_DRUM_FOLDER_FILES)break;
+      }
+    }
+    return entries;
+  }
+
+  async function mountDrumHandle(kind,handle,{refresh=false}={}){
+    if(!DRUM_KEYS.includes(kind) || !handle)return false;
+    let entries;
+    try{ entries=await scanDrumDirectory(handle); }
+    catch(error){
+      console.warn(`Restore ${kind} folder:`,error);
+      return false;
+    }
+    if(!entries.length)return false;
+
+    drumDirectoryHandles[kind]=handle;
+    drumDirectoryEntries[kind]=entries;
+    drumFolderFiles[kind]=[];
+    if(refresh){
+      $("drumStatus").textContent=`${kind.toUpperCase()} • ${handle.name} • ${entries.length} SOUNDS • LOADING…`;
+      await refreshDrumsAfterFolderChange(kind,entries.length,handle.name);
+    }
+    return true;
+  }
+
+  const chooseDrumFolderBase=chooseDrumFolder;
+  chooseDrumFolder=async function(kind){
+    if(!DRUM_KEYS.includes(kind))return await chooseDrumFolderBase(kind);
+    const button=$(`${kind}FolderBtn`);
+    if(button)button.disabled=true;
+    try{
+      // If startup already mounted this folder, clicking the lane is treated as
+      // an intentional folder change and opens the native picker as before.
+      const mounted=(drumDirectoryEntries[kind]||[]).length>0;
+      if(!mounted){
+        const saved=drumDirectoryHandles[kind] || await readHandle(kind);
+        if(saved){
+          drumDirectoryHandles[kind]=saved;
+          const permission=await requestReadPermission(saved);
+          if(permission==="granted" && await mountDrumHandle(kind,saved,{refresh:true})){
+            await saveHandle(kind,saved);
+            return true;
+          }
+        }
+      }
+
+      await chooseDrumFolderBase(kind);
+      const selected=drumDirectoryHandles[kind];
+      if(selected)await saveHandle(kind,selected);
+      return !!selected;
+    }finally{
+      if(button)button.disabled=false;
+    }
+  };
+
+  async function restoreDrumFolders(){
+    const restored=[];
+    for(const kind of DRUM_KEYS){
+      const handle=await readHandle(kind);
+      if(!handle)continue;
+      drumDirectoryHandles[kind]=handle;
+      if(await queryReadPermission(handle)!=="granted")continue;
+      if(await mountDrumHandle(kind,handle))restored.push(kind.toUpperCase());
+    }
+    if(restored.length){
+      const status=$("drumStatus");
+      if(status)status.textContent=`FOLDERS RESTORED • ${restored.join(" / ")} ✓`;
+    }
+    return restored;
+  }
+
+  async function chooseSampleDirectory(){
+    if(typeof window.showDirectoryPicker!=="function")return null;
+    try{
+      const handle=await window.showDirectoryPicker({id:"scratch-chopper-sample-folder",mode:"read"});
+      sampleDirectoryHandle=handle;
+      await saveHandle("sample",handle);
+      return handle;
+    }catch(error){
+      if(error?.name!=="AbortError")console.warn("Sample folder picker:",error);
+      return null;
+    }
+  }
+
+  async function chooseSampleFromRememberedFolder(forceNewFolder=false){
+    const legacyInput=$("sampleFile");
+    if(typeof window.showDirectoryPicker!=="function" || typeof window.showOpenFilePicker!=="function"){
+      if(legacyInput){legacyInput.value="";legacyInput.click();}
+      return false;
+    }
+
+    if(forceNewFolder)sampleDirectoryHandle=null;
+    if(!sampleDirectoryHandle && !forceNewFolder)sampleDirectoryHandle=await readHandle("sample");
+
+    if(!sampleDirectoryHandle){
+      const selected=await chooseSampleDirectory();
+      if(selected){
+        $("chopStatus").textContent=`SAMPLE FOLDER • ${selected.name} ✓ • CLICK LOAD SAMPLE AGAIN`;
+      }
+      return false;
+    }
+
+    let permission=await requestReadPermission(sampleDirectoryHandle);
+    if(permission!=="granted"){
+      const selected=await chooseSampleDirectory();
+      if(!selected)return false;
+      $("chopStatus").textContent=`SAMPLE FOLDER • ${selected.name} ✓ • CLICK LOAD SAMPLE AGAIN`;
+      return false;
+    }
+
+    try{
+      const handles=await window.showOpenFilePicker({
+        id:"scratch-chopper-sample-file",
+        startIn:sampleDirectoryHandle,
+        multiple:false,
+        excludeAcceptAllOption:false,
+        types:[{
+          description:"Audio samples",
+          accept:{"audio/*":[".wav",".mp3",".m4a",".aac",".ogg",".flac",".webm"]}
+        }]
+      });
+      const fileHandle=handles?.[0];
+      if(!fileHandle)return false;
+      const file=await fileHandle.getFile();
+      return await loadChopperSample(file);
+    }catch(error){
+      if(error?.name!=="AbortError"){
+        console.warn("Sample file picker:",error);
+        $("chopStatus").textContent=`SAMPLE PICKER ERROR • ${safeErrorMessage(error)}`;
+      }
+      return false;
+    }
+  }
+
+  const loadSampleBtn=$("loadSampleBtn");
+  if(loadSampleBtn){
+    loadSampleBtn.title="LOAD SAMPLE • Shift+click = change sample folder";
+    loadSampleBtn.setAttribute("aria-label","Load sample from remembered sample folder; Shift plus click changes folder");
+    loadSampleBtn.onclick=event=>chooseSampleFromRememberedFolder(!!event?.shiftKey);
+  }
+
+  async function restoreSampleDirectory(){
+    sampleDirectoryHandle=await readHandle("sample");
+    return sampleDirectoryHandle;
+  }
+
+  globalThis.ChopperFolderPersistence={
+    keys:[...ALLOWED_KEYS],
+    dbName:DB_NAME,
+    saveHandle,
+    readHandle,
+    removeHandle,
+    restoreDrumFolders,
+    restoreSampleDirectory,
+    mountDrumHandle,
+    chooseSampleFromRememberedFolder
+  };
+
+  void Promise.all([restoreDrumFolders(),restoreSampleDirectory()]);
+})();
