@@ -2,6 +2,8 @@
 
 Runtime files under `assets/looper-ui/`:
 
+- `looper-deck-faceplate-off.webp`
+- `looper-beat-crate-off.webp`
 - `cassette-cavity-off.png`
 - `cassette-tape-path-off.png`
 - `cassette-reel-left-off.png`
@@ -10,7 +12,8 @@ Runtime files under `assets/looper-ui/`:
 - `cassette-support-off.png`
 - `cassette-glass-off.png`
 
-The five full layers share a transparent `586 x 337` canvas. Each reel is a
+The two Looper skins provide the neutral desktop deck and Beat Crate chassis.
+The five full cassette layers share a transparent `586 x 337` canvas. Each reel is a
 transparent `154 x 154` image. All RGB pixels in this production set are
 grayscale by contract: illumination and state color are added by CSS.
 

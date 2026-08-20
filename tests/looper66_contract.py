@@ -52,6 +52,7 @@ for retired in ('overlay.css','cassette-runtime.staged','looper-faceplate','LOOP
     assert retired not in HTML+CSS+LOOPER+BOOT,retired
 
 asset_names=[
+    'looper-deck-faceplate-off.webp','looper-beat-crate-off.webp',
     'cassette-cavity-off.png','cassette-tape-path-off.png','cassette-shell-off.png',
     'cassette-support-off.png','cassette-glass-off.png',
     'cassette-reel-left-off.png','cassette-reel-right-off.png'

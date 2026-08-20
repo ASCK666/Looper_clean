@@ -6,6 +6,8 @@
   },
   "lighting": "css-only",
   "assets": {
+    "looper-deck-faceplate-off.webp": "984437f5622767a86627a4c40edfd163dcf8399b9f8e82f156fa7b55a04f4016",
+    "looper-beat-crate-off.webp": "bc13b74b49976cfa3f0e8e1949d0f1898bdb4e8f5d5e85b72938868f111b9de5",
     "cassette-cavity-off.png": "1296c0266518fc59db98e662241492e38d75aa779a904d19c2cb37fb21d8ad53",
     "cassette-tape-path-off.png": "33567835d61b482ab36c0926d13e935afa9be58421fc654d74f22af3f678e4e4",
     "cassette-reel-left-off.png": "400d9248756d196d69c1cd3f85dfe7ea36a98250d81521a10c80509359821764",
