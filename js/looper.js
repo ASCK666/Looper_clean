@@ -39,14 +39,18 @@ const TAKEUP_REEL_CYCLE_SECONDS=1.46;
 function refreshCassetteUI(){
   const zone=$("looperDropzoneBtn");
   const name=$("cassetteBeatName");
+  const readoutTrack=$("deckReadoutTrack");
   const hint=$("cassetteHint");
   const transportState=$("deckTransportState");
   const speedReadout=$("deckSpeedReadout");
+  const speedEcho=$("deckSpeedEcho");
   const autoReadout=$("deckAutoReadout");
   if(!zone || !name || !hint) return;
 
   const currentName=($("deckTrack")?.textContent || "NO BEAT LOADED").trim();
-  name.textContent=shortName(currentName.toUpperCase(),32);
+  const displayName=shortName(currentName.toUpperCase(),32);
+  name.textContent=displayName;
+  if(readoutTrack)readoutTrack.textContent=displayName;
 
   const loaded=!!deckBuffer;
   const playing=!!deckSource;
@@ -54,7 +58,9 @@ function refreshCassetteUI(){
   zone.classList.toggle("loaded",loaded);
   zone.classList.toggle("playing",playing);
   if(transportState)transportState.textContent=!loaded ? "EMPTY" : playing ? "PLAYING" : "READY";
-  if(speedReadout)speedReadout.textContent=formatDeckRate();
+  const formattedRate=formatDeckRate();
+  if(speedReadout)speedReadout.textContent=formattedRate;
+  if(speedEcho)speedEcho.textContent=formattedRate;
   if(autoReadout)autoReadout.textContent=autoLooperEnabledState ? "ON" : "OFF";
   if(!loaded){
     hint.textContent="LOAD A BEAT";
@@ -685,6 +691,7 @@ function refreshAutoLooperCompact(){
   const status=$("autoLooperCompactStatus");
   const deck=$("looperDropzoneBtn");
   const speed=$("deckSpeedReadout");
+  const speedEcho=$("deckSpeedEcho");
   const auto=$("deckAutoReadout");
   const autoButton=$("deckAutoToggle");
   const pitchControl=$("deckPitch");
@@ -707,7 +714,9 @@ function refreshAutoLooperCompact(){
     : "Speed Rate désactivé"
   );
   if(autoButton)autoButton.setAttribute("aria-pressed",autoLooperEnabledState ? "true" : "false");
-  if(speed)speed.textContent=formatDeckRate();
+  const formattedRate=formatDeckRate();
+  if(speed)speed.textContent=formattedRate;
+  if(speedEcho)speedEcho.textContent=formattedRate;
   if(auto)auto.textContent=autoLooperEnabledState ? "ON" : "OFF";
   const pitchLabel=`${looperPitchPercent>0?"+":""}${looperPitchPercent.toFixed(1)}%`;
   if(pitchReadout)pitchReadout.textContent=pitchLabel;

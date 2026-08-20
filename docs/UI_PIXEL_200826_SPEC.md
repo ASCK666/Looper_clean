@@ -18,6 +18,16 @@ Implementation work must be checked against it at every important milestone.
 
 ## 2. Responsive compositions
 
+Visual references committed with this contract:
+
+- `assets/looper-ui/looper66-desktop-target.webp` (`1086 × 1009`);
+- `assets/looper-ui/looper66-mobile-target.webp` (`441 × 849`).
+
+These files are the composition, spacing, material and typography references.
+Where a reference conflicts with a behavioural requirement below, the
+behavioural requirement wins. In particular, the three desktop transport
+modules remain equal-sized and all amber illumination remains runtime CSS.
+
 - Keep one semantic DOM and one behaviour implementation.
 - Provide a horizontal desktop/tablet composition.
 - Provide a dedicated vertical phone composition.

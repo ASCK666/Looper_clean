@@ -29,26 +29,30 @@ with contextlib.ExitStack() as stack:
         page.on('requestfailed',lambda req:failed.append(f'{req.url}: {req.failure}'))
         page.goto(f'http://127.0.0.1:{server.server_address[1]}/index.html',wait_until='networkidle',timeout=30000)
         page.wait_for_function('window.__SP?.ready === true',timeout=10000)
-        page.wait_for_function("[...document.querySelectorAll('.cassetteLayer,.cassetteReel')].every(img=>img.complete&&img.naturalWidth)",timeout=10000)
+        page.wait_for_function("document.querySelectorAll('.cassetteReel').length === 2",timeout=10000)
 
         info=page.evaluate('''() => {
           const ids=['prevBeat','playBeat','stopBeat','nextBeat','autoLooperToggle','deckAutoToggle','deckPitch','importFolderBtn','importBeatsBtn'];
           const rect=id=>document.getElementById(id).getBoundingClientRect().toJSON();
           return {
             appErrors:window.__SP.errors,
-            layers:[...document.querySelectorAll('.cassetteMechanism img')].map(img=>[img.className,img.naturalWidth,img.naturalHeight]),
+            layers:[...document.querySelectorAll('.cassetteMechanism > *')].map(layer=>[layer.className,getComputedStyle(layer).zIndex]),
             controls:ids.map(id=>({id,...rect(id),display:getComputedStyle(document.getElementById(id)).display})),
             transport:['playBeat','stopBeat','autoLooperToggle'].map(rect),
             title:document.getElementById('cassetteBeatName').textContent,
             skin:document.querySelector('.looper66Skin img').getAttribute('src')
           };
         }''')
-        assert len(info['layers'])==3,info
-        assert all(layer[1]>0 and layer[2]>0 for layer in info['layers']),info
+        assert len(info['layers'])==7,info
+        assert [layer[0] for layer in info['layers']]==[
+            'cassetteReel cassetteReelLeft','cassetteReel cassetteReelRight',
+            'cassetteShell','cassetteBeatName','cassetteSupportForeground',
+            'cassetteCssLight','cassetteGlass'
+        ],info
         assert all(c['display']!='none' and c['width']>=44 and c['height']>=44 for c in info['controls']),info
         sizes={(round(rect['width'],1),round(rect['height'],1)) for rect in info['transport']}
         assert len(sizes)==1,sizes
-        assert info['title']=='NO BEAT LOADED' and info['skin'].endswith('looper66-desktop-v2.webp'),info
+        assert info['title']=='NO BEAT LOADED' and info['skin'].endswith('looper66-desktop-target.webp'),info
         assert not info['appErrors'] and not page_errors and not failed,(info['appErrors'],page_errors,failed)
 
         page.locator('#looper').screenshot(path=str(ARTIFACTS/'looper66-render.png'))

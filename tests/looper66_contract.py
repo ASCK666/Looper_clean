@@ -2,6 +2,7 @@
 """Lock the approved Looper66 v2 visual and interaction contract."""
 
 from pathlib import Path
+import hashlib
 import re
 
 from PIL import Image
@@ -17,8 +18,8 @@ for control in controls:
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
 
 assert 'class="looper66Skin"' in HTML
-assert 'looper66-desktop-v2.webp' in HTML
-assert 'looper66-mobile-v2.webp' in HTML
+assert 'assets/looper-ui/looper66-desktop-target.webp' in HTML
+assert 'assets/looper-ui/looper66-mobile-target.webp' in HTML
 assert '>LOAD LIBRARY<' in HTML and '>LOAD BEAT<' in HTML
 assert re.search(r'id="autoLooperToggle"[\s\S]*?<strong>SPEED RATE</strong>',HTML)
 assert not re.search(r'id="autoLooperToggle"[^>]*>[\s\S]*?\+\d',HTML)
@@ -26,10 +27,10 @@ assert not re.search(r'id="autoLooperToggle"[^>]*>[\s\S]*?\+\d',HTML)
 crate=HTML[HTML.index('<section class="panel beatCratePanel">'):]
 assert crate.index('id="prevBeat"') < crate.index('id="nextBeat"')
 
-ordered=['cassetteReelLeft','cassetteReelRight','cassetteShell','cassetteBeatName','cassetteCssLight','cassetteGlass']
+ordered=['cassetteReelLeft','cassetteReelRight','cassetteShell','cassetteBeatName','cassetteSupportForeground','cassetteCssLight','cassetteGlass']
 positions=[HTML.index(token) for token in ordered]
 assert positions==sorted(positions),positions
-assert HTML.count('looper66-cassette-reel-v2.webp')==2
+assert HTML.count('class="cassetteReel ')==2
 for forbidden in ('BEAT TAPE','LOOP RAMP','FUNK BREAK'):
     assert forbidden not in HTML.upper()
 
@@ -45,7 +46,7 @@ assert 'animation-play-state:paused' in CSS
 assert '.cassetteDeck.playing .cassetteReel { animation-play-state:running; }' in CSS
 assert '@keyframes looper66ReelSpin' in CSS
 assert '@media (prefers-reduced-motion:reduce)' in CSS
-assert 'grid-template-columns:repeat(3,1fr)' in CSS
+assert 'grid-template-columns:repeat(3,minmax(0,1fr))' in CSS
 assert '@media (max-width:680px)' in CSS
 assert '--light-strength' in CSS and 'var(--deck-amber)' in CSS
 assert '--backlight-opacity:1' in CSS
@@ -55,27 +56,25 @@ assert 'id="deckPitchModule"' in HTML
 assert 'pitchModule.style.setProperty("--pitch-x"' in LOOPER
 assert 'pitchModule.style.setProperty("--pitch-y"' in LOOPER
 assert 'pitchControl.setAttribute("aria-valuetext"' in LOOPER
-assert HTML.count('class="cassetteLayer cassetteShell"')==1
-assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;[^}]*background:#050504;',CSS)
+assert HTML.count('class="cassetteShell"')==1
+assert HTML.count('class="cassetteSupportForeground"')==1
+assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
+assert '.cassetteSupportForeground { position:absolute;z-index:4;' in CSS
+assert '.cassetteGlass { position:absolute;z-index:6;' in CSS
+assert 'animation-direction:reverse' not in CSS
 
-retired=('deckFaceplate','crateFaceplate','tapeCounter','cassetteDoorEject','cassetteCavity','cassetteTapePath','cassetteSupport')
+retired=('deckFaceplate','crateFaceplate','tapeCounter','cassetteDoorEject','cassetteCavity','cassetteTapePath')
 for name in retired:
     assert name not in HTML+CSS+LOOPER+EVENTS,name
 
-assets={
-    'looper66-desktop-v2.webp':(1536,1024,False),
-    'looper66-mobile-v2.webp':(941,1672,False),
-    'looper66-cassette-shell-v2.webp':(1000,600,True),
-    'looper66-cassette-reel-v2.webp':(900,900,True),
+references={
+    'looper66-desktop-target.webp':((1086,1009),'7ccc3220f58d2779992085566836809f0ae5c34af0f13ce8b3d537f14f96e240'),
+    'looper66-mobile-target.webp':((441,849),'da92e13829331565e4b15c12e48c4e0f14bee796cef0e977eb3a13cb43fef144'),
 }
-for name,(min_width,min_height,needs_alpha) in assets.items():
+for name,(expected_size,expected_sha) in references.items():
     path=ROOT/'assets/looper-ui'/name
     assert path.is_file(),name
-    image=Image.open(path).convert('RGBA')
-    assert image.width>=min_width and image.height>=min_height,(name,image.size)
-    assert len(image.getcolors(maxcolors=256) or [])<=64,f'{name} is not palette-bounded pixel art'
-    if needs_alpha:
-        alpha=image.getchannel('A')
-        assert alpha.getextrema()[0]==0,f'{name} has no transparent pixels'
+    assert Image.open(path).size==expected_size,(name,Image.open(path).size)
+    assert hashlib.sha256(path.read_bytes()).hexdigest()==expected_sha,name
 
 print('OK: Looper66 v2 uses responsive production skins, native controls, separate animated reels and CSS-only state lights')

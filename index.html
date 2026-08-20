@@ -71,17 +71,19 @@
     <div class="looper66Shell">
       <div class="looper66Workspace">
         <picture class="looper66Skin" aria-hidden="true">
-          <source media="(max-width:680px)" srcset="assets/looper-ui/looper66-mobile-v2.webp">
-          <img src="assets/looper-ui/looper66-desktop-v2.webp" alt="" draggable="false">
+          <source media="(max-width:680px)" srcset="assets/looper-ui/looper66-mobile-target.webp">
+          <img src="assets/looper-ui/looper66-desktop-target.webp" alt="" draggable="false">
         </picture>
         <span id="looperVu" class="vu looperVu" aria-label="Niveau de sortie du Looper"></span>
         <section class="panel looperMainPanel" aria-label="Deck Looper66">
           <div id="looperDropzoneBtn" class="cassetteDeck" role="group" aria-label="Lecteur cassette pixel art et commandes du looper">
             <div class="deckReadout" role="status" aria-live="polite">
-              <div><small>STATE</small><strong id="deckTransportState">READY</strong></div>
-              <div><small>SPEED</small><strong id="deckSpeedReadout">100%</strong></div>
-              <div><small>AUTO</small><strong id="deckAutoReadout">OFF</strong></div>
-              <div><small>RATE</small><strong id="autoLooperCompactStatus">OFF</strong></div>
+              <strong id="deckReadoutTrack" class="deckReadoutTrack">NO BEAT LOADED</strong>
+              <span class="deckReadoutProgress" aria-hidden="true">◆◆◆◆◆◆◆◆◆◆◆◇◇◇</span>
+              <strong id="deckSpeedReadout" class="deckReadoutRate">100%</strong>
+              <div class="deckReadoutState"><small>STATE</small><strong id="deckTransportState">EMPTY</strong></div>
+              <div class="deckReadoutSpeed"><small>SPEED</small><strong id="deckSpeedEcho">100%</strong></div>
+              <span class="compatHidden"><span id="deckAutoReadout">OFF</span><span id="autoLooperCompactStatus">OFF</span></span>
             </div>
 
             <div id="deckPitchModule" class="deckPitchModule">
@@ -95,10 +97,11 @@
             </div>
 
             <div class="cassetteMechanism" aria-label="Cassette chargée dans son mécanisme">
-              <img class="cassetteReel cassetteReelLeft" src="assets/looper-ui/looper66-cassette-reel-v2.webp" alt="" aria-hidden="true" draggable="false">
-              <img class="cassetteReel cassetteReelRight" src="assets/looper-ui/looper66-cassette-reel-v2.webp" alt="" aria-hidden="true" draggable="false">
-              <img class="cassetteLayer cassetteShell" src="assets/looper-ui/looper66-cassette-shell-v2.webp" alt="Cassette pixel art noire dans son support" draggable="false">
+              <span class="cassetteReel cassetteReelLeft" aria-hidden="true"></span>
+              <span class="cassetteReel cassetteReelRight" aria-hidden="true"></span>
+              <span class="cassetteShell" aria-hidden="true"></span>
               <strong id="cassetteBeatName" class="cassetteBeatName">NO BEAT LOADED</strong>
+              <span class="cassetteSupportForeground" aria-hidden="true"></span>
               <div class="cassetteCssLight" aria-hidden="true"></div>
               <div class="cassetteGlass" aria-hidden="true"></div>
               <div id="cassetteHint" class="cassetteDeckHint">LOAD A BEAT</div>
@@ -112,7 +115,10 @@
             <div class="deckTransport" role="group" aria-label="Transport du Looper">
               <button id="playBeat" class="deckHotspot" type="button" aria-label="Lecture"><span aria-hidden="true">▶</span><strong>PLAY</strong></button>
               <button id="stopBeat" class="deckHotspot" type="button" aria-label="Stop"><span aria-hidden="true">■</span><strong>STOP</strong></button>
-              <button id="autoLooperToggle" class="deckHotspot deckRateHotspot" type="button" aria-label="Choisir le Speed Rate" aria-pressed="false"><span aria-hidden="true">↗</span><strong>SPEED RATE</strong></button>
+              <button id="autoLooperToggle" class="deckHotspot deckRateHotspot" type="button" aria-label="Choisir le Speed Rate" aria-pressed="false">
+                <strong>SPEED RATE</strong>
+                <span class="deckRateSegments" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+              </button>
             </div>
 
             <div id="beatImportStatus" class="beatImportStatus compatHidden" aria-live="polite">READY • LOAD LIBRARY OR LOAD BEAT</div>
