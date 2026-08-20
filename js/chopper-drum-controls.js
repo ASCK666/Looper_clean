@@ -1,75 +1,38 @@
 "use strict";
 
-// chopper-200826: the Drum UI is intentionally reduced to AUTO groove selection,
-// one fixed PLATE reverb mix and the existing four PUNCH master presets.
+// chopper-200826: reduced Drum control surface. These assignments replace the
+// legacy UI-dependent bindings without duplicating top-level function declarations.
 const PUNCH_MODE_NAMES=["off","warm","knock","hard"];
 
-function punchModeName(){
+globalThis.punchModeName=()=>{
   const raw=Number($("punchMode")?.value);
   const index=Number.isFinite(raw)
     ? clamp(Math.round(raw),0,PUNCH_MODE_NAMES.length-1)
     : 1;
   return PUNCH_MODE_NAMES[index]||"warm";
-}
+};
 
-function refreshPunchUI(){
-  const mode=punchModeName();
-  $("punchDesc").textContent=mode.toUpperCase();
-}
+globalThis.refreshPunchUI=()=>{
+  $("punchDesc").textContent=punchModeName().toUpperCase();
+};
 
-function punchSettings(){
+globalThis.punchSettings=()=>{
   const mode=punchModeName();
   const presets={
-    off:{
-      mode:"off"
-    },
-    warm:{
-      mode:"warm",
-      threshold:-12,
-      knee:12,
-      ratio:1.5,
-      attack:.035,
-      release:.20,
-      drive:1.03,
-      makeup:1.00,
-      ceiling:.97
-    },
-    knock:{
-      mode:"knock",
-      threshold:-14,
-      knee:10,
-      ratio:1.8,
-      attack:.030,
-      release:.13,
-      drive:1.08,
-      makeup:1.01,
-      ceiling:.965
-    },
-    hard:{
-      mode:"hard",
-      threshold:-18,
-      knee:8,
-      ratio:2.6,
-      attack:.018,
-      release:.10,
-      drive:1.18,
-      makeup:1.02,
-      ceiling:.95
-    }
+    off:{mode:"off"},
+    warm:{mode:"warm",threshold:-12,knee:12,ratio:1.5,attack:.035,release:.20,drive:1.03,makeup:1.00,ceiling:.97},
+    knock:{mode:"knock",threshold:-14,knee:10,ratio:1.8,attack:.030,release:.13,drive:1.08,makeup:1.01,ceiling:.965},
+    hard:{mode:"hard",threshold:-18,knee:8,ratio:2.6,attack:.018,release:.10,drive:1.18,makeup:1.02,ceiling:.95}
   };
   return presets[mode]||presets.warm;
-}
+};
 
-function snareReverbSettings(){
+globalThis.snareReverbSettings=()=>{
   const mix=clamp((Number($("snareReverbMix").value)||0)/100,0,.70);
-  return {
-    on:mix>0,
-    type:"plate",
-    mix
-  };
-}
+  return {on:mix>0,type:"plate",mix};
+};
 
-async function generateDrumSelection(forceDifferent=false){
+globalThis.generateDrumSelection=async(forceDifferent=false)=>{
   await ensureAudio();
   const requested="auto";
   const previous=currentDrumSelection;
@@ -82,13 +45,11 @@ async function generateDrumSelection(forceDifferent=false){
     const prevKick=forceDifferent ? previous?.kick?.name || null : null;
     const prevSnare=forceDifferent ? previous?.snare?.name || null : null;
     const prevHat=forceDifferent ? previous?.hat?.name || null : null;
-
     const [kick,snare,hat]=await Promise.all([
       loadSelectedDrum("kick",rate,prevKick),
       loadSelectedDrum("snare",rate,prevSnare),
       loadSelectedDrum("hat",rate,prevHat)
     ]);
-
     return {
       mode:pat.mode,
       patternId:pat.id,
@@ -106,9 +67,7 @@ async function generateDrumSelection(forceDifferent=false){
       hatOff:pat.hatOff??.24,
       snareDelay:pat.snareDelay??.008,
       kickNudge:{...(pat.kickNudge||{})},
-      kick,
-      snare,
-      hat
+      kick,snare,hat
     };
   }
 
@@ -116,20 +75,17 @@ async function generateDrumSelection(forceDifferent=false){
   if(forceDifferent && previous && drumSelectionSignature(next)===previousSignature){
     next=await buildOne();
   }
-
   currentDrumSelection=next;
   drumGenerationNumber++;
   updateDrumSelectionUI();
   return currentDrumSelection;
-}
+};
 
-async function refreshDrumsAfterFolderChange(kind,count,origin){
+globalThis.refreshDrumsAfterFolderChange=async(kind,count,origin)=>{
   const wasPlaying=isLoopPlaying;
   const modeBefore=lastPreviewMode;
-
   try{
     await generateDrumSelection(true);
-
     if(wasPlaying){
       if(modeBefore==="drums"){
         renderedFlip=await renderDrumsOnly();
@@ -144,7 +100,6 @@ async function refreshDrumsAfterFolderChange(kind,count,origin){
         }
       }
     }
-
     const selected={
       kick:currentDrumSelection?.kick?.name,
       snare:currentDrumSelection?.snare?.name,
@@ -154,46 +109,7 @@ async function refreshDrumsAfterFolderChange(kind,count,origin){
   }catch(error){
     $("drumStatus").textContent=`${kind.toUpperCase()} ERROR: ${safeErrorMessage(error)}`;
   }
-}
-
-const reverbInput=$("snareReverbMix");
-reverbInput.oninput=()=>{
-  $("snareReverbMixReadout").textContent=`${reverbInput.value}%`;
-};
-reverbInput.onchange=async()=>{
-  const mix=Number(reverbInput.value)||0;
-  renderedFlip=null;
-  if(!isLoopPlaying){
-    $("drumStatus").textContent=mix>0?`REVERB ${mix}% • READY`:"REVERB OFF • READY";
-    return;
-  }
-  try{
-    await rerenderPreviewMode();
-    $("drumStatus").textContent=mix>0?`REVERB ${mix}% ✓`:"REVERB OFF ✓";
-  }catch(error){
-    $("drumStatus").textContent=`REVERB ERROR: ${safeErrorMessage(error)}`;
-  }
-};
-
-const punchInput=$("punchMode");
-punchInput.oninput=refreshPunchUI;
-punchInput.onchange=async()=>{
-  const mode=punchModeName();
-  refreshPunchUI();
-  renderedFlip=null;
-
-  if(!isLoopPlaying){
-    $("chopStatus").textContent=`PUNCH ${mode.toUpperCase()} • READY`;
-    return;
-  }
-
-  try{
-    await rerenderPreviewMode();
-    $("chopStatus").textContent=`PUNCH ${mode.toUpperCase()} ✓`;
-  }catch(error){
-    $("chopStatus").textContent=`PUNCH ERROR: ${safeErrorMessage(error)}`;
-  }
 };
 
 refreshPunchUI();
-reverbInput.dispatchEvent(new Event("input"));
+$("snareReverbMix").dispatchEvent(new Event("input"));
