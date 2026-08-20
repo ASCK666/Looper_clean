@@ -9,7 +9,7 @@ except Exception:
 ROOT=Path(__file__).resolve().parents[1]
 
 
-def make_wav(path,duration=.72,freq=180,sr=44100):
+def make_wav(path,duration=.96,freq=180,sr=44100):
     n=int(duration*sr)
     with wave.open(str(path),'wb') as w:
         w.setnchannels(1)
@@ -65,87 +65,141 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.on('pageerror',lambda e:errors.append(str(e)))
     page.set_content(inline_project(),wait_until='load',timeout=20000)
     page.wait_for_function('window.__SP && window.__SP.ready === true',timeout=10000)
-    page.wait_for_function('window.ChopperWaveSlices && document.querySelector("#waveCanvas[tabindex]")',timeout=10000)
+    page.wait_for_function('window.ChopperWaveSlices && document.getElementById("sliceEditModeBtn")',timeout=10000)
     page.click('[data-tab="chopper"]')
     page.set_input_files('#sampleFile',str(sample))
     page.wait_for_function('sampleBuffer !== null && markers.length === 17',timeout=10000)
 
-    # Constraint: the feature must not enlarge the waveform. Desktop stays on
-    # the maintained 240px CSS height used before the slice-editor change.
-    wave_height=page.evaluate('document.getElementById("waveCanvas").getBoundingClientRect().height')
-    assert abs(wave_height-240)<1,wave_height
-
-    # Work with eight slices so double-click can create a ninth one.
-    page.evaluate('setMarkers(8)')
-    assert page.evaluate('markers.length')==9
-    assert page.evaluate('ChopperWaveSlices.selectedSlice')==0
-
-    # PAD N and waveform slice N are one selection state.
-    page.locator('#pads .pad').nth(2).click()
-    page.wait_for_function('ChopperWaveSlices.selectedSlice === 2 && chopAuditionPad === 2',timeout=5000)
-    selected=page.evaluate('''() => [...document.querySelectorAll('#pads .pad')].map(p=>p.classList.contains('selected'))''')
-    assert selected[2] and sum(1 for x in selected if x)==1,selected
-    assert page.evaluate('selectedMarker')==2
-    page.evaluate('stopChopAudition()')
-
-    # Clicking a waveform region selects/auditions the matching pad.
-    sec=page.evaluate('(markers[4]+markers[5])/2')
-    point=client_point_for_source(page,sec)
-    page.mouse.click(point['x'],point['y'])
-    page.wait_for_function('ChopperWaveSlices.selectedSlice === 4 && chopAuditionPad === 4',timeout=5000)
-    assert page.locator('#pads .pad').nth(4).evaluate("p=>p.classList.contains('selected')")
-
-    # A pad strike paints a whole slice region on the overlay, not only a thin
-    # playhead line. Count alpha pixels while the audition flash is active.
-    page.wait_for_timeout(30)
-    alpha_pixels=page.evaluate('''() => {
-      const c=document.getElementById('playheadCanvas');
-      const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
-      let count=0;
-      for(let i=3;i<d.length;i+=4)if(d[i])count++;
-      return count;
+    # The mode control lives directly in the SAMPLE DISPLAY title row and the
+    # feature does not enlarge the maintained waveform.
+    mode_ui=page.evaluate('''() => {
+      const button=document.getElementById('sliceEditModeBtn');
+      const title=button.closest('.stableTitle');
+      const label=title.querySelector('span');
+      const br=button.getBoundingClientRect();
+      const lr=label.getBoundingClientRect();
+      return {
+        text:button.textContent,
+        mode:ChopperWaveSlices.mode,
+        inTitle:!!title && title.textContent.includes('SAMPLE DISPLAY'),
+        buttonX:br.x,
+        labelRight:lr.right,
+        height:document.getElementById('waveCanvas').getBoundingClientRect().height
+      };
     }''')
-    assert alpha_pixels>2500,alpha_pixels
-    page.evaluate('stopChopAudition()')
+    assert mode_ui['text']=='MARKERS' and mode_ui['mode']=='markers',mode_ui
+    assert mode_ui['inTitle'] and mode_ui['buttonX']>=mode_ui['labelRight']-1,mode_ui
+    assert abs(mode_ui['height']-240)<1,mode_ui
 
-    # Double-click inserts a free marker, focuses the waveform and selects the
-    # newly created right-hand slice. Delete removes that internal marker again.
-    add_sec=page.evaluate('sampleBuffer.duration * .43')
-    add_point=client_point_for_source(page,add_sec)
-    page.mouse.dblclick(add_point['x'],add_point['y'],delay=35)
-    page.wait_for_function('markers.length === 10',timeout=3000)
-    added=page.evaluate('''() => ({
-      marker:selectedMarker,
-      slice:ChopperWaveSlices.selectedSlice,
-      focused:document.activeElement===document.getElementById('waveCanvas')
-    })''')
-    assert 0<added['marker']<9,added
-    assert added['slice']==added['marker'],added
-    assert added['focused'],added
-    page.keyboard.press('Delete')
-    page.wait_for_function('markers.length === 9',timeout=3000)
-
-    # Marker hit areas are large enough to grab and a drag moves the marker
-    # freely while preserving strict marker order.
+    # MARKERS is the original linked-boundary editor: dragging marker 2 moves
+    # that shared boundary while keeping the marker list ordered.
+    page.evaluate('setMarkers(8)')
     before=page.evaluate('markers[2]')
     marker_point=client_point_for_source(page,before)
     page.mouse.move(marker_point['x'],marker_point['y'])
     page.mouse.down()
     page.mouse.move(marker_point['x']+34,marker_point['y'],steps=5)
     page.mouse.up()
-    after=page.evaluate('markers[2]')
-    assert abs(after-before)>.005,(before,after)
-    ordered=page.evaluate('markers.every((v,i,a)=>i===0 || v>a[i-1])')
-    assert ordered
-    assert page.evaluate('selectedMarker')==2
+    linked_after=page.evaluate('markers[2]')
+    assert abs(linked_after-before)>.005,(before,linked_after)
+    assert page.evaluate('markers.every((v,i,a)=>i===0 || v>a[i-1])')
+    assert page.evaluate('ChopperWaveSlices.mode')=='markers'
 
-    # AUTO CHOP still returns to the requested 16-pad workstation.
+    # Switching to SLICES creates independent ranges from the current marker
+    # layout. The marker array remains the untouched MARKERS-mode source.
+    page.click('#sliceEditModeBtn')
+    page.wait_for_function('ChopperWaveSlices.mode === "slices"',timeout=3000)
+    seeded=page.evaluate('''() => ({
+      button:document.getElementById('sliceEditModeBtn').textContent,
+      marker2:markers[2],
+      ranges:ChopperWaveSlices.slices
+    })''')
+    assert seeded['button']=='SLICES',seeded
+    assert len(seeded['ranges'])==8,seeded
+    assert abs(seeded['ranges'][1]['end']-seeded['marker2'])<1e-9,seeded
+
+    # Hold + drag inside slice 2 changes only slice 2's end. Slice 3's start and
+    # every linked marker remain unchanged, so a deliberate gap is possible.
+    slice2=seeded['ranges'][1]
+    slice3_start=seeded['ranges'][2]['start']
+    marker_snapshot=page.evaluate('markers.slice()')
+    press_sec=slice2['start']+(slice2['end']-slice2['start'])*.35
+    target_sec=slice2['start']+(slice2['end']-slice2['start'])*.62
+    press=client_point_for_source(page,press_sec)
+    target=client_point_for_source(page,target_sec)
+    page.mouse.move(press['x'],press['y'])
+    page.mouse.down()
+    page.mouse.move(target['x'],target['y'],steps=6)
+    page.mouse.up()
+    page.wait_for_timeout(40)
+    gap_state=page.evaluate('''() => ({ranges:ChopperWaveSlices.slices,markers:markers.slice(),selected:ChopperWaveSlices.selectedSlice})''')
+    assert gap_state['selected']==1,gap_state
+    assert gap_state['ranges'][1]['end']<slice3_start,gap_state
+    assert abs(gap_state['ranges'][2]['start']-slice3_start)<1e-9,gap_state
+    assert gap_state['markers']==marker_snapshot,gap_state
+
+    # The same slice can also extend across the next slice, proving overlaps are
+    # allowed without moving that neighbour's independent start.
+    overlap_target=min(page.evaluate('sampleBuffer.duration-.01'),slice3_start+.055)
+    press=client_point_for_source(page,press_sec)
+    target=client_point_for_source(page,overlap_target)
+    page.mouse.move(press['x'],press['y'])
+    page.mouse.down()
+    page.mouse.move(target['x'],target['y'],steps=6)
+    page.mouse.up()
+    page.wait_for_timeout(40)
+    overlap=page.evaluate('ChopperWaveSlices.slices')
+    assert overlap[1]['end']>overlap[2]['start'],overlap
+    assert abs(overlap[2]['start']-slice3_start)<1e-9,overlap
+    assert page.evaluate('markers.slice()')==marker_snapshot
+
+    # A simple pad click selects the same independent region and auditions from
+    # that range's own start; the playhead model is limited by its own end.
+    page.locator('#pads .pad').nth(1).click()
+    page.wait_for_function('ChopperWaveSlices.selectedSlice === 1 && chopAuditionPad === 1',timeout=5000)
+    selected=page.evaluate('''() => [...document.querySelectorAll('#pads .pad')].map(p=>p.classList.contains('slice-selected'))''')
+    assert selected[1] and sum(1 for x in selected if x)==1,selected
+    assert abs(page.evaluate('chopAuditionOffset')-overlap[1]['start'])<1e-9
+    page.evaluate('stopChopAudition()')
+
+    page.evaluate('''() => {
+      loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+      loopGridEvents[0]=2;
+    }''')
+    playhead_state=page.evaluate('''() => {
+      const s=buildLoopPlayheadState();
+      const r=ChopperWaveSlices.slices[1];
+      return {segment:s.segments[0],range:r,rate:s.pitchRate};
+    }''')
+    audible=playhead_state['segment']['endTime']-playhead_state['segment']['startTime']
+    expected=(playhead_state['range']['end']-playhead_state['range']['start'])/playhead_state['rate']
+    assert abs(audible-expected)<1e-6,(audible,expected,playhead_state)
+
+    # Mode switching preserves each model separately: MARKERS returns to the
+    # original linked editor; switching back restores the independent edit.
+    saved_free_end=overlap[1]['end']
+    page.click('#sliceEditModeBtn')
+    assert page.evaluate('ChopperWaveSlices.mode')=='markers'
+    assert page.locator('#sliceEditModeBtn').inner_text()=='MARKERS'
+    assert page.evaluate('markers.slice()')==marker_snapshot
+    assert not page.locator('#pads .pad').nth(1).evaluate("p=>p.classList.contains('slice-selected')")
+
+    page.click('#sliceEditModeBtn')
+    assert page.evaluate('ChopperWaveSlices.mode')=='slices'
+    assert abs(page.evaluate('ChopperWaveSlices.slices[1].end')-saved_free_end)<1e-9
+
+    # AUTO CHOP remains available and intentionally reseeds both models.
     page.click('#autoMarkers')
-    page.wait_for_timeout(50)
-    assert page.evaluate('markers.length === 17 && document.querySelectorAll("#pads .pad:not(.unavailable)").length === 16')
-    assert page.evaluate('ChopperWaveSlices.selectedSlice')==0
+    page.wait_for_timeout(60)
+    final_state=page.evaluate('''() => ({
+      markers:markers.length,
+      ranges:ChopperWaveSlices.slices.length,
+      pads:document.querySelectorAll('#pads .pad:not(.unavailable)').length,
+      mode:ChopperWaveSlices.mode
+    })''')
+    assert final_state=={'markers':17,'ranges':16,'pads':16,'mode':'slices'},final_state
     assert not errors,errors
     page.close()
     browser.close()
 
-print('OK: Chopper waveform slices — unchanged height, region selection, pad sync/flash, add/delete and marker drag')
+print('OK: Chopper edit modes — original linked MARKERS plus independent hold-drag SLICES, unchanged waveform height')
