@@ -26,6 +26,7 @@ def geometry(page):
         resolution:box('#drumEditView'),
         reverb:box('.drumReverbKnob'),
         newDrums:box('#newDrums'),
+        clear:box('#clearDrumEdits'),
         quick:box('.drumQuickActions'),
         volume:box('.sampleVolumeKnob'),
         punch:box('.punchKnob'),
@@ -78,9 +79,12 @@ with sync_playwright() as p:
         assert page.evaluate('snareReverbSettings().on') is True
         assert abs(page.evaluate('snareReverbSettings().mix')-.40)<1e-9
 
-        # Resolution, REVERB and NEW DRUMS share one compact hardware row.
-        assert page.evaluate('document.querySelector("#drumEditView").closest(".drumQuickActions") === document.querySelector("#snareReverbMix").closest(".drumQuickActions")')
-        assert page.evaluate('document.querySelector("#newDrums").closest(".drumQuickActions") === document.querySelector("#snareReverbMix").closest(".drumQuickActions")')
+        # The whole drum toolbar is one hardware group in the requested order.
+        same_group=page.evaluate('''() => {
+          const q=document.querySelector('.drumQuickActions');
+          return ['drumEditView','snareReverbMix','newDrums','clearDrumEdits'].every(id=>document.getElementById(id).closest('.drumQuickActions')===q);
+        }''')
+        assert same_group
         assert 'drumMode' not in page.evaluate('generateDrumSelection.toString()')
 
         # PUNCH is the existing four-state master as a discrete range knob.
@@ -107,10 +111,22 @@ with sync_playwright() as p:
         assert abs(reverb_pct-50)<.01
 
         g=geometry(page)
-        assert g['resolution']['right'] <= g['reverb']['left']+2, g
-        assert g['resolution']['top'] < g['reverb']['bottom'] and g['resolution']['bottom'] > g['reverb']['top'], g
-        assert g['newDrums']['left'] >= g['reverb']['right']-2, g
-        assert g['newDrums']['top'] < g['reverb']['bottom'] and g['newDrums']['bottom'] > g['reverb']['top'], g
+        assert g['resolution']['width']<=94,g
+        if width>430:
+            # Desktop/tablet: one row, with actual air between every control.
+            ordered=[g['resolution'],g['reverb'],g['newDrums'],g['clear']]
+            assert all(x['top']<ordered[0]['bottom'] and x['bottom']>ordered[0]['top'] for x in ordered),g
+            for left,right in zip(ordered,ordered[1:]):
+                assert right['left']-left['right']>=14,g
+        else:
+            # Phone: two clean rows are allowed, but controls must never overlap.
+            boxes=[g['resolution'],g['reverb'],g['newDrums'],g['clear']]
+            for i,a in enumerate(boxes):
+                for b in boxes[i+1:]:
+                    overlap_x=min(a['right'],b['right'])-max(a['left'],b['left'])
+                    overlap_y=min(a['bottom'],b['bottom'])-max(a['top'],b['top'])
+                    assert overlap_x<=0 or overlap_y<=0,g
+
         assert g['punch']['left'] >= g['volume']['right']-2, g
         assert g['punch']['top'] < g['volume']['bottom'] and g['punch']['bottom'] > g['volume']['top'], g
         assert g['bodyW'] <= g['viewportW']+2, g
@@ -119,4 +135,4 @@ with sync_playwright() as p:
 
     browser.close()
 
-print('OK: Drum UI — 8TH/16TH inline with PLATE reverb + NEW DRUMS, AUTO grooves and four-step PUNCH')
+print('OK: Drum UI — spaced resolution / REVERB / NEW DRUMS / CLEAR toolbar, AUTO grooves and four-step PUNCH')
