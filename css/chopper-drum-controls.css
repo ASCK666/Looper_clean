@@ -103,8 +103,12 @@
   grid-template-columns: minmax(0,1fr) !important;
   grid-template-areas:
     "title"
-    "current"
     "editor" !important;
+}
+
+/* The old read-only BATTERIE COURANTE summary is redundant with the editor. */
+#chopper .currentDrums {
+  display: none !important;
 }
 
 #chopper .drumEditHead {
@@ -242,16 +246,15 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,.04),0 0 12px rgba(226,173,95,.12) !important;
 }
 
-#chopper .wavewrap.largeWave,
-#chopper .loopGridWrap {
+/* Waveform keeps its display bezel; the sequence wrapper does not need one. */
+#chopper .wavewrap.largeWave {
   border-color: #4a3826 !important;
   background: linear-gradient(180deg,#0d0906,#050403) !important;
   box-shadow: inset 0 0 0 1px rgba(226,173,95,.025),inset 0 8px 18px rgba(0,0,0,.28) !important;
 }
 
-/* Internal editor frames are intentionally flattened; the section panel is enough. */
-#chopper .drumEditBox,
-#chopper .currentDrums {
+#chopper .loopGridWrap,
+#chopper .drumEditBox {
   border: 0 !important;
   background: transparent !important;
   background-image: none !important;
