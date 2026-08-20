@@ -31,14 +31,23 @@ with contextlib.ExitStack() as stack:
               const rect=id=>document.getElementById(id).getBoundingClientRect();
               const mechanism=document.querySelector('.cassetteMechanism').getBoundingClientRect();
               const controls=['prevBeat','playBeat','stopBeat','nextBeat','autoLooperToggle','deckAutoToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>({id,...rect(id).toJSON()}));
-              return {bodyW:document.body.scrollWidth,viewportW:innerWidth,mechanism:mechanism.toJSON(),controls,workspace:getComputedStyle(document.querySelector('.looper66Workspace')).gridTemplateColumns};
+              return {bodyW:document.body.scrollWidth,viewportW:innerWidth,mechanism:mechanism.toJSON(),controls,transportPanel:document.querySelector('.deckTransportVisual').getBoundingClientRect().toJSON(),pitch:document.querySelector('.deckPitchModule').getBoundingClientRect().toJSON(),workspace:getComputedStyle(document.querySelector('.looper66Workspace')).gridTemplateColumns};
             }''')
             assert metrics['bodyW']<=metrics['viewportW']+2,metrics
-            assert abs(metrics['mechanism']['width']/metrics['mechanism']['height']-1422/804)<.03,metrics
+            expected_mechanism_ratio=1.505 if width<=680 else 1.586
+            assert abs(metrics['mechanism']['width']/metrics['mechanism']['height']-expected_mechanism_ratio)<.02,metrics
             assert all(c['width']>=44 and c['height']>=44 for c in metrics['controls']),metrics
             if width>=1080:
                 transport=[c for c in metrics['controls'] if c['id'] in ('playBeat','stopBeat','autoLooperToggle')]
                 assert len({(round(c['width']),round(c['height'])) for c in transport})==1,transport
+            if width<=680:
+                by_id={control['id']:control for control in metrics['controls']}
+                stop,play,speed=(by_id[name] for name in ('stopBeat','playBeat','autoLooperToggle'))
+                assert abs(stop['y']-play['y'])<1 and abs(stop['width']-play['width'])<1 and abs(stop['height']-play['height'])<1,metrics
+                assert speed['y']>=stop['y']+stop['height'] and speed['width']>=stop['width']+play['width'],metrics
+                assert abs(speed['x']-metrics['transportPanel']['x'])<1 and abs(speed['width']-metrics['transportPanel']['width'])<1,metrics
+                assert metrics['transportPanel']['y']>=metrics['mechanism']['y']+metrics['mechanism']['height']-1,metrics
+                assert metrics['transportPanel']['y']+metrics['transportPanel']['height']<=metrics['pitch']['y']+1,metrics
             assert len(metrics['workspace'].split())==1,metrics
             page.click('[data-tab="chopper"]'); page.wait_for_timeout(60)
             page.click('[data-tab="looper"]'); page.wait_for_timeout(60)

@@ -1068,10 +1068,10 @@ a, .blue {
 .looper66Shell .deckTransportVisual,.looper66Shell .deckTransport { top:39.84%;left:17.5%;width:69.06%;height:12.29%; }
 .looper66Shell .deckTransportVisual { z-index:2;background:url("../assets/looper-ui/looper66-transport.webp") center/100% 100% no-repeat;pointer-events:none; }
 .looper66Shell .deckTransport { z-index:3;display:grid;grid-template-columns:repeat(3,minmax(0,1fr)); }
-.looper66Shell .deckHotspot { --light-strength:0;--light-gain:.9;--transport-light-position:left;position:relative;display:block;width:100%;height:100%;min-width:0;min-height:0;padding:0;overflow:hidden;border:0;outline:0;color:transparent;background:transparent;box-shadow:none;filter:none!important;-webkit-tap-highlight-color:transparent;cursor:pointer;isolation:isolate; }
+.looper66Shell .deckHotspot { --light-strength:0;--light-gain:.9;--transport-light-position:left;--transport-light-size:300% 100%;position:relative;display:block;width:100%;height:100%;min-width:0;min-height:0;padding:0;overflow:hidden;border:0;outline:0;color:transparent;background:transparent;box-shadow:none;filter:none!important;-webkit-tap-highlight-color:transparent;cursor:pointer;isolation:isolate; }
 .looper66Shell #playBeat { --transport-light-position:center; }
 .looper66Shell #autoLooperToggle { --light-gain:.62;--transport-light-position:right; }
-.looper66Shell .deckHotspot::before { content:"";position:absolute;z-index:0;inset:0;opacity:calc(var(--light-strength) * var(--backlight-opacity) * var(--light-gain));border:0;background-image:url("../assets/looper-ui/looper66-transport.webp");background-position:var(--transport-light-position) center;background-size:300% 100%;background-repeat:no-repeat;box-shadow:none;filter:sepia(1) saturate(6) hue-rotate(352deg) brightness(2.65) contrast(1.28);mix-blend-mode:screen;transition:opacity .2s ease;pointer-events:none; }
+.looper66Shell .deckHotspot::before { content:"";position:absolute;z-index:0;inset:0;opacity:calc(var(--light-strength) * var(--backlight-opacity) * var(--light-gain));border:0;background-image:var(--transport-light-image,url("../assets/looper-ui/looper66-transport.webp"));background-position:var(--transport-light-position);background-size:var(--transport-light-size);background-repeat:no-repeat;box-shadow:none;filter:sepia(1) saturate(6) hue-rotate(352deg) brightness(2.65) contrast(1.28);mix-blend-mode:screen;transition:opacity .2s ease;pointer-events:none; }
 .looper66Shell .deckHotspot::after { content:"";position:absolute;z-index:1;inset:12% 9% 14%;opacity:calc(var(--light-strength) * var(--backlight-opacity) * .18);border:0;background:radial-gradient(ellipse 24% 36% at 50% 44%,rgba(var(--backlight-core),.52),rgba(var(--backlight-yellow),.18) 48%,rgba(var(--backlight-edge),.07) 70%,transparent 100%);box-shadow:none;filter:blur(2px);mix-blend-mode:screen;transition:opacity .2s ease;pointer-events:none; }
 .looper66Shell .deckHotspot:not([data-speed-level]):is(:hover,:focus-visible),.looper66Shell .deckRateHotspot[data-speed-level="0"]:is(:hover,:focus-visible) { --light-strength:.25; }
 .looper66Shell .cassetteDeck:not(.loaded) #playBeat::before { animation:looper66EmptyPlayPulse 6s ease-in-out infinite; }
@@ -1126,8 +1126,14 @@ a, .blue {
   .looper66Shell .cassetteReelLeft { left:23.38%;background-size:775.2% 1492.4%;background-position:31.13% 32.55%; }
   .looper66Shell .cassetteReelRight { left:59.24%;background-size:775.2% 1492.4%;background-position:66.52% 32.55%; }
   .looper66Shell .cassetteBeatName { top:17%;left:20%;width:60%;font-size:clamp(8px,2.7vw,12px); }
-  .looper66Shell .deckTransportVisual,.looper66Shell .deckTransport { top:37.45%;left:7%;width:86%;height:5.6%; }
-  .looper66Shell .deckHotspot { min-height:44px; }
+  .looper66Shell .deckTransportVisual,.looper66Shell .deckTransport { top:36.65%;left:7%;width:86%;height:19.2%; }
+  .looper66Shell .deckTransportVisual { background-image:url("../assets/looper-ui/looper66-mobile-transport-fbd6a0d3.webp"); }
+  .looper66Shell .deckTransport { grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:48fr 46fr;column-gap:4%;row-gap:6%; }
+  .looper66Shell .deckHotspot { --transport-light-image:url("../assets/looper-ui/looper66-mobile-transport-fbd6a0d3.webp");--transport-light-size:208.35% 208.35%;min-height:44px; }
+  .looper66Shell #stopBeat { --transport-light-position:left top; }
+  .looper66Shell #playBeat { --transport-light-position:right top; }
+  .looper66Shell #autoLooperToggle { --transport-light-position:left bottom;--transport-light-size:100% 217.4%;grid-column:1/-1; }
+  .looper66Shell .deckRateVisualSegments { top:82.8%;left:17%;width:66%;height:9.2%; }
 
   .looper66Shell .deckPitchModule { top:56.25%;left:8%;width:84%;height:6.9%; }
   .looper66Shell .deckPitchModule::after { top:65%;left:var(--pitch-x);width:5%;height:32%;transition:left .08s linear; }

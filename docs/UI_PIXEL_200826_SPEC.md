@@ -22,6 +22,7 @@ Visual references committed with this contract:
 
 - `assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp` (`1086 × 1009`);
 - `assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp` (`441 × 849`);
+- `assets/looper-ui/looper66-mobile-transport-fbd6a0d3.webp` (`379 × 215`), neutral powered-off phone transport;
 - `assets/looper-ui/looper66-cassette-bay-b10ab679.png` (`793 × 496`), habitacle complet au premier plan : charnière et cadre supérieur, montants latéraux, traverse de maintien inférieure et ouverture transparente. Son PNG alpha fingerprinté évite tout fond clair ou ancien asset mis en cache.
 
 These files are the composition, spacing, material and typography references.
@@ -43,8 +44,8 @@ modules remain equal-sized and all amber illumination remains runtime CSS.
 - Vertical `PITCH` module.
 - Animated cassette in the centre.
 - `LOAD LIBRARY` and `LOAD BEAT` controls on the right.
-- `PLAY`, `STOP` and `SPEED RATE` form one balanced transport row.
-- The outer hardware boxes for `PLAY`, `STOP` and `SPEED RATE` must have equal
+- `PLAY`, `STOP` and `SPEED UP` form one balanced transport row.
+- The outer hardware boxes for `PLAY`, `STOP` and `SPEED UP` must have equal
   width, height, depth and border treatment.
 - The Beat Crate occupies the lower section.
 - `PREVIOUS` and `NEXT` belong to the Beat Crate footer, not to the cassette
@@ -54,7 +55,10 @@ modules remain equal-sized and all amber illumination remains runtime CSS.
 
 - HTML state readout at the top.
 - Large readable cassette.
-- Thumb-friendly `PLAY`, `STOP` and `SPEED RATE` controls.
+- Thumb-friendly `PLAY`, `STOP` and `SPEED UP` controls.
+- `STOP` and `PLAY` occupy equal top-row modules in that order; `SPEED UP`
+  occupies the full second row and keeps five inactive neutral lenses in the
+  asset for CSS state lighting.
 - Horizontal Pitch control.
 - `LOAD LIBRARY` and `LOAD BEAT` controls.
 - Vertical Beat Crate with `PREVIOUS` and `NEXT` in its navigation footer.
@@ -105,7 +109,7 @@ matching hardware artwork:
 - Next;
 - Load Library;
 - Load Beat;
-- Speed Rate;
+- Speed Up;
 - Pitch;
 - Auto.
 
@@ -121,9 +125,10 @@ Requirements:
 The HTML may be visually transparent over the skin, but it must remain visible
 to the accessibility tree and fully interactive.
 
-## 8. Speed Rate
+## 8. Speed Up
 
-- The hardware button is labelled only **SPEED RATE**.
+- The hardware button is labelled **SPEED UP**, with the smaller explanatory
+  subtitle `+1% / 8 LOOPS`.
 - Do not bake `+1%`, `EVERY 8 LOOPS`, active segments or a current value into the
   asset.
 - Level 0 disables automatic acceleration.
@@ -132,13 +137,13 @@ to the accessibility tree and fully interactive.
 - The next click returns to level 0.
 - A dynamic HTML readout may show the selected level outside the static artwork.
 - CSS lighting intensity communicates the selected level on the hardware button.
-- Loading a new beat resets the playback speed and Speed Rate level to zero.
+- Loading a new beat resets the playback speed and Speed Up level to zero.
 
 ## 9. Pitch and Auto
 
 - Pitch is a real range from `-8%` through `0` to `+8%`.
 - Manual Pitch changes the beat base playback rate and disables automatic ramping.
-- `AUTO` re-enables Speed Rate application every eight completed loops.
+- `AUTO` re-enables Speed Up application every eight completed loops.
 - Auto has its own CSS-controlled lit state.
 - This branch does not add BPM detection or a time-stretch engine.
 
@@ -151,7 +156,7 @@ Do not bake any of the following into an asset:
 - amber or coloured halos;
 - already-lit buttons;
 - coloured light reflections;
-- active Speed Rate segments;
+- active Speed Up segments;
 - fake illuminated bloom.
 
 Assets may contain neutral dark lenses, transparent apertures and alpha masks.
@@ -167,7 +172,7 @@ the hardware borders already present in the reference artwork.
 CSS lighting must independently support:
 
 - Play;
-- Speed Rate level;
+- Speed Up level;
 - Auto;
 - Previous and Next;
 - Load Library and Load Beat;
@@ -181,7 +186,7 @@ CSS lighting must independently support:
 - `events.js` remains DOM-event wiring.
 - `bootstrap.js` must not replace Looper behaviour with late `onclick`
   monkeypatches.
-- Keep one Speed Rate state machine, one cassette animation system and one
+- Keep one Speed Up state machine, one cassette animation system and one
   readout system.
 - Remove the implementation path replaced by this work in the same change.
 - Remove CSS selectors, functions and runtime asset references that become
@@ -196,8 +201,8 @@ CSS lighting must independently support:
 - Verify desktop, tablet and phone layouts without horizontal overflow.
 - Verify phone touch-target sizes.
 - Verify hotspot-to-artwork alignment in both skins.
-- Assert equal desktop dimensions for `PLAY`, `STOP` and `SPEED RATE`.
-- Verify the Speed Rate cycle `0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 0`.
+- Assert equal desktop dimensions for `PLAY`, `STOP` and `SPEED UP`.
+- Verify the Speed Up cycle `0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 0`.
 - Verify rate application after every eight completed loops.
 - Verify reset behaviour when a new beat loads.
 - Verify that the cassette beat name comes from HTML.
