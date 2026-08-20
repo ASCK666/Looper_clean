@@ -44,6 +44,8 @@ for rel in [
     "assets/deck-black-ui-texture.png",
     "assets/looper-ui/looper66-desktop-target.webp",
     "assets/looper-ui/looper66-mobile-target.webp",
+    "assets/looper-ui/looper66-transport.webp",
+    "assets/looper-ui/looper66-crate-cassettes.webp",
 ]:
     require(f"file {rel}", (ROOT / rel).is_file())
 

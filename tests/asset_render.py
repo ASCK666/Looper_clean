@@ -52,10 +52,10 @@ with contextlib.ExitStack() as stack:
             skin:document.querySelector('.looper66Skin img').getAttribute('src')
           };
         }''')
-        assert len(info['layers'])==7,info
+        assert len(info['layers'])==6,info
         assert [layer[0] for layer in info['layers']]==[
             'cassetteReel cassetteReelLeft','cassetteReel cassetteReelRight',
-            'cassetteShell','cassetteBeatName','cassetteSupportForeground',
+            'cassetteBeatName','cassetteSupportForeground',
             'cassetteCssLight','cassetteGlass'
         ],info
         assert all(c['display']!='none' and c['width']>=44 and c['height']>=44 for c in info['controls']),info

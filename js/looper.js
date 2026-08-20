@@ -602,12 +602,6 @@ function renderLibraryRows(rows){
     content.push(createCassetteRackColumn(rows,columnIndex));
   }
 
-  if(!rows.length){
-    const message=document.createElement("div");
-    message.className="libraryEmptyMessage";
-    message.textContent="Aucun résultat. Importe un beat ou efface la recherche.";
-    content.push(message);
-  }
   box.replaceChildren(...content);
 }
 
@@ -710,8 +704,8 @@ function refreshAutoLooperCompact(){
   btn.dataset.speedLevel=String(looperSpeedRateLevel);
   btn.setAttribute("aria-pressed",looperSpeedRateLevel ? "true" : "false");
   btn.setAttribute("aria-label",looperSpeedRateLevel
-    ? `Speed Rate niveau ${looperSpeedRateLevel}, plus ${looperSpeedRateLevel} pour cent toutes les huit boucles`
-    : "Speed Rate désactivé"
+    ? `Speed Up niveau ${looperSpeedRateLevel}, plus ${looperSpeedRateLevel} pour cent toutes les huit boucles`
+    : "Speed Up désactivé"
   );
   if(autoButton)autoButton.setAttribute("aria-pressed",autoLooperEnabledState ? "true" : "false");
   const formattedRate=formatDeckRate();

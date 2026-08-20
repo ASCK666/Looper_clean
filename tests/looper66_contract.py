@@ -21,8 +21,8 @@ assert 'class="looper66Skin"' in HTML
 assert 'assets/looper-ui/looper66-desktop-target.webp' in HTML
 assert 'assets/looper-ui/looper66-mobile-target.webp' in HTML
 assert '>LOAD LIBRARY<' in HTML and '>LOAD BEAT<' in HTML
-assert re.search(r'id="autoLooperToggle"[\s\S]*?<strong>SPEED RATE</strong>',HTML)
-assert not re.search(r'id="autoLooperToggle"[^>]*>[\s\S]*?\+\d',HTML)
+assert re.search(r'id="autoLooperToggle"[^>]*aria-label="Speed Up, plus un pour cent toutes les huit boucles"',HTML)
+assert '>SPEED RATE<' not in HTML and '>+1%<' not in HTML
 transport=HTML[HTML.index('<div class="deckTransport"'):HTML.index('<div id="beatImportStatus"')]
 assert transport.index('id="stopBeat"') < transport.index('id="playBeat"') < transport.index('id="autoLooperToggle"')
 assert 'class="deckTransportFaceplate"' in HTML and 'class="deckTransportVisual"' in HTML
@@ -30,7 +30,7 @@ assert 'class="deckTransportFaceplate"' in HTML and 'class="deckTransportVisual"
 crate=HTML[HTML.index('<section class="panel beatCratePanel">'):]
 assert crate.index('id="prevBeat"') < crate.index('id="nextBeat"')
 
-ordered=['cassetteReelLeft','cassetteReelRight','cassetteShell','cassetteBeatName','cassetteSupportForeground','cassetteCssLight','cassetteGlass']
+ordered=['cassetteReelLeft','cassetteReelRight','cassetteBeatName','cassetteSupportForeground','cassetteCssLight','cassetteGlass']
 positions=[HTML.index(token) for token in ordered]
 assert positions==sorted(positions),positions
 assert HTML.count('class="cassetteReel ')==2
@@ -59,7 +59,7 @@ assert 'id="deckPitchModule"' in HTML
 assert 'pitchModule.style.setProperty("--pitch-x"' in LOOPER
 assert 'pitchModule.style.setProperty("--pitch-y"' in LOOPER
 assert 'pitchControl.setAttribute("aria-valuetext"' in LOOPER
-assert HTML.count('class="cassetteShell"')==1
+assert 'cassetteShell' not in HTML+CSS
 assert HTML.count('class="cassetteSupportForeground"')==1
 assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
 assert '.cassetteSupportForeground { position:absolute;z-index:4;' in CSS
@@ -79,6 +79,8 @@ for name in retired:
 references={
     'looper66-desktop-target.webp':((1086,1009),'7ccc3220f58d2779992085566836809f0ae5c34af0f13ce8b3d537f14f96e240'),
     'looper66-mobile-target.webp':((441,849),'da92e13829331565e4b15c12e48c4e0f14bee796cef0e977eb3a13cb43fef144'),
+    'looper66-transport.webp':((750,124),'ce7acecc81f0c112ae104d4035a334c6a3aba3b7940f9a62014b99b009fc6376'),
+    'looper66-crate-cassettes.webp':((560,62),'12256e2ec27d0a2976ce0a15184f578a04034c5318bbff8819deab05d0d6e3c9'),
 }
 for name,(expected_size,expected_sha) in references.items():
     path=ROOT/'assets/looper-ui'/name
