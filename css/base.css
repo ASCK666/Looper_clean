@@ -1340,7 +1340,7 @@ a, .blue {
   .looper66Shell .deckAutoKey { min-height:28px;height:27%;margin-top:2%;font-size:clamp(5px,.6vw,8px); }
 
   .looper66Shell .cassetteMechanism {
-    top:25%;left:32.15%;width:35.7%;height:auto;
+    top:27.2%;left:35%;width:30%;height:auto;
     border:0;background:#050403;box-shadow:0 0 0 3px rgba(0,0,0,.76),0 0 18px rgba(0,0,0,.62);
   }
 
@@ -1370,7 +1370,7 @@ a, .blue {
   .looper66Shell .deckHotspot::after { bottom:9%; }
 
   .looper66Shell .beatImportStatus {
-    top:23%;left:32.2%;width:35.6%;min-height:0;padding:0;border:0;
+    top:23.5%;left:35%;width:30%;min-height:0;padding:0;border:0;
     color:#7b7265;background:transparent;text-align:center;font-size:clamp(5px,.55vw,8px);
   }
 
