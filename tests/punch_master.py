@@ -40,21 +40,29 @@ with sync_playwright() as p:
           const reverb=document.querySelector('.drumReverbKnob').getBoundingClientRect();
           const newDrums=document.querySelector('#newDrums').getBoundingClientRect();
           const punchHit=document.elementFromPoint(punchInput.left+punchInput.width/2,punchInput.top+punchInput.height/2);
-          const reverbInput=document.querySelector('#snareReverbMix').getBoundingClientRect();
-          const reverbHit=document.elementFromPoint(reverbInput.left+reverbInput.width/2,reverbInput.top+reverbInput.height/2);
           return {
             volume:volume.toJSON(),punch:punch.toJSON(),reverb:reverb.toJSON(),newDrums:newDrums.toJSON(),
-            punchHit:punchHit&&punchHit.id,reverbHit:reverbHit&&reverbHit.id
+            punchHit:punchHit&&punchHit.id
           };
         }""")
         assert geo['punchHit']=='punchMode', (width,geo)
-        assert geo['reverbHit']=='snareReverbMix', (width,geo)
         # PUNCH belongs to the sample header immediately after SAMPLE VOL.
         assert geo['punch']['left'] >= geo['volume']['right']-2, (width,geo)
         assert geo['punch']['top'] < geo['volume']['bottom'] and geo['punch']['bottom'] > geo['volume']['top'], (width,geo)
         # NEW DRUMS remains directly beside the REVERB knob in the editor action row.
         assert geo['newDrums']['left'] >= geo['reverb']['right']-2, (width,geo)
         assert geo['newDrums']['top'] < geo['reverb']['bottom'] and geo['newDrums']['bottom'] > geo['reverb']['top'], (width,geo)
+
+        # Hit-test REVERB only after scrolling it into the viewport. At narrow
+        # widths it sits below the fold while PUNCH remains in the sample header.
+        page.locator('#snareReverbMix').scroll_into_view_if_needed()
+        page.wait_for_timeout(20)
+        reverb_hit=page.evaluate("""() => {
+          const r=document.querySelector('#snareReverbMix').getBoundingClientRect();
+          const e=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+          return e&&e.id;
+        }""")
+        assert reverb_hit=='snareReverbMix', (width,reverb_hit)
 
         page.locator('#masterVolume').scroll_into_view_if_needed()
         page.wait_for_timeout(20)
