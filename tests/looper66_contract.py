@@ -61,6 +61,10 @@ assert HTML.count('class="cassetteSupportForeground"')==1
 assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
 assert '.cassetteSupportForeground { position:absolute;z-index:4;' in CSS
 assert '.cassetteGlass { position:absolute;z-index:6;' in CSS
+assert 'clip-path:circle(48%)' in CSS
+assert 'transform-origin:50% 50%' in CSS
+assert 'animation:looper66ReelSpin var(--supply-reel-cycle)' in CSS
+assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
 assert 'animation-direction:reverse' not in CSS
 
 retired=('deckFaceplate','crateFaceplate','tapeCounter','cassetteDoorEject','cassetteCavity','cassetteTapePath')
