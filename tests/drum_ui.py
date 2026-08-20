@@ -9,232 +9,130 @@ except Exception:
 ROOT=Path(__file__).resolve().parents[1]
 html=(ROOT/'index.html').read_text(encoding='utf-8')
 html=re.sub(r'<link rel="manifest"[^>]*>','',html)
-for rel in ['./css/base.css','./css/clean-ui.css']:
+for rel in ['./css/base.css','./css/clean-ui.css','./css/chopper-drum-controls.css']:
     css=(ROOT/rel[2:]).read_text(encoding='utf-8')
     html=html.replace(f'<link rel="stylesheet" href="{rel}">',f'<style>{css}</style>')
 html=re.sub(r'src="assets/[^"]+"','src=""',html)
-for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js','./js/chopper.js','./js/drums.js','./js/events.js']:
+for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js','./js/chopper.js','./js/drums.js','./js/events.js','./js/chopper-drum-controls.js']:
     js=(ROOT/rel[2:]).read_text(encoding='utf-8')
     html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
     html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
 
-chromium='/usr/bin/chromium'
+
+def geometry(page):
+    return page.evaluate('''() => {
+      const box=s=>document.querySelector(s).getBoundingClientRect().toJSON();
+      return {
+        resolution:box('#drumEditView'),
+        reverb:box('.drumReverbKnob'),
+        newDrums:box('#newDrums'),
+        clear:box('#clearDrumEdits'),
+        quick:box('.drumQuickActions'),
+        volume:box('.sampleVolumeKnob'),
+        punch:box('.punchKnob'),
+        bodyW:document.body.scrollWidth,
+        viewportW:innerWidth
+      };
+    }''')
+
+
 with sync_playwright() as p:
-    browser=p.chromium.launch(headless=True,executable_path=chromium,args=['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required'])
-    page=browser.new_page(viewport={'width':1440,'height':1500})
-    errors=[]
-    page.on('pageerror',lambda e:errors.append(str(e)))
-    page.set_content(html,wait_until='load',timeout=20000)
-    page.wait_for_function('window.__SP && window.__SP.ready === true',timeout=10000)
-    page.add_style_tag(content='*,*::before,*::after{animation:none!important;transition:none!important}')
-    page.click('[data-tab="chopper"]')
-    page.wait_for_timeout(100)
+    browser=p.chromium.launch(
+        headless=True,
+        executable_path='/usr/bin/chromium',
+        args=['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required']
+    )
 
-    # The drum machine exposes one editor-owned path for loading and editing drums.
-    for sel in ['.controlPanel','.drumSelector','.snareFx','.currentDrums','.drumEditBox','#drumEditor','#drumStatus','#chopStatus']:
-        assert page.locator(sel).count()>=1, sel
-    assert page.locator('#drumEditor .drumEditStep').count()==48
-    assert page.locator('#drumEditor .drumEditHeadStep').count()==16
-    assert page.locator('#drumEditor .drumEditLibraryButton').count()==3
+    for width,height in [(1440,1500),(820,1500),(520,1700),(390,1800)]:
+        page=browser.new_page(viewport={'width':width,'height':height})
+        errors=[]
+        page.on('pageerror',lambda e:errors.append(str(e)))
+        page.set_content(html,wait_until='load',timeout=20000)
+        page.wait_for_function('window.__SP && window.__SP.ready === true',timeout=10000)
+        page.add_style_tag(content='*,*::before,*::after{animation:none!important;transition:none!important}')
+        page.click('[data-tab="chopper"]')
+        page.wait_for_timeout(80)
 
-    # The sequence-area Drum view is read-only presentation: three lanes, two 16ths per Chopper eighth, repeated over two bars.
-    assert page.locator('#drumPatternPreview').count()==1
-    assert page.locator('#drumPatternPreview .drumPatternPreviewLabel').count()==3
-    assert page.locator('#drumPatternPreview .drumPatternPreviewPair').count()==48
-    assert page.locator('#drumPatternPreview .drumPatternPreviewStep').count()==96
-    assert page.locator('#drumPatternPreview .drumPatternPreviewStep.active').count()==0
-    assert page.locator('#drumPatternPreview').evaluate("el=>el.previousElementSibling?.id==='loopGrid'")
-    assert page.locator('#drumPatternPreview').evaluate("el=>getComputedStyle(el).pointerEvents==='none'")
+        # Retired UI paths are physically gone.
+        assert page.locator('#drumMode').count()==0
+        assert page.locator('#snareReverbOn').count()==0
+        assert page.locator('#snareReverbType').count()==0
+        assert page.locator('.samplerDrumSection > .snareFx').count()==0
+        assert page.locator('.samplerDrumSection > .punchFx').count()==0
 
-    preview_matches_selection='''() => {
-      const selection=currentDrumSelection;
-      const expected={
-        kick:new Set(selection?.kicks||[]),
-        snare:new Set(selection?.snares||[]),
-        hat:new Set(Array.isArray(selection?.hatSteps)?selection.hatSteps:(selection?.hats||[]).map(x=>x*2))
-      };
-      for(const lane of ['kick','snare','hat']){
-        const cells=[...document.querySelectorAll(`#drumPatternPreview .drumPatternPreviewStep.${lane}`)];
-        if(cells.length!==32)return false;
-        for(let displayStep=0;displayStep<32;displayStep++){
-          const active=!!selection && selection.mode!=='off' && expected[lane].has(displayStep%16);
-          if(cells[displayStep].classList.contains('active')!==active)return false;
-        }
-      }
-      return true;
-    }'''
+        # REVERB is one 0-70 range knob, fixed to PLATE internally.
+        reverb=page.locator('#snareReverbMix')
+        assert reverb.get_attribute('type')=='range'
+        assert reverb.get_attribute('min')=='0'
+        assert reverb.get_attribute('max')=='70'
+        assert reverb.input_value()=='25'
+        assert page.locator('#snareReverbMixReadout').inner_text()=='25%'
+        assert page.evaluate('snareReverbSettings().type')=='plate'
+        assert page.evaluate('snareReverbSettings().on') is True
 
-    # NEW DRUMS must create a real selection and keep the editor usable.
-    page.click('#newDrums')
-    page.wait_for_function('currentDrumSelection !== null',timeout=10000)
-    assert page.evaluate('currentDrumSelection.mode !== "off"') is True
-    assert 'PATTERN' not in page.locator('#currentPattern').inner_text() or page.locator('#currentPattern').inner_text()!='PATTERN —'
-    assert page.evaluate(preview_matches_selection) is True
+        page.fill('#snareReverbMix','0')
+        page.dispatch_event('#snareReverbMix','input')
+        assert page.locator('#snareReverbMixReadout').inner_text()=='0%'
+        assert page.evaluate('snareReverbSettings().on') is False
+        page.fill('#snareReverbMix','40')
+        page.dispatch_event('#snareReverbMix','input')
+        assert page.evaluate('snareReverbSettings().on') is True
+        assert abs(page.evaluate('snareReverbSettings().mix')-.40)<1e-9
 
-    # Drums-only PLAY is one renderer-owned transition and must stop any active chop audition first.
-    page.evaluate('''() => {
-      window.__drumsPreviewAuditionStopped=false;
-      chopAuditionSource={stop(){window.__drumsPreviewAuditionStopped=true;}};
-      chopAuditionGain={gain:{value:1}};
-      chopAuditionPad=0;
-    }''')
-    page.click('#playDrumsOnly')
-    page.wait_for_function('isLoopPlaying === true && lastPreviewMode === "drums" && renderedFlip !== null',timeout=10000)
-    preview=page.evaluate('''() => ({
-      auditionStopped:window.__drumsPreviewAuditionStopped,
-      sourceCleared:chopAuditionSource===null,
-      gainCleared:chopAuditionGain===null,
-      status:document.getElementById('drumStatus').textContent,
-      bpm:document.getElementById('sampleBpm').value,
-      mode:currentDrumSelection.mode.toUpperCase()
-    })''')
-    assert preview['auditionStopped'] and preview['sourceCleared'] and preview['gainCleared'],preview
-    assert preview['status']==f"DRUMS • {preview['bpm']} BPM • {preview['mode']}",preview
+        # The whole drum toolbar is one hardware group in the requested order.
+        same_group=page.evaluate('''() => {
+          const q=document.querySelector('.drumQuickActions');
+          return ['drumEditView','snareReverbMix','newDrums','clearDrumEdits'].every(id=>document.getElementById(id).closest('.drumQuickActions')===q);
+        }''')
+        assert same_group
+        assert 'drumMode' not in page.evaluate('generateDrumSelection.toString()')
 
-    # NEW DRUMS while playing must reroll the selection and replace the live preview without stopping transport.
-    page.evaluate('''() => {
-      window.__drumsBeforeNew={
-        signature:drumSelectionSignature(currentDrumSelection),
-        generation:drumGenerationNumber,
-        buffer:renderedFlip,
-        source:flipSource
-      };
-      window.__newDrumsAuditionStopped=false;
-      chopAuditionSource={stop(){window.__newDrumsAuditionStopped=true;}};
-      chopAuditionGain={gain:{value:1}};
-      chopAuditionPad=0;
-    }''')
-    page.click('#newDrums')
-    page.wait_for_function('''() =>
-      drumGenerationNumber > window.__drumsBeforeNew.generation &&
-      renderedFlip !== window.__drumsBeforeNew.buffer &&
-      flipSource !== window.__drumsBeforeNew.source &&
-      isLoopPlaying === true &&
-      lastPreviewMode === "drums"
-    ''',timeout=10000)
-    rerolled=page.evaluate('''() => ({
-      selectionChanged:drumSelectionSignature(currentDrumSelection)!==window.__drumsBeforeNew.signature,
-      auditionStopped:window.__newDrumsAuditionStopped,
-      sourceCleared:chopAuditionSource===null,
-      gainCleared:chopAuditionGain===null,
-      status:document.getElementById('drumStatus').textContent
-    })''')
-    assert rerolled['selectionChanged'],rerolled
-    assert rerolled['auditionStopped'] and rerolled['sourceCleared'] and rerolled['gainCleared'],rerolled
-    assert rerolled['status']=='NEW DRUMS ✓',rerolled
-    assert page.evaluate(preview_matches_selection) is True
+        # PUNCH is the existing four-state master as a discrete range knob.
+        punch=page.locator('#punchMode')
+        assert punch.get_attribute('type')=='range'
+        assert punch.get_attribute('min')=='0'
+        assert punch.get_attribute('max')=='3'
+        assert punch.get_attribute('step')=='1'
+        expected=['OFF','WARM','KNOCK','HARD']
+        for value,label in enumerate(expected):
+            page.fill('#punchMode',str(value))
+            page.dispatch_event('#punchMode','input')
+            assert page.locator('#punchDesc').inner_text()==label
+            assert page.evaluate('punchSettings().mode')==label.lower()
 
-    # Editing while a drums-only preview is playing must rebuild the buffer and keep transport running.
-    page.evaluate('window.__drumPreviewBeforeEdit=renderedFlip')
-    page.locator('#drumEditor .drumEditStep.snare').last.click()
-    page.wait_for_function('renderedFlip !== window.__drumPreviewBeforeEdit && isLoopPlaying === true && lastPreviewMode === "drums"',timeout=10000)
-    assert page.evaluate(preview_matches_selection) is True
-    page.click('#stopFlip')
-    page.wait_for_function('isLoopPlaying === false && flipSource === null && lastPreviewMode === null && loopPlayheadState === null && loopPlayheadStartedAt === 0',timeout=5000)
-    assert page.evaluate('renderedFlip !== null') is True
+        # Range-knob bootstrap keeps the rotary position live.
+        page.fill('#punchMode','3')
+        page.dispatch_event('#punchMode','input')
+        punch_pct=float(page.evaluate("getComputedStyle(document.querySelector('.punchKnob')).getPropertyValue('--knob-pct')"))
+        page.fill('#snareReverbMix','35')
+        page.dispatch_event('#snareReverbMix','input')
+        reverb_pct=float(page.evaluate("getComputedStyle(document.querySelector('.drumReverbKnob')).getPropertyValue('--knob-pct')"))
+        assert abs(punch_pct-100)<.01
+        assert abs(reverb_pct-50)<.01
 
-    # Clicking a drum cell toggles it, and wheel velocity changes an active step.
-    cell=page.locator('#drumEditor .drumEditStep.kick').first
-    before='active' in (cell.get_attribute('class') or '').split()
-    cell.click()
-    page.wait_for_timeout(80)
-    cell=page.locator('#drumEditor .drumEditStep.kick').first
-    after='active' in (cell.get_attribute('class') or '').split()
-    assert before != after
-    assert page.evaluate(preview_matches_selection) is True
-    if not after:
-        cell.click(); page.wait_for_timeout(80)
-        cell=page.locator('#drumEditor .drumEditStep.kick').first
-    old=cell.get_attribute('data-velocity')
-    cell.dispatch_event('wheel',{'deltaY':100})
-    page.wait_for_timeout(120)
-    cell=page.locator('#drumEditor .drumEditStep.kick').first
-    new=cell.get_attribute('data-velocity')
-    assert old != new and new is not None
-    assert page.evaluate(preview_matches_selection) is True
+        g=geometry(page)
+        assert g['resolution']['width']<=94,g
+        if width>430:
+            # Desktop/tablet: one row, with actual air between every control.
+            ordered=[g['resolution'],g['reverb'],g['newDrums'],g['clear']]
+            assert all(x['top']<ordered[0]['bottom'] and x['bottom']>ordered[0]['top'] for x in ordered),g
+            for left,right in zip(ordered,ordered[1:]):
+                assert right['left']-left['right']>=14,g
+        else:
+            # Phone: two clean rows are allowed, but controls must never overlap.
+            boxes=[g['resolution'],g['reverb'],g['newDrums'],g['clear']]
+            for i,a in enumerate(boxes):
+                for b in boxes[i+1:]:
+                    overlap_x=min(a['right'],b['right'])-max(a['left'],b['left'])
+                    overlap_y=min(a['bottom'],b['bottom'])-max(a['top'],b['top'])
+                    assert overlap_x<=0 or overlap_y<=0,g
 
-    # 8TH / 16TH editor switching must not change the fixed two-bar read-only preview.
-    page.select_option('#drumEditView','8')
-    page.wait_for_timeout(60)
-    assert page.locator('#drumEditor .drumEditStep').count()==24
-    assert page.locator('#drumEditor .drumEditHeadStep').count()==8
-    assert page.locator('#drumPatternPreview .drumPatternPreviewStep').count()==96
-    assert page.evaluate(preview_matches_selection) is True
-    page.select_option('#drumEditView','16')
-    page.wait_for_timeout(60)
-    assert page.locator('#drumEditor .drumEditStep').count()==48
-    assert page.locator('#drumEditor .drumEditLibraryButton').count()==3
-    assert page.locator('#drumPatternPreview .drumPatternPreviewStep').count()==96
+        assert g['punch']['left'] >= g['volume']['right']-2, g
+        assert g['punch']['top'] < g['volume']['bottom'] and g['punch']['bottom'] > g['volume']['top'], g
+        assert g['bodyW'] <= g['viewportW']+2, g
+        assert not errors, errors
+        page.close()
 
-    # Clear means clear in both the editor and its read-only sequence preview; reverb and PUNCH still respond.
-    page.click('#clearDrumEdits')
-    page.wait_for_timeout(100)
-    assert page.locator('#drumEditor .drumEditStep.active').count()==0
-    assert page.locator('#drumPatternPreview .drumPatternPreviewStep.active').count()==0
-    assert page.evaluate(preview_matches_selection) is True
-    page.fill('#snareReverbMix','40')
-    page.dispatch_event('#snareReverbMix','input')
-    assert page.locator('#snareReverbMixReadout').inner_text()=='40%'
-    page.select_option('#punchMode','knock')
-    page.dispatch_event('#punchMode','change')
-    page.wait_for_timeout(80)
-    assert 'KNOCK' in page.locator('#punchDesc').inner_text().upper()
-
-    # Per-part folder loading exists only on the compact row labels.
-    for rid,label in [('kickFolderBtn','KICK'),('snareFolderBtn','SNARE'),('hatFolderBtn','HI-HAT')]:
-        control=page.locator('#'+rid)
-        assert control.count()==1, rid
-        assert control.inner_text()==label, (rid,control.inner_text())
-        assert control.evaluate("el=>el.closest('#drumEditor')!==null"), rid
-        assert control.evaluate("el=>typeof el.onclick==='function'"), rid
-        box=control.bounding_box()
-        assert box and 18<=box['width']<=60 and 10<=box['height']<=20, (rid,box)
-        assert control.is_enabled(), rid
-    for rid in ['kickFolderFallback','snareFolderFallback','hatFolderFallback']:
-        fallback=page.locator('#'+rid)
-        assert fallback.count()==1, rid
-        assert fallback.evaluate("el=>el.closest('.drumEditBox')!==null"), rid
-        assert fallback.is_hidden(), rid
-    assert page.locator('#drumPatternPreview').evaluate("el=>el.closest('.drumEditBox')===null")
-    assert page.locator('#drumStatus').evaluate("el=>el.closest('.drumEditBox')!==null")
-    assert page.locator('#chopStatus').evaluate("el=>el.closest('.samplerControlModule')!==null")
-    assert page.locator('#chopStatus').evaluate("el=>el.closest('.drumEditBox')===null")
-    for retired in ['#drumLibrariesPanel','#loadDrumLibraryCTA','.drumLibrarySlot','.drumLibraryButton','.outputMeterPanel','#masterVuVertical']:
-        assert page.locator(retired).count()==0, retired
-    assert page.locator('#masterVolume').count()==1
-
-    assert not errors, errors
-    page.close()
-
-    # Mobile regression: the old three-column grid squeezed the editor to ~60 px
-    # and made PUNCH overlap the taller reverb panel. The component now stacks.
-    mobile=browser.new_page(viewport={'width':520,'height':1800})
-    mobile_errors=[]
-    mobile.on('pageerror',lambda e:mobile_errors.append(str(e)))
-    mobile.set_content(html,wait_until='load',timeout=20000)
-    mobile.wait_for_function('window.__SP && window.__SP.ready === true',timeout=10000)
-    mobile.add_style_tag(content='*,*::before,*::after{animation:none!important;transition:none!important}')
-    mobile.click('[data-tab="chopper"]')
-    mobile.wait_for_timeout(100)
-    mobile_geo=mobile.evaluate("""() => {
-      const panel=document.querySelector('.controlPanel').getBoundingClientRect();
-      const selector=document.querySelector('.drumSelector').getBoundingClientRect();
-      const reverb=document.querySelector('.snareFx:not(.punchFx)').getBoundingClientRect();
-      const punch=document.querySelector('.punchFx').getBoundingClientRect();
-      const editor=document.querySelector('.drumEditBox').getBoundingClientRect();
-      const preview=document.querySelector('#drumPatternPreview').getBoundingClientRect();
-      const wrap=document.querySelector('.loopGridWrap').getBoundingClientRect();
-      return {panel:panel.toJSON(),selector:selector.toJSON(),reverb:reverb.toJSON(),punch:punch.toJSON(),editor:editor.toJSON(),preview:preview.toJSON(),wrap:wrap.toJSON(),columns:getComputedStyle(document.querySelector('.controlPanel')).gridTemplateColumns,bodyOverflow:document.body.scrollWidth-document.body.clientWidth};
-    }""")
-    assert mobile_geo['selector']['width']>300, mobile_geo
-    assert mobile_geo['editor']['width']>300, mobile_geo
-    assert mobile_geo['punch']['top']>=mobile_geo['reverb']['bottom']-1, mobile_geo
-    assert len(mobile_geo['columns'].split())==1, mobile_geo
-    assert mobile_geo['preview']['width']>=830, mobile_geo
-    assert mobile_geo['wrap']['width']<mobile_geo['preview']['width'], mobile_geo
-    assert mobile_geo['bodyOverflow']<=1, mobile_geo
-    assert not mobile_errors, mobile_errors
-    mobile.close()
     browser.close()
 
-print('OK: Drum UI — selection, renderer-owned drums PLAY/NEW/rerender/stop, read-only two-bar preview, 16/8 step editor, toggle/velocity, clear, FX/PUNCH, single-path drum loading and mobile stacking')
+print('OK: Drum UI — spaced resolution / REVERB / NEW DRUMS / CLEAR toolbar, AUTO grooves and four-step PUNCH')

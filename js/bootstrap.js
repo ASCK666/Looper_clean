@@ -305,7 +305,9 @@ function installAssetSpeedControl(){
 }
 
 loadLooperAsset();
-void activateCassetteLayerRuntimeSafely();
+if(location.protocol!=="about:"&&location.protocol!=="data:"){
+  void activateCassetteLayerRuntimeSafely();
+}
 window.addEventListener("load",()=>{
   installAssetSpeedControl();
   if(looperOverlayReady(document.getElementById("looper")))installCrateTruthTransport();

@@ -212,22 +212,39 @@ $("waveZoom").oninput=drawWave;
 $("waveScroll").oninput=drawWave;
 $("gridDivision").onchange=drawWave;
 $("transientRadius").onchange=drawWave;
+
 $("snareReverbMix").oninput=()=>{
   $("snareReverbMixReadout").textContent=`${$("snareReverbMix").value}%`;
 };
+$("snareReverbMix").onchange=async()=>{
+  const mix=Number($("snareReverbMix").value)||0;
+  renderedFlip=null;
+  if(!isLoopPlaying){
+    $("drumStatus").textContent=mix>0?`REVERB ${mix}% • READY`:"REVERB OFF • READY";
+    return;
+  }
+  try{
+    await rerenderPreviewMode();
+    $("drumStatus").textContent=mix>0?`REVERB ${mix}% ✓`:"REVERB OFF ✓";
+  }catch(error){
+    $("drumStatus").textContent=`REVERB ERROR: ${safeErrorMessage(error)}`;
+  }
+};
 
+$("punchMode").oninput=refreshPunchUI;
 $("punchMode").onchange=async()=>{
+  const mode=punchModeName();
   refreshPunchUI();
   renderedFlip=null; // never keep a preview rendered with an older PUNCH preset
 
   if(!isLoopPlaying){
-    $("chopStatus").textContent=`PUNCH ${$("punchMode").value.toUpperCase()} • READY`;
+    $("chopStatus").textContent=`PUNCH ${mode.toUpperCase()} • READY`;
     return;
   }
 
   try{
     await rerenderPreviewMode();
-    $("chopStatus").textContent=`PUNCH ${$("punchMode").value.toUpperCase()} ✓`;
+    $("chopStatus").textContent=`PUNCH ${mode.toUpperCase()} ✓`;
   }catch(error){
     $("chopStatus").textContent=`PUNCH ERROR: ${safeErrorMessage(error)}`;
   }

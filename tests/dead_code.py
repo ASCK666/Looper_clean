@@ -6,21 +6,27 @@ RUNTIME_DIRS = (ROOT / "js", ROOT / "css")
 RUNTIME_SUFFIXES = {".js", ".css"}
 problems = []
 
-# Keep index.html as the explicit runtime manifest. For this small static project,
-# every maintained JS/CSS file must be loaded there; replaced files must be deleted
-# in the same update instead of surviving as dormant runtime code.
+# Keep index.html as the primary runtime manifest, while also accepting explicit
+# local dependencies that bootstrap.js loads dynamically. Replaced files must
+# still be deleted in the same update instead of surviving as dormant runtime code.
 html = (ROOT / "index.html").read_text(encoding="utf-8")
+bootstrap = (ROOT / "js" / "bootstrap.js").read_text(encoding="utf-8")
 referenced = set()
-for value in re.findall(r'\b(?:src|href)=["\']([^"\']+)["\']', html):
-    if value.startswith(("http://", "https://", "data:", "#", "mailto:", "blob:")):
-        continue
-    clean = value.split("#", 1)[0].split("?", 1)[0]
-    target = (ROOT / clean.lstrip("./")).resolve()
-    if target.suffix not in RUNTIME_SUFFIXES:
-        continue
-    referenced.add(target)
-    if not target.exists():
-        problems.append(f"Runtime reference missing from index.html: {value}")
+
+for source_name, text, pattern in [
+    ("index.html", html, r'\b(?:src|href)=["\']([^"\']+)["\']'),
+    ("bootstrap.js", bootstrap, r'["\'](\./[^"\']+)["\']'),
+]:
+    for value in re.findall(pattern, text):
+        if value.startswith(("http://", "https://", "data:", "#", "mailto:", "blob:")):
+            continue
+        clean = value.split("#", 1)[0].split("?", 1)[0]
+        target = (ROOT / clean.lstrip("./")).resolve()
+        if target.suffix not in RUNTIME_SUFFIXES:
+            continue
+        referenced.add(target)
+        if not target.exists():
+            problems.append(f"Runtime reference missing from {source_name}: {value}")
 
 runtime_files = {
     path.resolve()
@@ -31,7 +37,7 @@ runtime_files = {
 
 for orphan in sorted(runtime_files - referenced):
     problems.append(
-        f"Dead runtime file: {orphan.relative_to(ROOT)} is not loaded by index.html; "
+        f"Dead runtime file: {orphan.relative_to(ROOT)} is not referenced by index.html/bootstrap.js; "
         "delete replaced code in the same update"
     )
 
