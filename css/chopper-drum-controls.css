@@ -1,4 +1,4 @@
-/* chopper-200826: compact Drum controls built on the existing range-knob system. */
+/* chopper-200826: compact Drum controls and Looper-family Chopper skin. */
 
 #chopper {
   --chopper-bg: #080604;
@@ -14,13 +14,78 @@
   --chopper-active: #80552c;
 }
 
+#chopper .samplerUpperDeck {
+  grid-template-columns: minmax(0,1fr) !important;
+}
+
 #chopper .samplerScreenModule {
   grid-template-columns: minmax(0,1fr) 52px 68px 52px 52px !important;
   grid-template-areas:
     "actions actions actions actions actions"
+    "fine fine fine fine fine"
     "title pitch tempo volume punch"
     "wave wave wave wave wave"
+    "status status status status status"
     "info info info info info" !important;
+}
+
+#chopper .chopperActionStrip {
+  grid-area: actions;
+  display: grid;
+  grid-template-columns: repeat(6,minmax(0,1fr));
+  gap: 6px;
+  width: 100%;
+  margin: 0;
+}
+
+#chopper .chopperActionStrip .btn {
+  min-width: 0;
+  min-height: 36px !important;
+  padding-inline: 7px !important;
+  white-space: nowrap;
+}
+
+#chopper .advancedBox {
+  grid-area: fine;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#chopper .advancedBox > summary {
+  min-height: 30px;
+  padding: 7px 0 !important;
+  border-bottom: 1px solid #3b2d20;
+  color: #c9ae84 !important;
+  font: 800 9px/1 var(--font-mono) !important;
+  letter-spacing: .8px;
+}
+
+#chopper .advancedBox[open] > summary {
+  margin-bottom: 8px;
+  color: var(--chopper-amber) !important;
+}
+
+#chopper .chopperStatusStrip {
+  grid-area: status;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap: 8px;
+}
+
+#chopper .chopperStatusStrip .status {
+  min-height: 0 !important;
+  padding: 4px 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#chopper .samplerSampleInfo,
+#chopper .titleMeta {
+  display: none !important;
 }
 
 #chopper .punchKnob {
@@ -135,7 +200,6 @@
   color: var(--chopper-text) !important;
 }
 
-#chopper .titleMeta,
 #chopper label,
 #chopper .help {
   color: var(--chopper-muted) !important;
@@ -179,12 +243,19 @@
 }
 
 #chopper .wavewrap.largeWave,
-#chopper .loopGridWrap,
-#chopper .drumEditBox,
-#chopper .currentDrums {
+#chopper .loopGridWrap {
   border-color: #4a3826 !important;
   background: linear-gradient(180deg,#0d0906,#050403) !important;
   box-shadow: inset 0 0 0 1px rgba(226,173,95,.025),inset 0 8px 18px rgba(0,0,0,.28) !important;
+}
+
+/* Internal editor frames are intentionally flattened; the section panel is enough. */
+#chopper .drumEditBox,
+#chopper .currentDrums {
+  border: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
 }
 
 #chopper .sampleKnob {
@@ -255,6 +326,14 @@
     grid-template-columns: minmax(0,1fr) 40px 56px 40px 40px !important;
   }
 
+  #chopper .chopperActionStrip {
+    grid-template-columns: repeat(3,minmax(0,1fr));
+  }
+
+  #chopper .chopperStatusStrip {
+    grid-template-columns: minmax(0,1fr);
+  }
+
   #chopper .drumEditActions {
     justify-content: flex-start;
   }
@@ -264,6 +343,11 @@
   #chopper .samplerScreenModule {
     grid-template-columns: minmax(0,1fr) 36px 50px 36px 36px !important;
     column-gap: 3px !important;
+  }
+
+  #chopper .chopperActionStrip {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 5px;
   }
 
   #chopper .drumQuickActions {
