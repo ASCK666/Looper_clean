@@ -15,6 +15,7 @@ steps=[
   ['tests/css_layout.py'],
   ['tests/header_responsive.py'],
   ['tests/chopper_ui.py'],
+  ['tests/chopper_wave_slices.py'],
   ['tests/chopper_sampler_layout.py'],
   ['tests/drum_ui.py'],
   ['tests/punch_master.py'],
