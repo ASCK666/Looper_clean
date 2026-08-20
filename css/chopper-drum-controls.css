@@ -121,7 +121,8 @@
   align-items: center !important;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 7px !important;
+  column-gap: 14px !important;
+  row-gap: 10px !important;
 }
 
 #chopper .drumQuickActions {
@@ -130,7 +131,12 @@
   width: auto !important;
   grid-template-columns: none !important;
   align-items: center !important;
-  gap: 8px !important;
+  gap: 14px !important;
+}
+
+#chopper .drumQuickActions #drumEditView {
+  flex: 0 0 auto;
+  margin: 0 !important;
 }
 
 #chopper .drumQuickActions .drumReverbKnob {
@@ -379,6 +385,8 @@
 
   #chopper .drumEditActions {
     justify-content: flex-start;
+    column-gap: 12px !important;
+    row-gap: 10px !important;
   }
 }
 
@@ -394,7 +402,7 @@
   }
 
   #chopper .drumQuickActions {
-    gap: 6px !important;
+    gap: 10px !important;
   }
 
   #chopper .drumQuickActions .sampleKnobControl {
