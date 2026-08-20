@@ -46,12 +46,14 @@
   if(fineSettings)screen.insertBefore(fineSettings,actionStrip.nextSibling);
   screen.appendChild(statusStrip);
 
-  // Keep resolution and snare reverb on the same compact hardware row.
+  // One hardware row owns resolution, snare reverb, regeneration and clear.
   const drumQuickActions=root.querySelector(".drumQuickActions");
   const drumEditView=document.getElementById("drumEditView");
-  if(drumQuickActions && drumEditView){
-    drumQuickActions.insertBefore(drumEditView,drumQuickActions.firstChild);
-    drumQuickActions.setAttribute("aria-label","Résolution, snare reverb et génération de batterie");
+  const clearDrums=document.getElementById("clearDrumEdits");
+  if(drumQuickActions){
+    if(drumEditView)drumQuickActions.insertBefore(drumEditView,drumQuickActions.firstChild);
+    if(clearDrums)drumQuickActions.appendChild(clearDrums);
+    drumQuickActions.setAttribute("aria-label","Résolution, snare reverb et actions de batterie");
   }
 
   // Hidden inputs remain available to their existing handlers after the old
