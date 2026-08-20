@@ -128,7 +128,7 @@
 #chopper .drumQuickActions {
   grid-area: auto !important;
   display: grid !important;
-  grid-template-columns: 92px 64px max-content max-content !important;
+  grid-template-columns: 76px 64px max-content max-content !important;
   column-gap: 24px !important;
   row-gap: 14px !important;
   width: max-content !important;
@@ -140,9 +140,11 @@
 }
 
 #chopper .drumQuickActions #drumEditView {
-  width: 92px !important;
-  min-width: 92px !important;
-  max-width: 92px !important;
+  width: 76px !important;
+  inline-size: 76px !important;
+  min-width: 76px !important;
+  max-width: 76px !important;
+  flex: 0 0 76px !important;
   margin: 0 !important;
   justify-self: start;
 }
@@ -402,14 +404,16 @@
   }
 
   #chopper .drumQuickActions {
-    grid-template-columns: 86px 60px max-content max-content !important;
+    grid-template-columns: 76px 60px max-content max-content !important;
     column-gap: 18px !important;
   }
 
   #chopper .drumQuickActions #drumEditView {
-    width: 86px !important;
-    min-width: 86px !important;
-    max-width: 86px !important;
+    width: 76px !important;
+    inline-size: 76px !important;
+    min-width: 76px !important;
+    max-width: 76px !important;
+    flex-basis: 76px !important;
   }
 
   #chopper .drumQuickActions .drumReverbKnob {
@@ -431,7 +435,7 @@
 
   /* Two clean rows are preferable to overlapping four controls on a phone. */
   #chopper .drumQuickActions {
-    grid-template-columns: 86px 60px !important;
+    grid-template-columns: 76px 60px !important;
     column-gap: 18px !important;
     row-gap: 16px !important;
   }
