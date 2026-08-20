@@ -2,9 +2,10 @@
 
 // looper-next: two explicit Chopper edit modes without changing waveform height.
 // MARKERS deliberately leaves the maintained chopper.js marker editor untouched.
-// SLICES keeps an independent start/end range per pad. The left and right edges
-// can be trimmed independently, while hold-dragging the body keeps the quick
-// "set this slice tail" gesture. Neighbouring slices never move with it.
+// SLICES is a separate 1..16 pad model. It starts with four coarse regions,
+// supports independent attack/tail trimming, and adds slices by double-click.
+// Slices are always ordered left-to-right and never overlap; deliberate gaps are
+// valid so a tail can be tightened without moving the next attack.
 (() => {
   const root=document.getElementById("chopper");
   const waveCanvas=document.getElementById("waveCanvas");
@@ -16,9 +17,10 @@
 
   const MODE_MARKERS="markers";
   const MODE_SLICES="slices";
-  const FLASH_MS=190;
+  const INITIAL_SLICES=4;
   const MAX_SLICES=16;
   const MIN_SLICE_SEC=.008;
+  const FLASH_MS=190;
   const DRAG_THRESHOLD_PX=4;
   const EDGE_GRAB_PX=14;
 
@@ -109,23 +111,54 @@
     return clamp(Math.round(Number(index)||0),0,count-1);
   }
 
-  function cloneMarkerSlices(){
-    const count=markerSliceCount();
-    independentSlices=Array.from({length:count},(_,i)=>(
-      {start:markers[i],end:markers[i+1]}
+  function markerBoundaryForFraction(fraction){
+    const markerCount=markerSliceCount();
+    if(markerCount>=INITIAL_SLICES){
+      const index=clamp(Math.round(markerCount*fraction),0,markerCount);
+      const value=Number(markers[index]);
+      if(Number.isFinite(value))return value;
+    }
+    return (sampleBuffer?.duration||0)*fraction;
+  }
+
+  function seedInitialSlices(){
+    if(!sampleBuffer){
+      independentSlices=[];
+      independentDirty=false;
+      selectedSlice=0;
+      return;
+    }
+
+    const boundaries=[];
+    for(let i=0;i<=INITIAL_SLICES;i++){
+      boundaries.push(markerBoundaryForFraction(i/INITIAL_SLICES));
+    }
+    boundaries[0]=0;
+    boundaries[boundaries.length-1]=sampleBuffer.duration;
+
+    let valid=true;
+    for(let i=1;i<boundaries.length;i++){
+      if(!(boundaries[i]-boundaries[i-1]>=MIN_SLICE_SEC)){valid=false;break;}
+    }
+    if(!valid){
+      for(let i=0;i<=INITIAL_SLICES;i++)boundaries[i]=sampleBuffer.duration*i/INITIAL_SLICES;
+    }
+
+    independentSlices=Array.from({length:INITIAL_SLICES},(_,i)=>(
+      {start:boundaries[i],end:boundaries[i+1]}
     ));
     independentDirty=false;
-    selectedSlice=count?clamp(selectedSlice,0,count-1):0;
+    selectedSlice=clamp(selectedSlice,0,INITIAL_SLICES-1);
   }
 
   function ensureIndependentSlices(){
-    const count=markerSliceCount();
-    if(!count){
+    if(!sampleBuffer){
       independentSlices=[];
       independentDirty=false;
+      selectedSlice=0;
       return;
     }
-    if(independentSlices.length!==count)cloneMarkerSlices();
+    if(!independentSlices.length)seedInitialSlices();
   }
 
   function currentSliceRange(index){
@@ -136,6 +169,14 @@
       return range?{start:range.start,end:range.end}:null;
     }
     return {start:markers[i],end:markers[i+1]};
+  }
+
+  function independentCueMarkers(){
+    if(!independentSlices.length)return [];
+    return [
+      ...independentSlices.map(range=>range.start),
+      independentSlices[independentSlices.length-1].end
+    ];
   }
 
   function sourceSecFromEvent(ev){
@@ -168,17 +209,12 @@
   }
 
   function sliceIndexAtSourceSec(sec){
-    const count=sliceCount();
-    if(!count)return -1;
+    if(editMode!==MODE_SLICES)return -1;
+    ensureIndependentSlices();
     const value=Number(sec)||0;
-
-    // Overlaps are legal. Keep the selected slice easy to reach first.
-    const selected=currentSliceRange(selectedSlice);
-    if(selected && value>=selected.start && value<=selected.end)return selectedSlice;
-
-    for(let i=0;i<count;i++){
-      const range=currentSliceRange(i);
-      if(range && value>=range.start && value<=range.end)return i;
+    for(let i=0;i<independentSlices.length;i++){
+      const range=independentSlices[i];
+      if(value>=range.start && (value<range.end || (i===independentSlices.length-1 && value<=range.end)))return i;
     }
     return -1;
   }
@@ -192,7 +228,6 @@
     let best=null;
     for(const i of order){
       const range=independentSlices[i];
-      if(!range)continue;
       const startDistance=Math.abs(sourceSecToClientX(range.start)-ev.clientX);
       const endDistance=Math.abs(sourceSecToClientX(range.end)-ev.clientX);
       if(startDistance<=EDGE_GRAB_PX && (!best || startDistance<best.distance)){
@@ -210,7 +245,6 @@
     if(edge)return edge;
     const index=sliceIndexAtSourceSec(sourceSecFromEvent(ev));
     if(index<0)return {index:-1,edge:null,distance:Infinity};
-    // Preserve the original SLICES gesture: hold-dragging the body edits tail.
     return {index,edge:"end",distance:Infinity};
   }
 
@@ -221,11 +255,14 @@
     const range=independentSlices[i];
     if(i<0 || !range)return false;
 
+    const previousEnd=i>0?independentSlices[i-1].end:0;
+    const nextStart=i<independentSlices.length-1?independentSlices[i+1].start:sampleBuffer.duration;
     const value=Number(sec)||0;
+
     if(edge==="start"){
-      range.start=clamp(value,0,Math.max(0,range.end-MIN_SLICE_SEC));
+      range.start=clamp(value,previousEnd,Math.max(previousEnd,range.end-MIN_SLICE_SEC));
     }else if(edge==="end"){
-      range.end=clamp(value,Math.min(sampleBuffer.duration,range.start+MIN_SLICE_SEC),sampleBuffer.duration);
+      range.end=clamp(value,Math.min(nextStart,range.start+MIN_SLICE_SEC),nextStart);
     }else{
       return false;
     }
@@ -238,12 +275,95 @@
     return true;
   }
 
+  function shiftGridForInsertion(insertAt){
+    if(!Array.isArray(loopGridEvents))return;
+    const firstShiftedPad=insertAt+1;
+    loopGridEvents=loopGridEvents.map(value=>{
+      const pad=Number(value)||0;
+      if(!pad)return 0;
+      return pad>=firstShiftedPad?Math.min(MAX_SLICES,pad+1):pad;
+    });
+  }
+
+  function addSliceAt(sec){
+    if(editMode!==MODE_SLICES || !sampleBuffer)return false;
+    ensureIndependentSlices();
+    if(independentSlices.length>=MAX_SLICES){
+      $("chopStatus").textContent=`SLICES • MAX ${MAX_SLICES}`;
+      return false;
+    }
+
+    const value=clamp(Number(sec)||0,0,sampleBuffer.duration);
+    const containing=sliceIndexAtSourceSec(value);
+    let insertAt=-1;
+
+    if(containing>=0){
+      const range=independentSlices[containing];
+      if(value-range.start<MIN_SLICE_SEC || range.end-value<MIN_SLICE_SEC){
+        $("chopStatus").textContent="SLICES • DOUBLE-CLICK TOO CLOSE TO EDGE";
+        return false;
+      }
+      const oldEnd=range.end;
+      range.end=value;
+      insertAt=containing+1;
+      independentSlices.splice(insertAt,0,{start:value,end:oldEnd});
+    }else{
+      insertAt=independentSlices.findIndex(range=>value<range.start);
+      if(insertAt<0)insertAt=independentSlices.length;
+
+      const gapStart=insertAt>0?independentSlices[insertAt-1].end:0;
+      const gapEnd=insertAt<independentSlices.length?independentSlices[insertAt].start:sampleBuffer.duration;
+      if(gapEnd-gapStart<MIN_SLICE_SEC){
+        $("chopStatus").textContent="SLICES • NO ROOM HERE";
+        return false;
+      }
+
+      const defaultLength=Math.max(MIN_SLICE_SEC*2,sampleBuffer.duration/MAX_SLICES);
+      let start=clamp(value,gapStart,gapEnd);
+      let end=Math.min(gapEnd,start+defaultLength);
+      if(end-start<MIN_SLICE_SEC){
+        end=clamp(value,gapStart,gapEnd);
+        start=Math.max(gapStart,end-defaultLength);
+      }
+      if(end-start<MIN_SLICE_SEC){
+        $("chopStatus").textContent="SLICES • NO ROOM HERE";
+        return false;
+      }
+      independentSlices.splice(insertAt,0,{start,end});
+    }
+
+    independentDirty=true;
+    selectedSlice=insertAt;
+    renderedFlip=null;
+    shiftGridForInsertion(insertAt);
+    stopChopAudition();
+    renderPads();
+    drawWave();
+    renderSampleTimeline();
+    $("chopStatus").textContent=`SLICE ${insertAt+1} ADDED • ${independentSlices.length}/${MAX_SLICES}`;
+    return true;
+  }
+
   function syncPadSelection(){
     document.querySelectorAll("#pads .pad").forEach((pad,i)=>{
       const selected=editMode===MODE_SLICES && i===selectedSlice && !pad.classList.contains("unavailable");
       pad.classList.toggle("slice-selected",selected);
       if(selected && !pad.disabled)pad.setAttribute("aria-current","true");
       else pad.removeAttribute("aria-current");
+    });
+  }
+
+  function syncPadAvailability(){
+    if(editMode!==MODE_SLICES)return;
+    const count=independentSlices.length;
+    document.querySelectorAll("#pads .pad").forEach((pad,i)=>{
+      const available=i<count;
+      pad.disabled=!available;
+      pad.classList.toggle("unavailable",!available);
+      pad.title=available
+        ? `Slice ${i+1} • click = audition`
+        : `PAD ${i+1} • double-click waveform to add a slice`;
+      pad.onclick=available?()=>previewSlice(i,pad):null;
     });
   }
 
@@ -290,7 +410,6 @@
       c2d.fillStyle=selected?"#fff0d0":"#d8bd91";
       c2d.fillText(String(i+1),Math.min(w-22,Math.max(6,left+6)),18);
 
-      // Both attack and tail are real independent handles.
       const handleColor=selected?"#ffe0a5":"#a97942";
       c2d.fillStyle=handleColor;
       c2d.fillRect(Math.max(0,left-3),0,Math.min(6,w-left+3),13);
@@ -354,16 +473,16 @@
     modeButton.setAttribute("aria-pressed",slices?"true":"false");
     modeButton.setAttribute("aria-label",slices
       ? "Chop edit mode SLICES. Click to return to original MARKERS mode."
-      : "Chop edit mode MARKERS. Click to trim independent SLICES.");
+      : "Chop edit mode MARKERS. Click to edit independent SLICES.");
     modeButton.title=slices
-      ? "SLICES • drag left edge = attack • drag right edge/body = tail"
+      ? "SLICES • 4 start • double-click = add • drag edges = trim"
       : "MARKERS • original linked marker editor";
     waveCanvas.dataset.editMode=editMode;
     waveCanvas.setAttribute("aria-label",slices
-      ? "Waveform en mode SLICES. Clic auditionne. Glisser le bord gauche règle le début; le bord droit règle la fin."
+      ? "Waveform en mode SLICES. Double-clic ajoute ou divise un slice. Glisser le bord gauche règle le début; le bord droit règle la fin."
       : "Waveform en mode MARKERS. Éditeur de marqueurs d'origine.");
     waveCanvas.title=slices
-      ? "SLICES • left edge = start • right edge/body = end • click = audition"
+      ? "SLICES • double-click = add/split • left edge = start • right edge/body = end"
       : "MARKERS • original linked marker editor";
     if(!slices)waveCanvas.style.cursor="";
   }
@@ -389,10 +508,8 @@
 
     editMode=next;
     if(editMode===MODE_SLICES){
-      // Before the first free edit, SLICES follows the latest MARKERS layout.
-      // After that the two edit models remain deliberately independent.
       if(independentDirty)ensureIndependentSlices();
-      else cloneMarkerSlices();
+      else seedInitialSlices();
     }
     activeSlice=-1;
     flashSlice=-1;
@@ -401,19 +518,14 @@
     drawWave();
     clearPlayhead();
     $("chopStatus").textContent=editMode===MODE_SLICES
-      ? "CHOP MODE • SLICES • TRIM START / END"
+      ? `CHOP MODE • SLICES • ${independentSlices.length}/${MAX_SLICES}`
       : "CHOP MODE • MARKERS";
     return editMode;
   }
 
   const drawWaveBase=drawWave;
   drawWave=function(...args){
-    if(editMode!==MODE_SLICES || !sampleBuffer){
-      return drawWaveBase(...args);
-    }
-
-    // Hide native linked marker lines only while SLICES is displayed. Their
-    // state remains untouched and returns exactly when MARKERS is selected.
+    if(editMode!==MODE_SLICES || !sampleBuffer)return drawWaveBase(...args);
     const savedMarkers=markers;
     const savedSelectedMarker=selectedMarker;
     let result;
@@ -429,13 +541,37 @@
     return result;
   };
 
+  const gridEventsForRenderBase=gridEventsForRender;
+  gridEventsForRender=function(...args){
+    const events=gridEventsForRenderBase(...args);
+    if(editMode!==MODE_SLICES)return events;
+    const count=independentSlices.length;
+    return events.map(value=>{
+      const pad=Number(value)||0;
+      return pad>=1 && pad<=count?pad:0;
+    });
+  };
+
+  const renderLoopGridBase=renderLoopGrid;
+  renderLoopGrid=function(...args){
+    if(editMode!==MODE_SLICES)return renderLoopGridBase(...args);
+    ensureIndependentSlices();
+    const savedMarkers=markers;
+    try{
+      markers=independentCueMarkers();
+      return renderLoopGridBase(...args);
+    }finally{
+      markers=savedMarkers;
+    }
+  };
+
   const renderPadsBase=renderPads;
   renderPads=function(...args){
     const result=renderPadsBase(...args);
     if(editMode===MODE_SLICES){
       ensureIndependentSlices();
-      const count=sliceCount();
-      selectedSlice=count?clamp(selectedSlice,0,count-1):0;
+      selectedSlice=independentSlices.length?clamp(selectedSlice,0,independentSlices.length-1):0;
+      syncPadAvailability();
     }
     syncPadSelection();
     return result;
@@ -444,8 +580,7 @@
   const setMarkersBase=setMarkers;
   setMarkers=function(...args){
     const result=setMarkersBase(...args);
-    cloneMarkerSlices();
-    selectedSlice=0;
+    if(sampleBuffer)seedInitialSlices();
     syncPadSelection();
     drawWave();
     return result;
@@ -454,8 +589,9 @@
   const autoPlaceMarkersBase=autoPlaceMarkers;
   autoPlaceMarkers=function(...args){
     const result=autoPlaceMarkersBase(...args);
-    cloneMarkerSlices();
+    if(sampleBuffer)seedInitialSlices();
     selectedSlice=0;
+    if(editMode===MODE_SLICES)renderPads();
     syncPadSelection();
     drawWave();
     return result;
@@ -470,14 +606,12 @@
     if(i<0 || !range)return;
     flash(i);
 
-    // Reuse the maintained preview path (including live VINYL), but audition
-    // from this independent attack and stop at this independent tail.
-    const savedStart=markers[i];
+    const savedMarkers=markers;
     try{
-      markers[i]=range.start;
+      markers=independentCueMarkers();
       await previewSliceBase(i,button);
     }finally{
-      markers[i]=savedStart;
+      markers=savedMarkers;
     }
 
     const source=chopAuditionSource;
@@ -528,18 +662,12 @@
     for(let i=0;i<placed.length;i++){
       const ev=placed[i];
       const range=independentSlices[ev.chop-1];
-      if(!range)continue;
       const startTime=ev.step*stepDur;
       const nextTime=i+1<placed.length?placed[i+1].step*stepDur:targetDur;
       const maxAudible=Math.max(0,range.end-range.start)/pitchRate;
       const endTime=Math.min(targetDur,nextTime,startTime+maxAudible);
       if(endTime>startTime){
-        segments.push({
-          pad:ev.chop-1,
-          startTime,
-          endTime,
-          sampleStart:range.start
-        });
+        segments.push({pad:ev.chop-1,startTime,endTime,sampleStart:range.start});
       }
     }
 
@@ -548,9 +676,7 @@
 
   const renderSequenceBase=renderSequence;
   renderSequence=async function(events,sourceBuffer,cueMarkers,pitchRate){
-    if(editMode!==MODE_SLICES){
-      return await renderSequenceBase(events,sourceBuffer,cueMarkers,pitchRate);
-    }
+    if(editMode!==MODE_SLICES)return await renderSequenceBase(events,sourceBuffer,cueMarkers,pitchRate);
     if(!sourceBuffer)throw new Error("Charge un sample");
     ensureIndependentSlices();
 
@@ -573,7 +699,6 @@
     for(let e=0;e<placed.length;e++){
       const ev=placed[e];
       const range=independentSlices[ev.chop-1];
-      if(!range)continue;
       const startTime=ev.step*stepDur;
       const nextTime=e+1<placed.length?placed[e+1].step*stepDur:targetDur;
       const available=Math.max(.005,range.end-range.start);
@@ -629,7 +754,6 @@
 
   waveCanvas.addEventListener("pointermove",ev=>{
     if(editMode!==MODE_SLICES || !sampleBuffer)return;
-
     if(dragSlice<0){
       waveCanvas.style.cursor=edgeHitFromEvent(ev)?"ew-resize":"pointer";
       return;
@@ -685,12 +809,22 @@
     if(editMode===MODE_SLICES && dragSlice<0)waveCanvas.style.cursor="pointer";
   });
 
+  waveCanvas.addEventListener("dblclick",ev=>{
+    if(editMode!==MODE_SLICES || !sampleBuffer)return;
+    ev.stopImmediatePropagation();
+    ev.preventDefault();
+    stopChopAudition();
+    clearDrag();
+    addSliceAt(sourceSecFromEvent(ev));
+  },true);
+
   modeButton.addEventListener("click",()=>{
     setEditMode(editMode===MODE_MARKERS?MODE_SLICES:MODE_MARKERS);
   });
 
   globalThis.ChopperWaveSlices={
     modes:Object.freeze({markers:MODE_MARKERS,slices:MODE_SLICES}),
+    initialSlices:INITIAL_SLICES,
     maxSlices:MAX_SLICES,
     minSliceSec:MIN_SLICE_SEC,
     get mode(){return editMode;},
@@ -700,10 +834,11 @@
     setEditMode,
     selectSlice,
     setSliceBoundary,
+    addSliceAt,
     sliceIndexAtSourceSec,
     sliceCanvasBounds,
-    resetSlicesFromMarkers(){
-      cloneMarkerSlices();
+    resetSlices(){
+      seedInitialSlices();
       renderPads();
       drawWave();
       return independentSlices.map(range=>({...range}));
