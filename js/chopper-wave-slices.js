@@ -1,9 +1,10 @@
 "use strict";
 
 // looper-next: two explicit Chopper edit modes without changing waveform height.
-// MARKERS preserves the original linked-boundary editor from chopper.js.
-// SLICES keeps an independent start/end range per pad; hold + drag inside a
-// slice changes only that slice's end, so gaps and overlaps are both valid.
+// MARKERS deliberately leaves the maintained chopper.js marker editor untouched.
+// SLICES keeps an independent start/end range per pad. The left and right edges
+// can be trimmed independently, while hold-dragging the body keeps the quick
+// "set this slice tail" gesture. Neighbouring slices never move with it.
 (() => {
   const root=document.getElementById("chopper");
   const waveCanvas=document.getElementById("waveCanvas");
@@ -19,6 +20,7 @@
   const MAX_SLICES=16;
   const MIN_SLICE_SEC=.008;
   const DRAG_THRESHOLD_PX=4;
+  const EDGE_GRAB_PX=14;
 
   let editMode=MODE_MARKERS;
   let independentSlices=[];
@@ -28,6 +30,7 @@
   let flashSlice=-1;
   let flashUntil=0;
   let dragSlice=-1;
+  let dragEdge=null;
   let dragPointerId=null;
   let dragStartClientX=0;
   let dragMoved=false;
@@ -36,7 +39,9 @@
   modeButton.id="sliceEditModeBtn";
   modeButton.type="button";
   modeButton.className="chopModeToggle";
-  displayTitle.appendChild(modeButton);
+  const displayLabel=displayTitle.querySelector("span");
+  if(displayLabel?.nextSibling)displayTitle.insertBefore(modeButton,displayLabel.nextSibling);
+  else displayTitle.appendChild(modeButton);
 
   waveCanvas.tabIndex=0;
 
@@ -146,6 +151,13 @@
     return (display-vw.start)/Math.max(.000001,vw.dur)*target.width;
   }
 
+  function sourceSecToClientX(sec){
+    const r=waveCanvas.getBoundingClientRect();
+    const vw=viewWindow();
+    const display=sourceToDisplayTime(sec);
+    return r.left+(display-vw.start)/Math.max(.000001,vw.dur)*r.width;
+  }
+
   function sliceCanvasBounds(index,target=waveCanvas){
     const range=currentSliceRange(index);
     if(!range)return null;
@@ -160,7 +172,7 @@
     if(!count)return -1;
     const value=Number(sec)||0;
 
-    // When independent ranges overlap, keep the selected slice easy to edit.
+    // Overlaps are legal. Keep the selected slice easy to reach first.
     const selected=currentSliceRange(selectedSlice);
     if(selected && value>=selected.start && value<=selected.end)return selectedSlice;
 
@@ -169,6 +181,61 @@
       if(range && value>=range.start && value<=range.end)return i;
     }
     return -1;
+  }
+
+  function edgeHitFromEvent(ev){
+    if(editMode!==MODE_SLICES || !independentSlices.length)return null;
+    const order=[];
+    if(selectedSlice>=0 && selectedSlice<independentSlices.length)order.push(selectedSlice);
+    for(let i=0;i<independentSlices.length;i++)if(i!==selectedSlice)order.push(i);
+
+    let best=null;
+    for(const i of order){
+      const range=independentSlices[i];
+      if(!range)continue;
+      const startDistance=Math.abs(sourceSecToClientX(range.start)-ev.clientX);
+      const endDistance=Math.abs(sourceSecToClientX(range.end)-ev.clientX);
+      if(startDistance<=EDGE_GRAB_PX && (!best || startDistance<best.distance)){
+        best={index:i,edge:"start",distance:startDistance};
+      }
+      if(endDistance<=EDGE_GRAB_PX && (!best || endDistance<best.distance)){
+        best={index:i,edge:"end",distance:endDistance};
+      }
+    }
+    return best;
+  }
+
+  function pointerTarget(ev){
+    const edge=edgeHitFromEvent(ev);
+    if(edge)return edge;
+    const index=sliceIndexAtSourceSec(sourceSecFromEvent(ev));
+    if(index<0)return {index:-1,edge:null,distance:Infinity};
+    // Preserve the original SLICES gesture: hold-dragging the body edits tail.
+    return {index,edge:"end",distance:Infinity};
+  }
+
+  function setSliceBoundary(index,edge,sec,{redraw=true}={}){
+    if(editMode!==MODE_SLICES || !sampleBuffer)return false;
+    ensureIndependentSlices();
+    const i=clampSlice(index);
+    const range=independentSlices[i];
+    if(i<0 || !range)return false;
+
+    const value=Number(sec)||0;
+    if(edge==="start"){
+      range.start=clamp(value,0,Math.max(0,range.end-MIN_SLICE_SEC));
+    }else if(edge==="end"){
+      range.end=clamp(value,Math.min(sampleBuffer.duration,range.start+MIN_SLICE_SEC),sampleBuffer.duration);
+    }else{
+      return false;
+    }
+
+    independentDirty=true;
+    selectedSlice=i;
+    renderedFlip=null;
+    syncPadSelection();
+    if(redraw)drawWave();
+    return true;
   }
 
   function syncPadSelection(){
@@ -223,9 +290,16 @@
       c2d.fillStyle=selected?"#fff0d0":"#d8bd91";
       c2d.fillText(String(i+1),Math.min(w-22,Math.max(6,left+6)),18);
 
-      // Independent right edge: visually a handle, not a shared chop line.
-      c2d.fillStyle=selected?"#ffe0a5":"#a97942";
-      c2d.fillRect(Math.max(0,right-3),0,Math.min(6,w-right+3),12);
+      // Both attack and tail are real independent handles.
+      const handleColor=selected?"#ffe0a5":"#a97942";
+      c2d.fillStyle=handleColor;
+      c2d.fillRect(Math.max(0,left-3),0,Math.min(6,w-left+3),13);
+      c2d.fillRect(Math.max(0,right-3),0,Math.min(6,w-right+3),13);
+      if(selected){
+        c2d.fillStyle="rgba(255,224,165,.72)";
+        c2d.fillRect(Math.max(0,left-1),13,2,Math.max(0,h-13));
+        c2d.fillRect(Math.max(0,right-1),13,2,Math.max(0,h-13));
+      }
     }
     c2d.restore();
   }
@@ -279,18 +353,26 @@
     modeButton.textContent=slices?"SLICES":"MARKERS";
     modeButton.setAttribute("aria-pressed",slices?"true":"false");
     modeButton.setAttribute("aria-label",slices
-      ? "Chop edit mode SLICES. Click to return to linked MARKERS mode."
-      : "Chop edit mode MARKERS. Click to use independent SLICES mode.");
+      ? "Chop edit mode SLICES. Click to return to original MARKERS mode."
+      : "Chop edit mode MARKERS. Click to trim independent SLICES.");
     modeButton.title=slices
-      ? "SLICES • hold + drag a slice to set its independent end"
-      : "MARKERS • original linked chop boundaries";
+      ? "SLICES • drag left edge = attack • drag right edge/body = tail"
+      : "MARKERS • original linked marker editor";
     waveCanvas.dataset.editMode=editMode;
     waveCanvas.setAttribute("aria-label",slices
-      ? "Waveform en mode SLICES. Clic auditionne. Maintenir puis glisser dans un slice règle uniquement sa fin."
-      : "Waveform en mode MARKERS. Éditeur de marqueurs liés d'origine.");
+      ? "Waveform en mode SLICES. Clic auditionne. Glisser le bord gauche règle le début; le bord droit règle la fin."
+      : "Waveform en mode MARKERS. Éditeur de marqueurs d'origine.");
     waveCanvas.title=slices
-      ? "SLICES • click = audition • hold + drag = set independent end"
+      ? "SLICES • left edge = start • right edge/body = end • click = audition"
       : "MARKERS • original linked marker editor";
+    if(!slices)waveCanvas.style.cursor="";
+  }
+
+  function clearDrag(){
+    dragSlice=-1;
+    dragEdge=null;
+    dragPointerId=null;
+    dragMoved=false;
   }
 
   function setEditMode(mode){
@@ -302,16 +384,13 @@
     stopChopAudition();
     if(typeof stopCurrentBeat==="function" && isLoopPlaying)stopCurrentBeat();
     renderedFlip=null;
-    dragSlice=-1;
-    dragPointerId=null;
-    dragMoved=false;
+    clearDrag();
     if(typeof draggingMarker!=="undefined")draggingMarker=-1;
 
     editMode=next;
     if(editMode===MODE_SLICES){
-      // Until the user has actually edited an independent slice, entering
-      // SLICES reflects the latest MARKERS positions. Once edited, toggling
-      // modes preserves that independent state instead of silently resetting it.
+      // Before the first free edit, SLICES follows the latest MARKERS layout.
+      // After that the two edit models remain deliberately independent.
       if(independentDirty)ensureIndependentSlices();
       else cloneMarkerSlices();
     }
@@ -322,7 +401,7 @@
     drawWave();
     clearPlayhead();
     $("chopStatus").textContent=editMode===MODE_SLICES
-      ? "CHOP MODE • SLICES"
+      ? "CHOP MODE • SLICES • TRIM START / END"
       : "CHOP MODE • MARKERS";
     return editMode;
   }
@@ -333,8 +412,8 @@
       return drawWaveBase(...args);
     }
 
-    // Hide linked marker lines in SLICES mode. The source markers still exist
-    // untouched for MARKERS mode; only their drawing is temporarily suppressed.
+    // Hide native linked marker lines only while SLICES is displayed. Their
+    // state remains untouched and returns exactly when MARKERS is selected.
     const savedMarkers=markers;
     const savedSelectedMarker=selectedMarker;
     let result;
@@ -391,8 +470,8 @@
     if(i<0 || !range)return;
     flash(i);
 
-    // Reuse the maintained preview chain (including VINYL) with this slice's
-    // independent start, then stop the source at this slice's own end.
+    // Reuse the maintained preview path (including live VINYL), but audition
+    // from this independent attack and stop at this independent tail.
     const savedStart=markers[i];
     try{
       markers[i]=range.start;
@@ -404,7 +483,8 @@
     const source=chopAuditionSource;
     if(source){
       const audible=Math.max(.005,(range.end-range.start)/samplePitchRate());
-      try{source.stop(ctx.currentTime+audible);}catch{}
+      const stopAt=Math.max(ctx.currentTime+.005,chopAuditionStartedAt+audible);
+      try{source.stop(stopAt);}catch{}
     }
   };
 
@@ -531,36 +611,35 @@
     ensureIndependentSlices();
     try{waveCanvas.focus({preventScroll:true});}catch{waveCanvas.focus();}
 
-    const sec=sourceSecFromEvent(ev);
-    const index=sliceIndexAtSourceSec(sec);
-    if(index<0){
-      dragSlice=-1;
+    const hit=pointerTarget(ev);
+    if(hit.index<0){
+      clearDrag();
       return;
     }
 
-    selectSlice(index);
-    dragSlice=index;
+    selectSlice(hit.index);
+    dragSlice=hit.index;
+    dragEdge=hit.edge;
     dragPointerId=ev.pointerId;
     dragStartClientX=ev.clientX;
     dragMoved=false;
+    waveCanvas.style.cursor="ew-resize";
     try{waveCanvas.setPointerCapture(ev.pointerId);}catch{}
   },true);
 
   waveCanvas.addEventListener("pointermove",ev=>{
-    if(editMode!==MODE_SLICES || !sampleBuffer || dragSlice<0)return;
+    if(editMode!==MODE_SLICES || !sampleBuffer)return;
+
+    if(dragSlice<0){
+      waveCanvas.style.cursor=edgeHitFromEvent(ev)?"ew-resize":"pointer";
+      return;
+    }
+
     ev.stopImmediatePropagation();
     ev.preventDefault();
     if(Math.abs(ev.clientX-dragStartClientX)>=DRAG_THRESHOLD_PX)dragMoved=true;
     if(!dragMoved)return;
-
-    const range=independentSlices[dragSlice];
-    if(!range)return;
-    range.end=clamp(
-      sourceSecFromEvent(ev),
-      Math.min(sampleBuffer.duration,range.start+MIN_SLICE_SEC),
-      sampleBuffer.duration
-    );
-    drawWave();
+    setSliceBoundary(dragSlice,dragEdge,sourceSecFromEvent(ev));
   },true);
 
   waveCanvas.addEventListener("pointerup",ev=>{
@@ -568,13 +647,13 @@
     ev.stopImmediatePropagation();
     ev.preventDefault();
     const index=dragSlice;
+    const edge=dragEdge;
     const moved=dragMoved;
     if(dragPointerId!==null){
       try{waveCanvas.releasePointerCapture(dragPointerId);}catch{}
     }
-    dragSlice=-1;
-    dragPointerId=null;
-    dragMoved=false;
+    clearDrag();
+    waveCanvas.style.cursor=edgeHitFromEvent(ev)?"ew-resize":"pointer";
 
     if(index<0)return;
     const range=independentSlices[index];
@@ -583,8 +662,10 @@
       stopChopAudition();
       renderedFlip=null;
       renderSampleTimeline();
-      const ms=Math.round((range.end-range.start)*1000);
-      $("chopStatus").textContent=`SLICE ${index+1} • ${ms} ms ✓`;
+      const startMs=Math.round(range.start*1000);
+      const endMs=Math.round(range.end*1000);
+      const lenMs=Math.round((range.end-range.start)*1000);
+      $("chopStatus").textContent=`SLICE ${index+1} • ${edge==="start"?"START":"END"} • ${startMs}–${endMs} ms • ${lenMs} ms ✓`;
       drawWave();
       return;
     }
@@ -596,10 +677,13 @@
   waveCanvas.addEventListener("pointercancel",ev=>{
     if(editMode!==MODE_SLICES)return;
     ev.stopImmediatePropagation();
-    dragSlice=-1;
-    dragPointerId=null;
-    dragMoved=false;
+    clearDrag();
+    waveCanvas.style.cursor="pointer";
   },true);
+
+  waveCanvas.addEventListener("pointerleave",()=>{
+    if(editMode===MODE_SLICES && dragSlice<0)waveCanvas.style.cursor="pointer";
+  });
 
   modeButton.addEventListener("click",()=>{
     setEditMode(editMode===MODE_MARKERS?MODE_SLICES:MODE_MARKERS);
@@ -608,15 +692,22 @@
   globalThis.ChopperWaveSlices={
     modes:Object.freeze({markers:MODE_MARKERS,slices:MODE_SLICES}),
     maxSlices:MAX_SLICES,
+    minSliceSec:MIN_SLICE_SEC,
     get mode(){return editMode;},
     get selectedSlice(){return selectedSlice;},
     get activeSlice(){return activeSlice;},
     get slices(){return independentSlices.map(range=>({...range}));},
     setEditMode,
     selectSlice,
+    setSliceBoundary,
     sliceIndexAtSourceSec,
     sliceCanvasBounds,
-    resetSlicesFromMarkers(){cloneMarkerSlices();renderPads();drawWave();return independentSlices.map(range=>({...range}));}
+    resetSlicesFromMarkers(){
+      cloneMarkerSlices();
+      renderPads();
+      drawWave();
+      return independentSlices.map(range=>({...range}));
+    }
   };
 
   updateModeButton();
