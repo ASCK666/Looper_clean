@@ -37,9 +37,11 @@ for val in re.findall(r'["\'](\./[^"\']+)["\']', sw):
 # intercept fetches; bootstrap also cleans registrations/caches defensively.
 if re.search(r'addEventListener\s*\(\s*["\']fetch["\']', sw):
     problems.append('SW must not intercept fetches while Pages is in development mode')
-for token in ['caches.keys()', 'self.registration.unregister()', 'client.navigate(client.url)']:
+for token in ['caches.keys()', 'self.registration.unregister()']:
     if token not in sw:
         problems.append(f'SW retirement missing: {token}')
+if 'client.navigate(' in sw:
+    problems.append('SW retirement must not navigate an already-rendered client')
 
 bootstrap=(ROOT/'js'/'bootstrap.js').read_text(encoding='utf-8')
 for token in ['navigator.serviceWorker.getRegistrations()', 'caches.keys()']:

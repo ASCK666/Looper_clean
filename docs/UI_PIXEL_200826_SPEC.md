@@ -202,6 +202,8 @@ CSS lighting must independently support:
 - Verify that all coloured backlighting is runtime CSS, not baked artwork.
 - Verify that retired runtime paths are no longer referenced.
 - Verify that no JavaScript or browser console errors are introduced.
+- Retiring a legacy service worker must never navigate or replace an already
+  rendered Looper66 client; cache cleanup stays background-only.
 
 ## 13. Delivery workflow
 
