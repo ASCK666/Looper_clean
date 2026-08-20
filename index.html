@@ -9,6 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="./css/base.css">
 <link rel="stylesheet" href="./css/clean-ui.css">
+<link rel="stylesheet" href="./css/chopper-drum-controls.css">
 <link rel="stylesheet" href="./assets/looper-ui/overlay.css">
 </head>
 <body>
@@ -286,6 +287,15 @@
               </div>
               <span id="sampleVolumeReadout" class="sampleKnobReadout">80%</span>
             </div>
+
+            <div class="sampleKnob punchKnob punchFx" data-range-knob="punchMode">
+              <label for="punchMode">PUNCH</label>
+              <div class="sampleKnobControl">
+                <span class="sampleKnobFace" aria-hidden="true"></span>
+                <input id="punchMode" class="sampleKnobInput" type="range" min="0" max="3" step="1" value="1" aria-label="Punch master OFF, WARM, KNOCK ou HARD">
+              </div>
+              <span id="punchDesc" class="sampleKnobReadout">WARM</span>
+            </div>
           </div>
 
           <div id="sampleInfo" class="status samplerSampleInfo">Charge un sample, place tes chops et joue.</div>
@@ -319,45 +329,6 @@
 
       <div class="panel controlPanel samplerDrumSection">
         <div class="title stableTitle"><span>DRUM MACHINE <i class="blueLed"></i></span><span class="titleMeta">GROOVE / OUTPUT</span></div>
-        <div class="drumSelector">
-          <div>
-            <label>STYLE POUR LA PROCHAINE SÉLECTION</label>
-            <select id="drumMode"><option value="auto" selected>AUTO / 30 GROOVES</option><option value="classic">BOOM BAP</option><option value="sparse">DUSTY / SPARSE</option><option value="hard">HARD</option><option value="wonky">WONKY</option><option value="west">WEST COAST</option><option value="off">OFF</option></select>
-          </div>
-          <button id="newDrums" class="btn blue">NEW DRUMS</button>
-        </div>
-
-        <div class="snareFx">
-          <div class="snareFxHead">
-            <label class="fxToggle">
-              <input id="snareReverbOn" type="checkbox">
-              <span>SNARE REVERB</span>
-            </label>
-            <select id="snareReverbType">
-              <option value="room">ROOM</option>
-              <option value="plate" selected>PLATE</option>
-              <option value="dark">DARK</option>
-            </select>
-          </div>
-          <div class="snareMixRow">
-            <label>MIX <span id="snareReverbMixReadout">25%</span></label>
-            <input id="snareReverbMix" type="range" min="0" max="70" step="1" value="25">
-          </div>
-          <div class="help">Le réglage reste fixe quand tu fais NEW DRUMS.</div>
-        </div>
-
-        <div class="snareFx punchFx">
-          <div class="snareFxHead">
-            <label>PUNCH / MASTER</label>
-            <select id="punchMode">
-              <option value="off">OFF</option>
-              <option value="warm" selected>WARM</option>
-              <option value="knock">KNOCK</option>
-              <option value="hard">HARD</option>
-            </select>
-          </div>
-          <div id="punchDesc" class="help">WARM • glue légère, transitoires préservées, limiteur de sécurité.</div>
-        </div>
 
         <div class="currentDrums">
           <div class="currentDrumsTitle">BATTERIE COURANTE</div>
@@ -381,6 +352,17 @@
                 <option value="8">8TH</option>
                 <option value="16" selected>16TH</option>
               </select>
+              <div class="drumSelector drumQuickActions" role="group" aria-label="Drum generation and snare reverb">
+                <div class="sampleKnob drumReverbKnob snareFx snareMixRow" data-range-knob="snareReverbMix">
+                  <div class="snareFxHead"><label class="fxToggle" for="snareReverbMix">REVERB</label></div>
+                  <div class="sampleKnobControl">
+                    <span class="sampleKnobFace" aria-hidden="true"></span>
+                    <input id="snareReverbMix" class="sampleKnobInput" type="range" min="0" max="70" step="1" value="25" aria-label="Snare reverb mix, zéro désactive la reverb">
+                  </div>
+                  <span id="snareReverbMixReadout" class="sampleKnobReadout">25%</span>
+                </div>
+                <button id="newDrums" class="btn blue">NEW DRUMS</button>
+              </div>
               <button id="clearDrumEdits" class="btn">CLEAR DRUMS</button>
             </div>
           </div>
@@ -407,5 +389,6 @@
 <script src="./js/chopper.js" defer></script>
 <script src="./js/drums.js" defer></script>
 <script src="./js/events.js" defer></script>
+<script src="./js/chopper-drum-controls.js" defer></script>
 </body>
 </html>
