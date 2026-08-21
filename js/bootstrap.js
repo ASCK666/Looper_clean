@@ -11,6 +11,18 @@ window.__SP.report=(scope,error)=>{
 window.addEventListener("error",event=>window.__SP.report("RUNTIME",event.error||event.message));
 window.addEventListener("unhandledrejection",event=>window.__SP.report("PROMISE",event.reason));
 
+// Branch-specific Chopper material pass. Load it after the maintained static
+// stylesheets so the visible deck grain cannot be overwritten later in cascade.
+(()=>{
+  if(document.querySelector('link[data-chopper-deck-texture="1"]'))return;
+  const link=document.createElement("link");
+  link.rel="stylesheet";
+  link.href="./css/chopper-deck-texture.css";
+  link.dataset.chopperDeckTexture="1";
+  link.onerror=()=>window.__SP.report("CHOPPER DECK TEXTURE",new Error("Texture stylesheet failed to load"));
+  document.head.appendChild(link);
+})();
+
 document.querySelectorAll("[data-range-knob]").forEach(knob=>{
   const input=document.getElementById(knob.dataset.rangeKnob);
   if(!input)return;
