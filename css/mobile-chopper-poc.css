@@ -1,0 +1,258 @@
+/* Mobile Chopper slice-editor POC.
+   Loaded only by mobile-chopper-poc.html; production index.html is untouched. */
+
+body.mobileChopperPoc #mobileSliceEditor {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  body.mobileChopperPoc.sliceEditorOpen {
+    overflow: hidden !important;
+  }
+
+  body.mobileChopperPoc #chopper .samplerControlLegend {
+    color: #cbb286 !important;
+    font-size: 9px !important;
+    letter-spacing: .5px !important;
+  }
+
+  body.mobileChopperPoc #chopper .wavewrap.largeWave {
+    position: relative;
+    cursor: pointer;
+  }
+
+  body.mobileChopperPoc #chopper .wavewrap.largeWave:after {
+    content: "TAP A SLICE TO EDIT";
+    position: absolute;
+    right: 8px;
+    bottom: 28px;
+    z-index: 3;
+    pointer-events: none;
+    padding: 4px 6px;
+    border: 1px solid rgba(226,173,95,.28);
+    border-radius: 3px;
+    color: #d7b77d;
+    background: rgba(8,6,4,.78);
+    font: 800 8px/1 var(--font-mono);
+    letter-spacing: .5px;
+  }
+
+  body.mobileChopperPoc #mobileSliceEditor.open {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-top: max(16px, env(safe-area-inset-top));
+    background: rgba(0,0,0,.72);
+    backdrop-filter: blur(3px);
+  }
+
+  body.mobileChopperPoc .mobileSliceSheet {
+    width: 100%;
+    max-height: 94dvh;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding:
+      8px
+      max(10px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(10px, env(safe-area-inset-left));
+    border: 1px solid #3c3023;
+    border-bottom: 0;
+    border-radius: 14px 14px 0 0;
+    background:
+      linear-gradient(180deg,rgba(226,173,95,.035),transparent 90px),
+      #090806;
+    box-shadow: 0 -24px 70px rgba(0,0,0,.65);
+  }
+
+  body.mobileChopperPoc .mobileSliceGrabber {
+    width: 42px;
+    height: 4px;
+    margin: 0 auto 8px;
+    border-radius: 99px;
+    background: #554838;
+  }
+
+  body.mobileChopperPoc .mobileSliceHeader {
+    display: grid;
+    grid-template-columns: 44px minmax(0,1fr) 44px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  body.mobileChopperPoc .mobileSliceHeaderCopy {
+    min-width: 0;
+    text-align: center;
+  }
+
+  body.mobileChopperPoc .mobileSliceHeaderCopy strong {
+    display: block;
+    color: #efd8af;
+    font: 900 13px/1 var(--font-condensed);
+    letter-spacing: 1.3px;
+  }
+
+  body.mobileChopperPoc .mobileSliceHeaderCopy small {
+    display: block;
+    min-height: 12px;
+    margin-top: 4px;
+    overflow: hidden;
+    color: #8f816d;
+    font: 700 8px/1.25 var(--font-mono);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.mobileChopperPoc .mobileSliceIconBtn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 1px solid #3b3025;
+    border-radius: 5px;
+    color: #d9c4a0;
+    background: linear-gradient(180deg,#19140e,#0b0906);
+    font: 900 17px/1 var(--font-mono);
+  }
+
+  body.mobileChopperPoc .mobileSliceIconBtn:disabled {
+    opacity: .28;
+  }
+
+  body.mobileChopperPoc .mobileSliceWaveFrame {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #4a3825;
+    border-radius: 6px;
+    background: #080704;
+    box-shadow: inset 0 0 30px rgba(226,173,95,.035);
+  }
+
+  body.mobileChopperPoc #mobileSliceCanvas {
+    display: block;
+    width: 100%;
+    height: 220px;
+    touch-action: none;
+  }
+
+  body.mobileChopperPoc .mobileSliceWaveHint {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 9px;
+    border-top: 1px solid #2f271e;
+    color: #9e8b6f;
+    background: #0d0a07;
+    font: 700 8px/1.2 var(--font-mono);
+  }
+
+  body.mobileChopperPoc .mobileSliceTimeReadout {
+    margin: 8px 0;
+    padding: 8px 10px;
+    border: 1px solid #30281f;
+    border-radius: 5px;
+    color: #dbc69e;
+    background: #0c0a07;
+    font: 800 9px/1.4 var(--font-mono);
+    text-align: center;
+  }
+
+  body.mobileChopperPoc .mobileSliceNudgeGrid {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 7px;
+  }
+
+  body.mobileChopperPoc .mobileSliceNudgeBox {
+    padding: 8px;
+    border: 1px solid #30281f;
+    border-radius: 5px;
+    background: #0b0907;
+  }
+
+  body.mobileChopperPoc .mobileSliceNudgeBox.active {
+    border-color: #8a6538;
+    box-shadow: 0 0 0 2px rgba(226,173,95,.08);
+  }
+
+  body.mobileChopperPoc .mobileSliceNudgeHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 7px;
+    color: #c5ac7e;
+    font: 900 9px/1 var(--font-mono);
+    letter-spacing: .5px;
+  }
+
+  body.mobileChopperPoc .mobileSliceNudgeHead small {
+    color: #796b58;
+    font-size: 7px;
+  }
+
+  body.mobileChopperPoc .mobileSliceNudgeButtons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  body.mobileChopperPoc .mobileSliceNudgeButtons button,
+  body.mobileChopperPoc .mobileSliceActionGrid button,
+  body.mobileChopperPoc .mobileSliceActionGrid select {
+    min-height: 46px;
+    border: 1px solid #3a3025;
+    border-radius: 5px;
+    color: #d9c6a4;
+    background: linear-gradient(180deg,#18130e,#0b0906);
+    font: 900 9px/1 var(--font-condensed);
+    letter-spacing: .8px;
+  }
+
+  body.mobileChopperPoc .mobileSliceNudgeButtons button:active,
+  body.mobileChopperPoc .mobileSliceActionGrid button:active {
+    transform: translateY(1px);
+    background: #231a10;
+  }
+
+  body.mobileChopperPoc .mobileSliceActionGrid {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 7px;
+    margin-top: 7px;
+  }
+
+  body.mobileChopperPoc #mobileSliceAudition {
+    color: #f1d6a4;
+    border-color: #7b5730;
+    background: linear-gradient(180deg,#342413,#171008);
+  }
+
+  body.mobileChopperPoc #mobileSliceReset {
+    color: #efc5aa;
+    border-color: #67402e;
+  }
+
+  body.mobileChopperPoc #mobileSliceSnap {
+    width: 100%;
+    padding: 0 10px;
+    appearance: auto;
+    text-align: center;
+  }
+
+  body.mobileChopperPoc .mobileSliceFooterNote {
+    margin-top: 8px;
+    color: #726554;
+    font: 700 7px/1.35 var(--font-mono);
+    text-align: center;
+  }
+}
+
+@media (min-width: 761px) {
+  body.mobileChopperPoc #mobileSliceEditor {
+    display: none !important;
+  }
+}
