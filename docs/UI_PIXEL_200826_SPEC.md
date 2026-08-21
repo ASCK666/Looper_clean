@@ -3,6 +3,10 @@
 This document is the acceptance contract for branch `ui-pixel-200826`.
 Implementation work must be checked against it at every important milestone.
 
+On branch `210826`, the narrower desktop side controls and reduced speed-readout
+hierarchy in `UI_210826_SPEC.md` override the equal desktop transport dimensions
+below. The phone contract remains unchanged.
+
 ## 1. Visual identity
 
 - The product name is exactly **Looper66**.

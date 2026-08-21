@@ -51,6 +51,7 @@ with contextlib.ExitStack() as stack:
             reels:[...document.querySelectorAll('.cassetteReel')].map(reel=>reel.getBoundingClientRect().toJSON()),
             workspace:document.querySelector('.looper66Workspace').getBoundingClientRect().toJSON(),
             transportOrder:[...document.querySelectorAll('.deckTransport > button')].map(button=>button.id),
+            readoutRateFontSize:parseFloat(getComputedStyle(document.querySelector('.deckReadoutRate')).fontSize),
             transportStyles:['stopBeat','playBeat','autoLooperToggle'].map(id=>{
               const style=getComputedStyle(document.getElementById(id));
               return {background:style.backgroundColor,backgroundImage:style.backgroundImage,boxShadow:style.boxShadow};
@@ -72,15 +73,17 @@ with contextlib.ExitStack() as stack:
             'src':'assets/looper-ui/looper66-cassette-bay-b10ab679.png'
         },info
         assert all(c['display']!='none' and c['width']>=44 and c['height']>=44 for c in info['controls']),info
-        sizes={(round(rect['width'],1),round(rect['height'],1)) for rect in info['transport']}
-        assert len(sizes)==1,sizes
+        stop,play,speed=info['transport']
+        assert abs(stop['width']-speed['width'])<1 and abs(stop['height']-speed['height'])<1,info
+        assert play['width']>stop['width']*2 and play['height']>stop['height'],info
         assert info['transportOrder']==['stopBeat','playBeat','autoLooperToggle'],info
+        assert info['readoutRateFontSize']<=27.01,info
         assert all(style['background']=='rgba(0, 0, 0, 0)' and style['backgroundImage']=='none' and style['boxShadow']=='none' for style in info['transportStyles']),info
         transport_left=min(rect['x'] for rect in info['transport'])
         transport_right=max(rect['x']+rect['width'] for rect in info['transport'])
         cassette_left=info['workspace']['x']+info['workspace']['width']*.423
         cassette_right=cassette_left+info['workspace']['width']*.417
-        assert transport_left>=cassette_left-1 and transport_right<=cassette_right+1,info
+        assert abs(transport_left-cassette_left)<1 and abs(transport_right-cassette_right)<1,info
         expected_centers=((601,238),(763,238))
         for reel,(expected_x,expected_y) in zip(info['reels'],expected_centers):
           center_x=(reel['x']+reel['width']/2-info['workspace']['x'])/info['workspace']['width']*1086
@@ -95,4 +98,4 @@ with contextlib.ExitStack() as stack:
         page.screenshot(path=str(ARTIFACTS/'looper66-full-render.png'),full_page=True)
         browser.close()
 
-print('OK: Looper66 v2 skins, separate reels and equal native controls render without runtime errors')
+print('OK: Looper66 desktop transport matches cassette width with dominant Play and symmetric side controls')

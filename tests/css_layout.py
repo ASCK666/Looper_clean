@@ -38,8 +38,12 @@ with contextlib.ExitStack() as stack:
             assert abs(metrics['mechanism']['width']/metrics['mechanism']['height']-expected_mechanism_ratio)<.02,metrics
             assert all(c['width']>=44 and c['height']>=44 for c in metrics['controls']),metrics
             if width>=1080:
-                transport=[c for c in metrics['controls'] if c['id'] in ('playBeat','stopBeat','autoLooperToggle')]
-                assert len({(round(c['width']),round(c['height'])) for c in transport})==1,transport
+                by_id={control['id']:control for control in metrics['controls']}
+                stop,play,speed=(by_id[name] for name in ('stopBeat','playBeat','autoLooperToggle'))
+                assert abs(stop['width']-speed['width'])<1 and abs(stop['height']-speed['height'])<1,metrics
+                assert play['width']>stop['width']*2 and play['height']>stop['height'],metrics
+                assert abs(stop['x']-metrics['mechanism']['x'])<1,metrics
+                assert abs(speed['x']+speed['width']-metrics['mechanism']['x']-metrics['mechanism']['width'])<1,metrics
             if width<=680:
                 by_id={control['id']:control for control in metrics['controls']}
                 stop,play,speed=(by_id[name] for name in ('stopBeat','playBeat','autoLooperToggle'))
