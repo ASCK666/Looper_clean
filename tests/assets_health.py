@@ -11,7 +11,7 @@ EXPECTED_VISUALS = {
     "looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp",
     "looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp",
     "looper-ui/looper66-mobile-transport-fbd6a0d3.webp",
-    "looper-ui/looper66-desktop-transport-square-49d0237b.webp",
+    "looper-ui/looper66-desktop-transport-square-3d62809d.webp",
     "looper-ui/looper66-crate-cassettes.webp",
     "looper-ui/looper66-cassette-bay-b10ab679.png",
 }
