@@ -6,9 +6,7 @@
 const $ = id => document.getElementById(id);
 let ctx = null;
 let liveBus = null;
-let masterAnalyser = null;
-let meterAnimationRAF = 0;
-const meterPeakHold = new Map();
+const MASTER_OUTPUT_GAIN = .85;
 
 let sampleBuffer = null;
 let sampleName = "";
@@ -46,7 +44,6 @@ let sampleConditionProfile = {
   clippingRatio:0,
   lowMidRatio:0
 };
-let masterVolumePercent = 85;
 let chopAuditionGain = null;
 let loopGridEvents = [];
 const audioExt = /\.(wav|mp3|m4a|aac|ogg|flac|webm)$/i;
@@ -95,23 +92,14 @@ function initializeAudioContext(){
 
   ctx=new AudioContext({latencyHint:"interactive"});
   liveBus=ctx.createGain();
-  liveBus.gain.value=masterVolumeGain();
-
-  masterAnalyser=ctx.createAnalyser();
-  masterAnalyser.fftSize=1024;
-  masterAnalyser.smoothingTimeConstant=.74;
-
-  liveBus.connect(masterAnalyser);
-  masterAnalyser.connect(ctx.destination);
-
-  ensureMeterElements();
+  liveBus.gain.value=MASTER_OUTPUT_GAIN;
+  liveBus.connect(ctx.destination);
   return ctx;
 }
 
 async function ensureAudio(){
   initializeAudioContext();
   if(ctx.state==="suspended")await ctx.resume();
-  startMeterAnimation();
   return ctx;
 }
 
@@ -120,107 +108,7 @@ function connectLive(node){
   else node.connect(ctx.destination);
 }
 
-function ensureMeterElements(){
-  const build=(id,count)=>{
-    const el=$(id);
-    if(!el) return;
-    if(el.children.length>=count) return;
-    el.innerHTML="";
-    for(let i=0;i<count;i++){
-      el.appendChild(document.createElement("i"));
-    }
-  };
-  build("vu",16);
-  build("looperVu",16);
-}
-
-function analyserPeakDb(analyser){
-  if(!analyser) return -72;
-  const arr=new Float32Array(analyser.fftSize);
-  analyser.getFloatTimeDomainData(arr);
-  let peak=0;
-  for(let i=0;i<arr.length;i++){
-    const v=Math.abs(arr[i]);
-    if(v>peak) peak=v;
-  }
-  if(peak<1e-5) return -72;
-  return 20*Math.log10(peak);
-}
-
-function dbToBarCount(db,total){
-  const min=-42, max=0;
-  const norm=clamp((db-min)/(max-min),0,1);
-  return Math.round(norm*total);
-}
-
-function paintMeter(id,count,now=performance.now()){
-  const el=$(id);
-  if(!el) return;
-  const bars=[...el.children];
-  const total=bars.length;
-  const lit=Math.max(0,Math.min(total,Math.round(count)));
-  const currentPeak=lit-1;
-  const hold=meterPeakHold.get(id)||{index:-1,until:0};
-
-  if(currentPeak>=hold.index){
-    hold.index=currentPeak;
-    hold.until=now+680;
-  }else if(now>=hold.until){
-    hold.index=Math.max(currentPeak,hold.index-1);
-    hold.until=now+85;
-  }
-  meterPeakHold.set(id,hold);
-
-  bars.forEach((bar,index)=>{
-    // DOM order follows signal order: left-to-right in the header and,
-    // thanks to column-reverse, bottom-to-top in the vertical meter.
-    const active=index<lit;
-    bar.classList.toggle("on",active);
-    bar.classList.remove("low","mid","high");
-    if(index<total-5) bar.classList.add("low");
-    else if(index<total-2) bar.classList.add("mid");
-    else bar.classList.add("high");
-    bar.classList.toggle("peakHold",index===hold.index && hold.index>=0);
-  });
-}
-
-function updateRealMeters(){
-  const now=performance.now();
-  if(masterAnalyser){
-    const masterDb=analyserPeakDb(masterAnalyser);
-    paintMeter("vu",dbToBarCount(masterDb,16),now);
-    paintMeter("looperVu",dbToBarCount(masterDb,16),now);
-  }else{
-    paintMeter("vu",0,now);
-    paintMeter("looperVu",0,now);
-  }
-
-  meterAnimationRAF=requestAnimationFrame(updateRealMeters);
-}
-
-function startMeterAnimation(){
-  if(meterAnimationRAF) return;
-  meterAnimationRAF=requestAnimationFrame(updateRealMeters);
-}
-
-function setLamp(id,on){ $(id).classList.toggle("on",!!on); }
-
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
-
-function masterVolumeGain(){
-  return clamp(masterVolumePercent/100,0,1);
-}
-
-function updateMasterVolume(value=masterVolumePercent){
-  masterVolumePercent=Number(value)||0;
-  const readout=$("masterVolumeReadout");
-  if(readout) readout.textContent=`${masterVolumePercent}%`;
-  if(liveBus)liveBus.gain.value=masterVolumeGain();
-  const gain=masterVolumeGain();
-  const db=(gain<=0)? "-∞ dB" : `${(20*Math.log10(gain)).toFixed(1)} dB`;
-  if($("masterDb")) $("masterDb").textContent=db;
-  document.documentElement.style.setProperty("--masterpct", String(masterVolumePercent));
-}
 
 function shortName(s,n=42){ return s.length>n ? s.slice(0,n-1)+"…" : s; }
 

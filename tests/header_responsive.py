@@ -24,11 +24,13 @@ with sync_playwright() as p:
         page.wait_for_timeout(20)
         data=page.evaluate('''()=>{
           const top=document.querySelector('.stableTop').getBoundingClientRect().toJSON();
-          const visible=['.headerActions','.headerMaster'].map(s=>({s,r:document.querySelector(s).getBoundingClientRect().toJSON()}));
+          const visible=['.headerActions'].map(s=>({s,r:document.querySelector(s).getBoundingClientRect().toJSON()}));
           const hidden=['.stableBrand','.headerDeckPill'].map(s=>({s,display:getComputedStyle(document.querySelector(s)).display,r:document.querySelector(s).getBoundingClientRect().toJSON()}));
-          return {top,visible,hidden,scroll:document.documentElement.scrollWidth,inner:innerWidth};
+          const retired=document.querySelectorAll('#masterVolume,#masterDb,#vu,#looperVu,.headerMaster').length;
+          return {top,visible,hidden,retired,scroll:document.documentElement.scrollWidth,inner:innerWidth};
         }''')
         assert data['scroll'] <= data['inner']+2,(width,data)
+        assert data['retired']==0,(width,data)
         for item in data['visible']:
             r=item['r']; top=data['top']
             assert r['width']>0 and r['height']>0,(width,item,data)

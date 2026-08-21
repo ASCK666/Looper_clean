@@ -31,9 +31,11 @@ with contextlib.ExitStack() as stack:
               const rect=id=>document.getElementById(id).getBoundingClientRect();
               const mechanism=document.querySelector('.cassetteMechanism').getBoundingClientRect();
               const controls=['prevBeat','playBeat','stopBeat','nextBeat','autoLooperToggle','deckAutoToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>({id,...rect(id).toJSON()}));
-              return {bodyW:document.body.scrollWidth,viewportW:innerWidth,mechanism:mechanism.toJSON(),controls,transportPanel:document.querySelector('.deckTransportVisual').getBoundingClientRect().toJSON(),pitch:document.querySelector('.deckPitchModule').getBoundingClientRect().toJSON(),workspace:getComputedStyle(document.querySelector('.looper66Workspace')).gridTemplateColumns,playLightSize:getComputedStyle(document.getElementById('playBeat'),'::before').backgroundSize};
+              return {bodyW:document.body.scrollWidth,viewportW:innerWidth,mechanism:mechanism.toJSON(),controls,transportPanel:document.querySelector('.deckTransportVisual').getBoundingClientRect().toJSON(),pitch:document.querySelector('.deckPitchModule').getBoundingClientRect().toJSON(),workspace:getComputedStyle(document.querySelector('.looper66Workspace')).gridTemplateColumns,playLightSize:getComputedStyle(document.getElementById('playBeat'),'::before').backgroundSize,tabs:document.querySelector('.mainModeTabs').getBoundingClientRect().toJSON(),shell:document.querySelector('.looper66Shell').getBoundingClientRect().toJSON()};
             }''')
             assert metrics['bodyW']<=metrics['viewportW']+2,metrics
+            assert abs(metrics['tabs']['width']-metrics['shell']['width'])<1,metrics
+            assert abs(metrics['tabs']['x']-metrics['shell']['x'])<1,metrics
             expected_mechanism_ratio=1.505 if width<=680 else 1.586
             assert abs(metrics['mechanism']['width']/metrics['mechanism']['height']-expected_mechanism_ratio)<.02,metrics
             assert all(c['width']>=44 and c['height']>=44 for c in metrics['controls']),metrics

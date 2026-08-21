@@ -69,7 +69,6 @@ function refreshCassetteUI(){
 const memoryBeatStore=new Map();
 let dbFallbackMode=false;
 let dbPromise=null;
-let storeLampTimer=null;
 
 function enableDbFallback(error){
   dbFallbackMode=true;
@@ -137,16 +136,7 @@ async function runBeatStoreTransaction(mode,operation){
   });
 }
 
-function flashStoreLamp(){
-  if(storeLampTimer)clearTimeout(storeLampTimer);
-  setLamp("lampStore",true);
-  storeLampTimer=setTimeout(()=>{
-    storeLampTimer=null;
-    setLamp("lampStore",false);
-  },250);
-}
-
-async function dbPut(row,{flashLamp=true}={}){
+async function dbPut(row){
   if(dbFallbackMode){
     memoryBeatStore.set(row.id,row);
   }else{
@@ -164,7 +154,6 @@ async function dbPut(row,{flashLamp=true}={}){
       }
     }
   }
-  if(flashLamp)flashStoreLamp();
 }
 
 async function dbDelete(id){
@@ -835,9 +824,6 @@ async function playDeck(){
   deckSource.start(0);
   if(autoLooperEnabledState)startAutoLooperProgress();
   else stopAutoLooperProgress();
-  setLamp("lampPlay",true);
-  ensureMeterElements();
-  startMeterAnimation();
   refreshCassetteUI();
   return true;
 }
@@ -854,7 +840,6 @@ function stopDeck({cancelPendingPlay=true}={}){
     try{deckOutputGain.disconnect()}catch{}
     deckOutputGain=null;
   }
-  setLamp("lampPlay",false);
   refreshCassetteUI();
 }
 

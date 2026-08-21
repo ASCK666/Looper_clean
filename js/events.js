@@ -135,8 +135,6 @@ $("sliceCount").onchange=()=>{
   stopChopAudition();
   autoPlaceMarkers();
 };
-$("masterVolume").oninput=()=>updateMasterVolume($("masterVolume").value);
-
 $("sampleVolume").oninput=()=>updateSampleVolume($("sampleVolume").value);
 
 $("sampleVolume").onchange=async()=>{
@@ -371,11 +369,9 @@ function safeInit(name,fn){
 }
 
 [
-  ["meters",ensureMeterElements],
   ["practice",makePractice],
   ["drum-selection",updateDrumSelectionUI],
   ["auto-looper",refreshAutoLooperCompact],
-  ["master-volume",updateMasterVolume],
   ["punch",refreshPunchUI],
   ["loop-grid",renderLoopGrid],
   ["waveform",drawWave]

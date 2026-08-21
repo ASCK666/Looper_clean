@@ -78,15 +78,7 @@ with tempfile.TemporaryDirectory() as td:
         page.wait_for_function("document.getElementById('beatSaveStatus').textContent.includes('Charge un sample')")
         assert page.evaluate('window.__pickerCalls') == 0
 
-        # 2) MASTER dB readout must be logarithmic.
-        page.evaluate('''() => {
-          const el=document.getElementById('masterVolume');
-          el.value='25';
-          el.dispatchEvent(new Event('input',{bubbles:true}));
-        }''')
-        assert page.locator('#masterDb').inner_text() == '-12.0 dB'
-
-        # 3) Stereo conditioner must not cancel anti-phase channels.
+        # 2) Stereo conditioner must not cancel anti-phase channels.
         stereo=page.evaluate('''() => {
           const b=new AudioBuffer({length:44100,sampleRate:44100,numberOfChannels:2});
           const l=b.getChannelData(0),r=b.getChannelData(1);
@@ -100,7 +92,7 @@ with tempfile.TemporaryDirectory() as td:
         assert stereo['rmsDb'] > -5.0, stereo
         assert stereo['trimDb'] <= -2.5, stereo
 
-        # 4) Loop finalizer must eliminate the circular sample jump and leave middle untouched.
+        # 3) Loop finalizer must eliminate the circular sample jump and leave middle untouched.
         loopcheck=page.evaluate('''() => {
           const b=new AudioBuffer({length:12000,sampleRate:44100,numberOfChannels:1});
           const d=b.getChannelData(0);
@@ -113,7 +105,7 @@ with tempfile.TemporaryDirectory() as td:
         assert loopcheck['jump'] < 1e-7, loopcheck
         assert loopcheck['middleDelta'] == 0, loopcheck
 
-        # 5) Reverb impulse itself is deterministic.
+        # 4) Reverb impulse itself is deterministic.
         reverb=page.evaluate('''() => {
           const a=new OfflineAudioContext(2,88200,44100);
           const b=new OfflineAudioContext(2,88200,44100);
@@ -132,7 +124,7 @@ with tempfile.TemporaryDirectory() as td:
         page.set_input_files('#beatFiles',[str(beat_a),str(beat_b)])
         page.wait_for_function("document.querySelectorAll('#library .track .danger').length >= 2 && deckBuffer !== null",timeout=10000)
 
-        # 6) NEXT/PREV preserves transport state.
+        # 5) NEXT/PREV preserves transport state.
         page.click('#stopBeat')
         before=page.evaluate('currentTrack.id')
         page.click('#nextBeat')
@@ -151,7 +143,7 @@ with tempfile.TemporaryDirectory() as td:
         assert page.evaluate('deckSource !== null') is True
         page.click('#stopBeat')
 
-        # 7) Closing PRACTICE must stop the hidden timer.
+        # 6) Closing PRACTICE must stop the hidden timer.
         page.click('#practiceOverlayOpen')
         page.click('#startPractice')
         page.wait_for_function('practiceTimer !== null')
@@ -160,7 +152,7 @@ with tempfile.TemporaryDirectory() as td:
         assert page.locator('#practice.overlayOpen').count() == 0
         page.click('#stopBeat')
 
-        # 8) Deleting the currently loaded imported beat fully unloads the deck.
+        # 7) Deleting the currently loaded imported beat fully unloads the deck.
         # Ensure current row is visible/active, then delete its own X button.
         page.wait_for_function("document.querySelector('#library .track.active .danger') !== null")
         page.locator('#library .track.active .danger').click()
@@ -170,7 +162,7 @@ with tempfile.TemporaryDirectory() as td:
         page.wait_for_timeout(120)
         assert page.evaluate('deckSource === null') is True
 
-        # 9) Real CHOPPER sample import and PITCH rerender while playing.
+        # 8) Real CHOPPER sample import and PITCH rerender while playing.
         page.click('[data-tab="chopper"]')
         page.set_input_files('#sampleFile',str(sample))
         page.wait_for_function("document.getElementById('chopStatus').textContent.includes('SAMPLE READY')",timeout=10000)
@@ -197,7 +189,7 @@ with tempfile.TemporaryDirectory() as td:
         assert page.evaluate('isLoopPlaying === true && samplePitchSemitones === 3') is True
         page.click('#stopFlip')
 
-        # 10) The seeded reverb impulse is bit-identical. The browser's
+        # 9) The seeded reverb impulse is bit-identical. The browser's
         # partitioned ConvolverNode is allowed to vary at floating-point level,
         # so the end-to-end check verifies that reverb changes a valid,
         # click-free render instead of comparing two convolutions sample by sample.
@@ -263,7 +255,7 @@ with tempfile.TemporaryDirectory() as td:
         assert reverb_check['renderMax']>1e-7 and reverb_check['renderSum']>1e-6, reverb_check
         assert reverb_check['wetJump']<1e-7 and reverb_check['dryJump']<1e-7, reverb_check
 
-        # 11) Drum library fallback imports still work after all fixes.
+        # 10) Drum library fallback imports still work after all fixes.
         page.set_input_files('#kickFolderFallback',str(kick_dir))
         page.set_input_files('#snareFolderFallback',str(snare_dir))
         page.set_input_files('#hatFolderFallback',str(hat_dir))

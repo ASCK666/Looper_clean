@@ -44,14 +44,8 @@ assert.equal(evaluate("clamp(12,0,10)"),10);
 assert.equal(evaluate("clamp(-1,0,10)"),0);
 assert.equal(evaluate("shortName('abcdef',4)"),"abc…");
 assert.equal(evaluate("safeErrorMessage({message:'bad\\nmessage'})"),"bad message");
-assert.equal(evaluate("dbToBarCount(-42,16)"),0);
-assert.equal(evaluate("dbToBarCount(-21,16)"),8);
-assert.equal(evaluate("dbToBarCount(0,16)"),16);
-assert.doesNotMatch(evaluate("initializeAudioContext.toString()"),/startMeterAnimation/);
-assert.match(evaluate("ensureAudio.toString()"),/startMeterAnimation/);
-assert.equal(evaluate("updateMasterVolume(0);masterVolumeGain()"),0);
-assert.equal(evaluate("updateMasterVolume(25);masterVolumeGain()"),.25);
-assert.equal(evaluate("updateMasterVolume(150);masterVolumeGain()"),1);
+assert.equal(evaluate("MASTER_OUTPUT_GAIN"),.85);
+assert.doesNotMatch(evaluate("initializeAudioContext.toString()"),/Analyser|Meter|Volume/);
 assert.equal(evaluate("isAudioFile({name:'BEAT.WAV',type:''})"),true);
 assert.equal(evaluate("isAudioFile({name:'notes.txt',type:'text/plain'})"),false);
 assert.throws(

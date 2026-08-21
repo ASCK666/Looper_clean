@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <title>Scratch Practice Station</title>
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="./css/base.css?v=looper66-desktop-transport-210826-4">
+<link rel="stylesheet" href="./css/base.css?v=looper66-tabs-210826-5">
 <link rel="stylesheet" href="./css/clean-ui.css">
 <link rel="stylesheet" href="./css/chopper-drum-controls.css">
 </head>
@@ -34,25 +34,6 @@
       <button id="practiceOverlayOpen" class="utilityBtn" type="button">PRACTICE</button>
     </div>
 
-    <div class="headerMaster">
-      <div class="headerVolLabel">VOLUME</div>
-      <div class="headerMasterInner">
-        <div class="masterVolumeBox headerMasterBox">
-          <input id="masterVolume" type="range" min="0" max="100" step="1" value="85">
-        </div>
-        <div id="masterDb" class="masterDb">-1.8 dB</div>
-        <span id="masterVolumeReadout" class="compatHidden">85%</span>
-        <div class="headerMeterWrap">
-          <div id="vu" class="vu headerVu"></div>
-          <div class="headerMeterScale"><span>-24</span><span>-18</span><span>-12</span><span>-6</span><span>-3</span><span>0</span></div>
-        </div>
-      </div>
-      <div class="compatHidden">
-        <div id="lampReady" class="lamp green on"></div>
-        <div id="lampPlay" class="lamp red"></div>
-        <div id="lampStore" class="lamp amber"></div>
-      </div>
-    </div>
   </div>
 
   <div class="tabs mainModeTabs" role="tablist" aria-label="Main workstation mode">
@@ -74,7 +55,6 @@
           <source media="(max-width:680px)" srcset="assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp">
           <img src="assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp" alt="" draggable="false">
         </picture>
-        <span id="looperVu" class="vu looperVu" aria-label="Niveau de sortie du Looper"></span>
         <section class="panel looperMainPanel" aria-label="Deck Looper66">
           <div id="looperDropzoneBtn" class="cassetteDeck" role="group" aria-label="Lecteur cassette pixel art et commandes du looper">
             <div class="deckReadout" role="status" aria-live="polite">

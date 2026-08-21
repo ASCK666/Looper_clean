@@ -18,13 +18,16 @@ for control in controls:
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
 
 assert 'class="looper66Skin"' in HTML
-assert './css/base.css?v=looper66-desktop-transport-210826-4' in HTML
+assert './css/base.css?v=looper66-tabs-210826-5' in HTML
 assert './css/clean-ui.css' in HTML
 assert 'assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp' in HTML
 assert 'assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp' in HTML
 assert '>LOAD LIBRARY<' in HTML and '>LOAD BEAT<' in HTML
 assert re.search(r'id="autoLooperToggle"[^>]*aria-label="Speed Up, plus un pour cent toutes les huit boucles"',HTML)
 assert '>SPEED RATE<' not in HTML and '>+1%<' not in HTML
+assert re.search(r'\.mainModeTabs\s*\{[^}]*width:\s*min\(100%,1086px\)\s*!important;[^}]*max-width:\s*1086px\s*!important;[^}]*margin:\s*0 auto\s*!important;',CSS)
+for retired in ('masterVolume','masterDb','masterVolumeReadout','looperVu','headerMaster','headerVu'):
+    assert retired not in HTML+CSS+LOOPER+EVENTS,retired
 transport=HTML[HTML.index('<div class="deckTransport"'):HTML.index('<div id="beatImportStatus"')]
 assert transport.index('id="stopBeat"') < transport.index('id="playBeat"') < transport.index('id="autoLooperToggle"')
 assert 'deckTransportFaceplate' not in HTML+CSS

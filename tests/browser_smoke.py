@@ -43,14 +43,15 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.wait_for_function('window.ChopperWaveSlices',timeout=10000)
 
         assert page.evaluate('window.__SP.errors.length')==0
-        assert page.evaluate('sampleBuffer === null && meterAnimationRAF === 0') is True
+        assert page.evaluate("sampleBuffer === null && typeof meterAnimationRAF === 'undefined'") is True
+        assert page.locator('#masterVolume,#masterDb,#vu,#looperVu').count()==0
         assert not page_errors,page_errors
         assert page.locator('.cassetteMechanism').count()==1
         assert page.locator('.cassetteLayer').count()==1
         assert page.locator('.cassetteReel').count()==2
         assert page.locator('#library .track').count()==0
 
-        for rid in ['playBeat','stopBeat','prevBeat','nextBeat','importBeatsBtn','importFolderBtn','loadSampleBtn','kickFolderBtn','snareFolderBtn','hatFolderBtn','autoLooperToggle','deckAutoToggle','deckPitch','deckTransportState','deckSpeedReadout','looperVu']:
+        for rid in ['playBeat','stopBeat','prevBeat','nextBeat','importBeatsBtn','importFolderBtn','loadSampleBtn','kickFolderBtn','snareFolderBtn','hatFolderBtn','autoLooperToggle','deckAutoToggle','deckPitch','deckTransportState','deckSpeedReadout']:
             assert page.locator('#'+rid).count()==1,rid
         handlers=page.evaluate('''() => ['playBeat','stopBeat','loadSampleBtn','kickFolderBtn','autoLooperToggle','deckAutoToggle','importBeatsBtn','importFolderBtn'].map(id=>typeof document.getElementById(id).onclick)''')
         assert all(v=='function' for v in handlers),handlers
