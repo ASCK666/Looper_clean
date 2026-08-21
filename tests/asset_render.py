@@ -75,7 +75,8 @@ with contextlib.ExitStack() as stack:
         assert all(c['display']!='none' and c['width']>=44 and c['height']>=44 for c in info['controls']),info
         stop,play,speed=info['transport']
         assert abs(stop['width']-speed['width'])<1 and abs(stop['height']-speed['height'])<1,info
-        assert play['width']>stop['width']*2 and play['height']>stop['height'],info
+        assert play['width']>stop['width']*1.5 and play['width']<stop['width']*1.7,info
+        assert play['height']>stop['height'] and stop['width']/stop['height']<1.3,info
         assert info['transportOrder']==['stopBeat','playBeat','autoLooperToggle'],info
         assert info['readoutRateFontSize']<=27.01,info
         assert all(style['background']=='rgba(0, 0, 0, 0)' and style['backgroundImage']=='none' and style['boxShadow']=='none' for style in info['transportStyles']),info

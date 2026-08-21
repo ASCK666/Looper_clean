@@ -18,7 +18,7 @@ for control in controls:
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
 
 assert 'class="looper66Skin"' in HTML
-assert './css/base.css?v=looper66-desktop-transport-210826-1' in HTML
+assert './css/base.css?v=looper66-desktop-transport-210826-2' in HTML
 assert './css/clean-ui.css' in HTML
 assert 'assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp' in HTML
 assert 'assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp' in HTML
@@ -56,7 +56,7 @@ assert '.cassetteDeck:not(.loaded) #playBeat::before { animation:looper66EmptyPl
 assert '@keyframes looper66EmptyPlayAuraPulse' in CSS
 assert '.cassetteDeck:not(.loaded) #playBeat::after { animation:looper66EmptyPlayAuraPulse 6s ease-in-out infinite; }' in CSS
 assert '@media (prefers-reduced-motion:reduce)' in CSS
-assert 'grid-template-columns:24fr 52fr 24fr' in CSS
+assert 'grid-template-columns:28fr 44fr 28fr' in CSS
 assert '.deckReadoutRate { position:absolute;bottom:14%;left:8%;font-size:clamp(13px,1.8vw,27px);' in CSS
 assert '@media (max-width:680px)' in CSS
 assert '--light-strength' in CSS and 'var(--deck-amber)' in CSS
@@ -67,9 +67,9 @@ assert '.deckHotspot::before' in CSS and '.deckLoadKey::before' in CSS
 assert re.search(r'\.deckHotspot::before\s*\{[^}]*border:0;',CSS)
 assert re.search(r'\.deckLoadKey::before[^\{]*\{[^}]*border:0;',CSS)
 assert re.search(r'\.deckAutoKey::before\s*\{[^}]*border:0;',CSS)
-assert 'looper66-desktop-transport-210826.webp' in CSS
+assert 'looper66-desktop-transport-square-49d0237b.webp' in CSS
 assert re.search(r'\.deckHotspot::before\s*\{[^}]*background-image:var\(--transport-light-image\);[^}]*background-size:var\(--transport-light-size\);[^}]*box-shadow:none;[^}]*mix-blend-mode:screen;',CSS)
-assert '#playBeat { --transport-light-position:center;--transport-light-size:192.308% 100%;height:100%; }' in CSS
+assert '#playBeat { --transport-light-position:center;--transport-light-size:227.273% 100%;height:100%; }' in CSS
 assert '#autoLooperToggle { --light-gain:.62;--transport-light-position:right center; }' in CSS
 assert 'looper66-mobile-transport-fbd6a0d3.webp' in CSS
 assert re.search(r'@media \(max-width:680px\)[\s\S]*\.deckTransport\s*\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\);[^}]*grid-template-rows:48fr 46fr;',CSS)
@@ -110,7 +110,7 @@ references={
     'looper66-desktop-pitch-clean-1e6d4f36.webp':((1086,1009),'1e6d4f360d7b6382a6bfeab0559aaaf505080ff6ef6e6bff7467175dd696e548'),
     'looper66-mobile-pitch-clean-c034fcbb.webp':((441,849),'c034fcbb8d60de005240f9a339af9a51d5dd25f66c6fdb81209c2d93052ef02b'),
     'looper66-mobile-transport-fbd6a0d3.webp':((379,215),'fbd6a0d378eb43526ffbb1c9b6109c6894522d516310d003abe3f47edfd51bc5'),
-    'looper66-desktop-transport-210826.webp':((750,124),'4a442b2fb8c67702af01f560493bd72c56970c7f557a61b15ed4049afc29828e'),
+    'looper66-desktop-transport-square-49d0237b.webp':((750,200),'49d0237b68c14eed4a7237794432ab4899add5b6a098a446923b70a66b9cf7a6'),
     'looper66-crate-cassettes.webp':((560,62),'12256e2ec27d0a2976ce0a15184f578a04034c5318bbff8819deab05d0d6e3c9'),
     'looper66-cassette-bay-b10ab679.png':((793,496),'b10ab6796ed411b1633b7c81f8cbdc213c249e4499ffc92ec9e373bcb2c5c245'),
 }
