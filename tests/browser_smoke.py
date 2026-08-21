@@ -40,8 +40,10 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.on('console',lambda m:console_errors.append(m.text) if m.type=='error' else None)
         page.goto(f'http://127.0.0.1:{port}/index.html',wait_until='networkidle',timeout=30000)
         page.wait_for_function('window.__SP && window.__SP.ready === true',timeout=10000)
+        page.wait_for_function('window.ChopperWaveSlices',timeout=10000)
 
         assert page.evaluate('window.__SP.errors.length')==0
+        assert page.evaluate('sampleBuffer === null && meterAnimationRAF === 0') is True
         assert not page_errors,page_errors
         assert page.locator('.cassetteMechanism').count()==1
         assert page.locator('.cassetteLayer').count()==1

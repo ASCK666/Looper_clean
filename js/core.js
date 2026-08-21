@@ -105,13 +105,13 @@ function initializeAudioContext(){
   masterAnalyser.connect(ctx.destination);
 
   ensureMeterElements();
-  startMeterAnimation();
   return ctx;
 }
 
 async function ensureAudio(){
   initializeAudioContext();
   if(ctx.state==="suspended")await ctx.resume();
+  startMeterAnimation();
   return ctx;
 }
 

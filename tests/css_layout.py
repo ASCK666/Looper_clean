@@ -31,7 +31,7 @@ with contextlib.ExitStack() as stack:
               const rect=id=>document.getElementById(id).getBoundingClientRect();
               const mechanism=document.querySelector('.cassetteMechanism').getBoundingClientRect();
               const controls=['prevBeat','playBeat','stopBeat','nextBeat','autoLooperToggle','deckAutoToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>({id,...rect(id).toJSON()}));
-              return {bodyW:document.body.scrollWidth,viewportW:innerWidth,mechanism:mechanism.toJSON(),controls,transportPanel:document.querySelector('.deckTransportVisual').getBoundingClientRect().toJSON(),pitch:document.querySelector('.deckPitchModule').getBoundingClientRect().toJSON(),workspace:getComputedStyle(document.querySelector('.looper66Workspace')).gridTemplateColumns};
+              return {bodyW:document.body.scrollWidth,viewportW:innerWidth,mechanism:mechanism.toJSON(),controls,transportPanel:document.querySelector('.deckTransportVisual').getBoundingClientRect().toJSON(),pitch:document.querySelector('.deckPitchModule').getBoundingClientRect().toJSON(),workspace:getComputedStyle(document.querySelector('.looper66Workspace')).gridTemplateColumns,playLightSize:getComputedStyle(document.getElementById('playBeat'),'::before').backgroundSize};
             }''')
             assert metrics['bodyW']<=metrics['viewportW']+2,metrics
             expected_mechanism_ratio=1.505 if width<=680 else 1.586
@@ -54,6 +54,7 @@ with contextlib.ExitStack() as stack:
                 assert abs(speed['x']-metrics['transportPanel']['x'])<1 and abs(speed['width']-metrics['transportPanel']['width'])<1,metrics
                 assert metrics['transportPanel']['y']>=metrics['mechanism']['y']+metrics['mechanism']['height']-1,metrics
                 assert metrics['transportPanel']['y']+metrics['transportPanel']['height']<=metrics['pitch']['y']+1,metrics
+                assert metrics['playLightSize']=='208.35% 208.35%',metrics
             assert len(metrics['workspace'].split())==1,metrics
             page.click('[data-tab="chopper"]'); page.wait_for_timeout(60)
             page.click('[data-tab="looper"]'); page.wait_for_timeout(60)

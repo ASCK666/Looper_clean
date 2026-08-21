@@ -1,6 +1,10 @@
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
+loader=(ROOT/'js/chopper-wave-slices.js').read_text(encoding='utf-8')
+assert 'await loadDefaultSample();' not in loader
+assert '.addEventListener("click",requestDefaultSample,{once:true})' in loader
+assert 'if(chopper?.classList.contains("active"))' in loader
 legacy=ROOT/'tests/chopper_wave_slices_legacy.py'
 source=legacy.read_text(encoding='utf-8')
 needle="js/chopper-wave-slices.js"

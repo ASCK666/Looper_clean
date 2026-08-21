@@ -18,7 +18,7 @@ for control in controls:
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
 
 assert 'class="looper66Skin"' in HTML
-assert './css/base.css?v=looper66-desktop-transport-210826-3' in HTML
+assert './css/base.css?v=looper66-desktop-transport-210826-4' in HTML
 assert './css/clean-ui.css' in HTML
 assert 'assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp' in HTML
 assert 'assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp' in HTML
@@ -74,6 +74,7 @@ assert '#autoLooperToggle { --light-gain:.62;--transport-light-position:right ce
 assert 'looper66-mobile-transport-fbd6a0d3.webp' in CSS
 assert re.search(r'@media \(max-width:680px\)[\s\S]*\.deckTransport\s*\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\);[^}]*grid-template-rows:48fr 46fr;',CSS)
 assert re.search(r'@media \(max-width:680px\)[\s\S]*#autoLooperToggle\s*\{[^}]*grid-column:1/-1;',CSS)
+assert re.search(r'@media \(max-width:680px\)[\s\S]*#playBeat\s*\{[^}]*--transport-light-position:right top;[^}]*--transport-light-size:208\.35% 208\.35%;',CSS)
 assert re.search(r'\.deckLoadKey::before[^\{]*\{[^}]*box-shadow:none;[^}]*filter:blur\(2px\);',CSS)
 assert 'opacity:.001' not in CSS
 assert 'id="deckPitchModule"' in HTML

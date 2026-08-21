@@ -1131,7 +1131,7 @@ a, .blue {
   .looper66Shell .deckTransport { grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:48fr 46fr;column-gap:4%;row-gap:6%; }
   .looper66Shell .deckHotspot { --transport-light-image:url("../assets/looper-ui/looper66-mobile-transport-fbd6a0d3.webp");--transport-light-size:208.35% 208.35%;height:100%;min-height:44px; }
   .looper66Shell #stopBeat { --transport-light-position:left top; }
-  .looper66Shell #playBeat { --transport-light-position:right top; }
+  .looper66Shell #playBeat { --transport-light-position:right top;--transport-light-size:208.35% 208.35%; }
   .looper66Shell #autoLooperToggle { --transport-light-position:left bottom;--transport-light-size:100% 217.4%;grid-column:1/-1; }
   .looper66Shell .deckRateVisualSegments { top:82.8%;left:17%;width:66%;height:9.2%; }
 

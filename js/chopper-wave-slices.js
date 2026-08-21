@@ -7,6 +7,7 @@
   const DEFAULT_SAMPLE_URL="./assets/Le%20altre%2010.mp3";
   const DEFAULT_SAMPLE_NAME="Le altre 10.mp3";
   let defaultSampleCancelled=false;
+  let defaultSampleRequested=false;
 
   function loadScript(src,dataKey,scope){
     const selector=`script[data-${dataKey.replace(/[A-Z]/g,m=>`-${m.toLowerCase()}`)}="1"]`;
@@ -52,6 +53,22 @@
     }
   }
 
+  function requestDefaultSample(){
+    if(defaultSampleRequested)return;
+    defaultSampleRequested=true;
+    void loadDefaultSample();
+  }
+
+  function loadDefaultSampleOnChopperOpen(){
+    const chopper=document.getElementById("chopper");
+    if(chopper?.classList.contains("active")){
+      requestDefaultSample();
+      return;
+    }
+    document.querySelector('[data-tab="chopper"]')
+      ?.addEventListener("click",requestDefaultSample,{once:true});
+  }
+
   async function boot(){
     const sampleInput=document.getElementById("sampleFile");
     sampleInput?.addEventListener("change",()=>{defaultSampleCancelled=true;},{once:true});
@@ -63,7 +80,7 @@
       await loadScript("./js/chopper-folder-reconnect.js","chopperFolderReconnect","CHOPPER FOLDER RECONNECT");
     }
 
-    await loadDefaultSample();
+    loadDefaultSampleOnChopperOpen();
   }
 
   void boot().catch(error=>{
