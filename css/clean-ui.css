@@ -63,6 +63,24 @@
 #chopper .samplerDeck {
   gap: 8px !important;
   padding: 8px !important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.018),rgba(0,0,0,.12)),
+    var(--deck-texture),
+    #0b0907 !important;
+  background-size: auto,256px 256px,auto !important;
+  background-blend-mode: normal,soft-light,normal !important;
+}
+
+/* Reuse the physical deck grain on the Chopper's metal work surfaces.
+   Screens, pads and interactive controls keep their own material treatment. */
+#chopper .samplerDeck .panel,
+#chopper .samplerDrumSection {
+  background:
+    linear-gradient(180deg,rgba(21,18,15,.78),rgba(9,7,5,.88)),
+    var(--deck-texture),
+    #090705 !important;
+  background-size: auto,256px 256px,auto !important;
+  background-blend-mode: normal,soft-light,normal !important;
 }
 
 #chopper .samplerUpperDeck {
