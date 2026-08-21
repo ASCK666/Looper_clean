@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>POC Mobile Chopper — Slice Editor</title>
+<style>
+  html,body{margin:0;min-height:100%;background:#050403}
+  #appFrame{display:block;width:100%;height:100dvh;border:0;background:#050403}
+</style>
+</head>
+<body>
+<iframe id="appFrame" src="../index.html" title="Looper666 mobile Chopper POC"></iframe>
+<script>
+(() => {
+  "use strict";
+
+  const frame=document.getElementById("appFrame");
+  const MOBILE_QUERY="(max-width: 760px)";
+  let baseline=[];
+  let activeSlice=-1;
+  let draggingBoundary=-1;
+
+  frame.addEventListener("load",()=>{
+    const win=frame.contentWindow;
+    const doc=frame.contentDocument;
+    if(!win||!doc)return;
+
+    const style=doc.createElement("style");
+    style.textContent=`
+      @media (max-width:760px){
+        #chopper .samplerControlLegend{display:none!important}
+        #chopper .advancedBox .fineSettingsSelectRow>div:first-child{display:none!important}
+        #chopper .wavewrap{cursor:pointer}
+        #chopper .wavewrap:after{
+          content:"TAP A SLICE TO EDIT";
+          position:absolute;right:8px;bottom:8px;z-index:5;
+          padding:4px 6px;border:1px solid #5f4930;border-radius:3px;
+          color:#e2ad5f;background:rgba(4,3,2,.8);
+          font:800 8px/1 ui-monospace,SFMono-Regular,Consolas,monospace;
+          letter-spacing:.5px;pointer-events:none
+        }
+        .mobileSliceBackdrop{
+          position:fixed;inset:0;z-index:5000;display:none;
+          align-items:flex-end;background:rgba(0,0,0,.72);backdrop-filter:blur(2px)
+        }
+        .mobileSliceBackdrop.open{display:flex}
+        .mobileSliceSheet{
+          width:100%;max-height:92dvh;overflow:auto;
+          padding:10px 10px calc(12px + env(safe-area-inset-bottom));
+          border-top:1px solid #6e5638;background:#0a0907;
+          box-shadow:0 -18px 50px rgba(0,0,0,.55)
+        }
+        .mobileSliceHead{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px;margin-bottom:8px}
+        .mobileSliceNav,.mobileSliceClose,.mobileSliceBtn{
+          min-height:42px;border:1px solid #443725;border-radius:4px;
+          background:#17130e;color:#ead9b9;font:850 10px/1 Arial Narrow,Arial,sans-serif;
+          letter-spacing:.8px;text-transform:uppercase
+        }
+        .mobileSliceTitle{text-align:center;color:#e2ad5f;font:900 12px/1 Arial Narrow,Arial,sans-serif;letter-spacing:1.2px}
+        .mobileSliceSub{margin-top:4px;color:#87755d;font:800 8px/1 ui-monospace,SFMono-Regular,Consolas,monospace}
+        .mobileSliceCanvasWrap{position:relative;border:1px solid #3c3021;border-radius:5px;overflow:hidden;background:#050403}
+        #mobileSliceCanvas{display:block;width:100%;height:210px;touch-action:none}
+        .mobileSliceHint{padding:6px 8px;color:#86745a;font:800 8px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace;text-align:center}
+        .mobileSliceTimes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+        .mobileSliceTimeBox{padding:8px;border:1px solid #31291e;border-radius:4px;background:#0d0b08;text-align:center}
+        .mobileSliceTimeBox small{display:block;color:#77664e;font:800 8px/1 ui-monospace,SFMono-Regular,Consolas,monospace}
+        .mobileSliceTimeBox strong{display:block;margin-top:5px;color:#ead9b9;font:900 14px/1 ui-monospace,SFMono-Regular,Consolas,monospace}
+        .mobileSliceNudges{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+        .mobileSliceActions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
+        .mobileSliceBtn.primary{border-color:#8c6735;background:#342411;color:#f3d79e}
+        .mobileSliceBtn.reset{border-color:#63412d;color:#d9b18d}
+        .mobileSliceBtn:active,.mobileSliceNav:active,.mobileSliceClose:active{transform:translateY(1px)}
+        body.mobileSliceLocked{overflow:hidden!important}
+      }
+    `;
+    doc.head.appendChild(style);
+
+    const modal=doc.createElement("div");
+    modal.className="mobileSliceBackdrop";
+    modal.id="mobileSliceBackdrop";
+    modal.innerHTML=`
+      <div class="mobileSliceSheet" role="dialog" aria-modal="true" aria-labelledby="mobileSliceTitle">
+        <div class="mobileSliceHead">
+          <button class="mobileSliceNav" id="mobileSlicePrev" type="button" aria-label="Slice précédente">◀</button>
+          <div>
+            <div class="mobileSliceTitle" id="mobileSliceTitle">SLICE 01 / 16</div>
+            <div class="mobileSliceSub" id="mobileSliceSub">AUTO CHOP BASELINE</div>
+          </div>
+          <button class="mobileSliceClose" id="mobileSliceClose" type="button" aria-label="Fermer">✕</button>
+        </div>
+        <div class="mobileSliceCanvasWrap">
+          <canvas id="mobileSliceCanvas" width="900" height="420"></canvas>
+          <div class="mobileSliceHint">DRAG START / END • manual edits stay free</div>
+        </div>
+        <div class="mobileSliceTimes">
+          <div class="mobileSliceTimeBox"><small>START</small><strong id="mobileSliceStart">0.000 s</strong></div>
+          <div class="mobileSliceTimeBox"><small>END</small><strong id="mobileSliceEnd">0.000 s</strong></div>
+        </div>
+        <div class="mobileSliceNudges">
+          <button class="mobileSliceBtn" data-nudge="start:-0.005" type="button">START −5</button>
+          <button class="mobileSliceBtn" data-nudge="start:0.005" type="button">START +5</button>
+          <button class="mobileSliceBtn" data-nudge="end:-0.005" type="button">END −5</button>
+          <button class="mobileSliceBtn" data-nudge="end:0.005" type="button">END +5</button>
+        </div>
+        <div class="mobileSliceActions">
+          <button class="mobileSliceBtn primary" id="mobileSliceAudition" type="button">▶ AUDITION</button>
+          <button class="mobileSliceBtn reset" id="mobileSliceReset" type="button">RESET SLICE</button>
+          <button class="mobileSliceBtn" id="mobileSliceAuto" type="button">AUTO CHOP 16</button>
+          <button class="mobileSliceBtn" id="mobileSliceNext" type="button">NEXT ▶</button>
+        </div>
+      </div>`;
+    doc.body.appendChild(modal);
+
+    const $=id=>doc.getElementById(id);
+    const canvas=$("waveCanvas");
+    const editorCanvas=$("mobileSliceCanvas");
+    const editorCtx=editorCanvas.getContext("2d");
+
+    function isMobile(){ return win.matchMedia(MOBILE_QUERY).matches; }
+    function readMarkers(){
+      try{return win.eval("markers.slice()");}catch{return [];}
+    }
+    function readBuffer(){
+      try{return win.eval("sampleBuffer");}catch{return null;}
+    }
+    function snapshotBaseline(){
+      const current=readMarkers();
+      if(current.length===17)baseline=current.slice();
+    }
+    function forceSixteen(){
+      const select=$("sliceCount");
+      if(select)select.value="16";
+    }
+    function autoChop16(){
+      forceSixteen();
+      try{win.eval("autoPlaceMarkers()") }catch{}
+      snapshotBaseline();
+      if(activeSlice>=0)refreshEditor();
+    }
+
+    forceSixteen();
+
+    const autoBtn=$("autoMarkers");
+    if(autoBtn){
+      autoBtn.addEventListener("click",()=>setTimeout(snapshotBaseline,0));
+    }
+    const sampleInput=$("sampleFile");
+    if(sampleInput){
+      sampleInput.addEventListener("change",()=>{
+        forceSixteen();
+        let tries=0;
+        const timer=win.setInterval(()=>{
+          tries++;
+          const current=readMarkers();
+          if(current.length===17){
+            baseline=current.slice();
+            win.clearInterval(timer);
+          }else if(tries>80){
+            win.clearInterval(timer);
+          }
+        },100);
+      });
+    }
+
+    function sourceAtCanvasX(clientX){
+      if(!canvas)return null;
+      const rect=canvas.getBoundingClientRect();
+      const ratio=Math.max(0,Math.min(1,(clientX-rect.left)/Math.max(1,rect.width)));
+      try{
+        return win.eval(`(()=>{const vw=viewWindow();return displayToSourceTime(vw.start+${ratio}*vw.dur)})()`);
+      }catch{return null;}
+    }
+
+    function sliceAtSource(sec){
+      const m=readMarkers();
+      if(!m.length||sec===null)return -1;
+      for(let i=0;i<m.length-1;i++){
+        if(sec>=m[i] && (sec<m[i+1] || i===m.length-2))return i;
+      }
+      return -1;
+    }
+
+    function openSlice(index){
+      const m=readMarkers();
+      if(index<0||index>=m.length-1)return;
+      activeSlice=index;
+      if(baseline.length!==m.length)baseline=m.slice();
+      modal.classList.add("open");
+      doc.body.classList.add("mobileSliceLocked");
+      refreshEditor();
+    }
+
+    function closeSlice(){
+      modal.classList.remove("open");
+      doc.body.classList.remove("mobileSliceLocked");
+      draggingBoundary=-1;
+    }
+
+    function editorWindow(){
+      const m=readMarkers();
+      const buffer=readBuffer();
+      if(!buffer||activeSlice<0||activeSlice>=m.length-1)return null;
+      const start=m[activeSlice],end=m[activeSlice+1];
+      const span=Math.max(.001,end-start);
+      const left=Math.max(0,start-span*.55);
+      const right=Math.min(buffer.duration,end+span*.55);
+      return {m,buffer,start,end,left,right,dur:Math.max(.001,right-left)};
+    }
+
+    function drawEditor(){
+      const state=editorWindow();
+      const w=editorCanvas.width,h=editorCanvas.height;
+      editorCtx.clearRect(0,0,w,h);
+      editorCtx.fillStyle="#050403";
+      editorCtx.fillRect(0,0,w,h);
+      if(!state)return;
+
+      const {buffer,start,end,left,right,dur}=state;
+      const data=buffer.getChannelData(0),sr=buffer.sampleRate;
+      const first=Math.max(0,Math.floor(left*sr));
+      const last=Math.min(data.length,Math.ceil(right*sr));
+      const center=h/2;
+      editorCtx.strokeStyle="#d7a455";
+      editorCtx.lineWidth=2;
+      editorCtx.beginPath();
+      for(let x=0;x<w;x++){
+        const a=first+Math.floor((last-first)*x/w);
+        const b=Math.min(last,first+Math.ceil((last-first)*(x+1)/w));
+        let min=1,max=-1;
+        for(let i=a;i<b;i+=Math.max(1,Math.floor((b-a)/12))){
+          const v=data[i]||0;if(v<min)min=v;if(v>max)max=v;
+        }
+        editorCtx.moveTo(x,center-max*(h*.37));
+        editorCtx.lineTo(x,center-min*(h*.37));
+      }
+      editorCtx.stroke();
+
+      const xStart=(start-left)/dur*w;
+      const xEnd=(end-left)/dur*w;
+      editorCtx.fillStyle="rgba(226,173,95,.10)";
+      editorCtx.fillRect(xStart,0,Math.max(1,xEnd-xStart),h);
+
+      function handle(x,label,align){
+        editorCtx.strokeStyle="#ff795a";
+        editorCtx.lineWidth=5;
+        editorCtx.beginPath();editorCtx.moveTo(x,0);editorCtx.lineTo(x,h);editorCtx.stroke();
+        editorCtx.fillStyle="#ff795a";
+        editorCtx.beginPath();
+        editorCtx.moveTo(x,0);editorCtx.lineTo(x+(align<0?-18:18),0);editorCtx.lineTo(x,24);editorCtx.closePath();editorCtx.fill();
+        editorCtx.fillStyle="#f7dec0";
+        editorCtx.font="900 24px monospace";
+        editorCtx.textAlign=align<0?"right":"left";
+        editorCtx.fillText(label,x+(align<0?-12:12),46);
+      }
+      handle(xStart,"START",1);
+      handle(xEnd,"END",-1);
+    }
+
+    function refreshEditor(){
+      const m=readMarkers();
+      if(activeSlice<0||activeSlice>=m.length-1)return;
+      $("mobileSliceTitle").textContent=`SLICE ${String(activeSlice+1).padStart(2,"0")} / ${m.length-1}`;
+      $("mobileSliceStart").textContent=`${m[activeSlice].toFixed(3)} s`;
+      $("mobileSliceEnd").textContent=`${m[activeSlice+1].toFixed(3)} s`;
+      const changed=baseline.length===m.length && (
+        Math.abs(m[activeSlice]-baseline[activeSlice])>.0005 ||
+        Math.abs(m[activeSlice+1]-baseline[activeSlice+1])>.0005
+      );
+      $("mobileSliceSub").textContent=changed?"MANUAL EDIT • RESET AVAILABLE":"AUTO CHOP BASELINE";
+      drawEditor();
+    }
+
+    function moveBoundary(markerIndex,sec){
+      try{win.eval(`moveMarker(${markerIndex},${Number(sec)},false)`) }catch{}
+      refreshEditor();
+    }
+
+    function nudge(which,delta){
+      const m=readMarkers();
+      const markerIndex=which==="start"?activeSlice:activeSlice+1;
+      if(markerIndex<0||markerIndex>=m.length)return;
+      moveBoundary(markerIndex,m[markerIndex]+delta);
+    }
+
+    function resetSlice(){
+      const m=readMarkers();
+      if(baseline.length!==m.length||activeSlice<0)return;
+      moveBoundary(activeSlice,baseline[activeSlice]);
+      moveBoundary(activeSlice+1,baseline[activeSlice+1]);
+      refreshEditor();
+    }
+
+    function changeSlice(delta){
+      const m=readMarkers();
+      if(!m.length)return;
+      activeSlice=(activeSlice+delta+(m.length-1))%(m.length-1);
+      refreshEditor();
+    }
+
+    if(canvas){
+      canvas.addEventListener("pointerdown",ev=>{
+        if(!isMobile()||!readBuffer())return;
+        const sec=sourceAtCanvasX(ev.clientX);
+        const slice=sliceAtSource(sec);
+        if(slice<0)return;
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        openSlice(slice);
+      },true);
+    }
+
+    editorCanvas.addEventListener("pointerdown",ev=>{
+      const state=editorWindow();
+      if(!state)return;
+      const rect=editorCanvas.getBoundingClientRect();
+      const ratio=Math.max(0,Math.min(1,(ev.clientX-rect.left)/Math.max(1,rect.width)));
+      const sec=state.left+ratio*state.dur;
+      const dStart=Math.abs(sec-state.start),dEnd=Math.abs(sec-state.end);
+      draggingBoundary=dStart<=dEnd?activeSlice:activeSlice+1;
+      editorCanvas.setPointerCapture(ev.pointerId);
+      ev.preventDefault();
+    });
+    editorCanvas.addEventListener("pointermove",ev=>{
+      if(draggingBoundary<0)return;
+      const state=editorWindow();
+      if(!state)return;
+      const rect=editorCanvas.getBoundingClientRect();
+      const ratio=Math.max(0,Math.min(1,(ev.clientX-rect.left)/Math.max(1,rect.width)));
+      moveBoundary(draggingBoundary,state.left+ratio*state.dur);
+      ev.preventDefault();
+    });
+    editorCanvas.addEventListener("pointerup",()=>{draggingBoundary=-1});
+    editorCanvas.addEventListener("pointercancel",()=>{draggingBoundary=-1});
+
+    $("mobileSliceClose").addEventListener("click",closeSlice);
+    $("mobileSlicePrev").addEventListener("click",()=>changeSlice(-1));
+    $("mobileSliceNext").addEventListener("click",()=>changeSlice(1));
+    $("mobileSliceAuto").addEventListener("click",autoChop16);
+    $("mobileSliceReset").addEventListener("click",resetSlice);
+    $("mobileSliceAudition").addEventListener("click",()=>{
+      try{win.eval(`previewSlice(${activeSlice})`) }catch{}
+    });
+    modal.addEventListener("click",ev=>{if(ev.target===modal)closeSlice()});
+    modal.querySelectorAll("[data-nudge]").forEach(button=>{
+      button.addEventListener("click",()=>{
+        const [which,delta]=button.dataset.nudge.split(":");
+        nudge(which,Number(delta));
+      });
+    });
+
+    win.addEventListener("resize",()=>{if(modal.classList.contains("open"))refreshEditor()});
+  });
+})();
+</script>
+</body>
+</html>
