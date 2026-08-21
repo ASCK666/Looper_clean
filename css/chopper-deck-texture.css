@@ -1,0 +1,34 @@
+/* 210826-ui-chopper: make the shared deck grain visibly part of the Chopper chassis.
+   Loaded after chopper-drum-controls.css so these material rules win the cascade. */
+
+#chopper.screen .samplerDeck {
+  background-image:
+    linear-gradient(180deg,rgba(8,6,4,.24),rgba(8,6,4,.42)),
+    var(--deck-texture) !important;
+  background-color:#080604 !important;
+  background-size:auto,256px 256px !important;
+  background-repeat:no-repeat,repeat !important;
+  background-blend-mode:normal,normal !important;
+}
+
+#chopper.screen .samplerDeck .panel,
+#chopper.screen .samplerDrumSection {
+  background-image:
+    linear-gradient(180deg,rgba(16,12,8,.42),rgba(8,6,4,.58)),
+    var(--deck-texture) !important;
+  background-color:#0d0a07 !important;
+  background-size:auto,256px 256px !important;
+  background-repeat:no-repeat,repeat !important;
+  background-blend-mode:normal,normal !important;
+}
+
+/* Keep display/readout surfaces visually separate from the textured chassis. */
+#chopper.screen .wavewrap.largeWave,
+#chopper.screen .loopGridWrap,
+#chopper.screen .drumEditBox,
+#chopper.screen .advancedBox,
+#chopper.screen input,
+#chopper.screen select,
+#chopper.screen .status {
+  background-image:none !important;
+}
