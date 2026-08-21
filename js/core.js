@@ -90,22 +90,27 @@ function safeErrorMessage(error,fallback="Erreur"){
   return raw.replace(/[\x00-\x1F\x7F]/g," ").trim().slice(0,180)||fallback;
 }
 
+function initializeAudioContext(){
+  if(ctx)return ctx;
+
+  ctx=new AudioContext({latencyHint:"interactive"});
+  liveBus=ctx.createGain();
+  liveBus.gain.value=masterVolumeGain();
+
+  masterAnalyser=ctx.createAnalyser();
+  masterAnalyser.fftSize=1024;
+  masterAnalyser.smoothingTimeConstant=.74;
+
+  liveBus.connect(masterAnalyser);
+  masterAnalyser.connect(ctx.destination);
+
+  ensureMeterElements();
+  startMeterAnimation();
+  return ctx;
+}
+
 async function ensureAudio(){
-  if(!ctx){
-    ctx=new AudioContext({latencyHint:"interactive"});
-    liveBus=ctx.createGain();
-    liveBus.gain.value=masterVolumeGain();
-
-    masterAnalyser=ctx.createAnalyser();
-    masterAnalyser.fftSize=1024;
-    masterAnalyser.smoothingTimeConstant=.74;
-
-    liveBus.connect(masterAnalyser);
-    masterAnalyser.connect(ctx.destination);
-
-    ensureMeterElements();
-    startMeterAnimation();
-  }
+  initializeAudioContext();
   if(ctx.state==="suspended")await ctx.resume();
   return ctx;
 }
@@ -242,7 +247,7 @@ function bufferToBlob(buffer){
 }
 
 async function decodeFile(file){
-  await ensureAudio();
+  initializeAudioContext();
   const ab = await file.arrayBuffer();
   return await ctx.decodeAudioData(ab.slice(0));
 }
