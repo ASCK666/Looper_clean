@@ -5,6 +5,8 @@ loader=(ROOT/'js/chopper-wave-slices.js').read_text(encoding='utf-8')
 assert 'await loadDefaultSample();' not in loader
 assert '.addEventListener("click",requestDefaultSample,{once:true})' in loader
 assert 'if(chopper?.classList.contains("active"))' in loader
+assert './js/chopper-banks.js' in loader
+assert loader.index('./js/chopper-wave-slices-core.js') < loader.index('./js/chopper-banks.js') < loader.index('loadDefaultSampleOnChopperOpen()')
 legacy=ROOT/'tests/chopper_wave_slices_legacy.py'
 source=legacy.read_text(encoding='utf-8')
 needle="js/chopper-wave-slices.js"
