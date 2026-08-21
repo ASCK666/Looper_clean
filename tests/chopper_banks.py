@@ -32,14 +32,13 @@ def inline_project():
     html=re.sub(r'src="assets/[^"]+"','src=""',html)
     for rel in [
         './js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js',
-        './js/chopper.js','./js/drums.js','./js/events.js','./js/chopper-drum-controls.js'
+        './js/chopper.js','./js/drums.js','./js/events.js','./js/chopper-drum-controls.js',
+        './js/chopper-wave-slices-core.js','./js/chopper-banks.js',
+        './js/chopper-folder-reconnect.js','./js/chopper-wave-slices.js'
     ]:
         js=(ROOT/rel[2:]).read_text(encoding='utf-8')
         html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
         html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
-    feature=(ROOT/'js/chopper-wave-slices-core.js').read_text(encoding='utf-8')
-    banks=(ROOT/'js/chopper-banks.js').read_text(encoding='utf-8')
-    html=html.replace('</body>',f'<script>{feature}</script><script>{banks}</script></body>')
     return html
 
 
@@ -173,4 +172,4 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert not errors,errors
     page.close();browser.close()
 
-print('OK: Chopper banks — ALL + overlapping 30s windows, independent MARKERS/SLICES/grid state and bank-limited rendering')
+print('OK: Chopper banks — production script order, ALL + overlapping 30s windows, independent MARKERS/SLICES/grid state and bank-limited rendering')
