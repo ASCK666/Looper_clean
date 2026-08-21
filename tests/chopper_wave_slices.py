@@ -6,7 +6,10 @@ assert 'await loadDefaultSample();' not in loader
 assert '.addEventListener("click",requestDefaultSample,{once:true})' in loader
 assert 'if(chopper?.classList.contains("active"))' in loader
 assert './js/chopper-banks.js' in loader
-assert loader.index('./js/chopper-wave-slices-core.js') < loader.index('./js/chopper-banks.js') < loader.index('loadDefaultSampleOnChopperOpen()')
+core_pos=loader.index('./js/chopper-wave-slices-core.js')
+banks_pos=loader.index('./js/chopper-banks.js')
+default_call_pos=loader.rindex('    loadDefaultSampleOnChopperOpen();')
+assert core_pos < banks_pos < default_call_pos
 legacy=ROOT/'tests/chopper_wave_slices_legacy.py'
 source=legacy.read_text(encoding='utf-8')
 needle="js/chopper-wave-slices.js"
