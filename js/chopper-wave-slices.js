@@ -1,8 +1,8 @@
 "use strict";
 
 // looper-next feature loader. The maintained bootstrap still loads this path;
-// the actual slice editor lives in chopper-wave-slices-core.js so this loader
-// can also install the folder reconnect fix without touching main/base files.
+// the slice editor and long-sample banks live in focused Chopper feature files,
+// followed by the folder reconnect fix.
 (() => {
   const DEFAULT_SAMPLE_URL="./assets/Le%20altre%2010.mp3";
   const DEFAULT_SAMPLE_NAME="Le altre 10.mp3";
@@ -75,6 +75,9 @@
 
     if(!globalThis.ChopperWaveSlices){
       await loadScript("./js/chopper-wave-slices-core.js","chopperWaveSlicesCore","CHOPPER WAVE SLICES CORE");
+    }
+    if(!globalThis.ChopperBanks){
+      await loadScript("./js/chopper-banks.js","chopperBanks","CHOPPER BANKS");
     }
     if(!globalThis.ChopperFolderReconnect){
       await loadScript("./js/chopper-folder-reconnect.js","chopperFolderReconnect","CHOPPER FOLDER RECONNECT");
