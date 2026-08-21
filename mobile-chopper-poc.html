@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050403">
+  <title>Looper666 — Mobile Chopper POC</title>
+  <style>
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#050403}
+    #mobileChopperPocFrame{display:block;width:100%;height:100%;border:0;background:#050403}
+    #mobileChopperPocError{position:fixed;inset:12px;display:none;z-index:2;padding:14px;border:1px solid #6f3d2c;background:#190d08;color:#f0c6aa;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap}
+  </style>
+</head>
+<body>
+  <div id="mobileChopperPocError" role="alert"></div>
+  <iframe id="mobileChopperPocFrame" src="./index.html?mobile-chopper-poc=1" title="Looper666 mobile Chopper POC"></iframe>
+  <script>
+    (() => {
+      const frame=document.getElementById("mobileChopperPocFrame");
+      const errorBox=document.getElementById("mobileChopperPocError");
+
+      function fail(error){
+        errorBox.style.display="block";
+        errorBox.textContent="MOBILE CHOPPER POC ERROR\n"+(error?.message||String(error));
+      }
+
+      frame.addEventListener("load",()=>{
+        try{
+          const doc=frame.contentDocument;
+          const win=frame.contentWindow;
+          if(!doc||!win)throw new Error("Impossible d'accéder au runtime Looper666.");
+
+          const css=doc.createElement("link");
+          css.rel="stylesheet";
+          css.href="./css/mobile-chopper-poc.css";
+          doc.head.appendChild(css);
+
+          const script=doc.createElement("script");
+          script.src="./js/mobile-chopper-poc.js";
+          script.onload=()=>{
+            try{
+              if(typeof win.switchTab==="function")win.switchTab("chopper");
+            }catch(error){ fail(error); }
+          };
+          script.onerror=()=>fail(new Error("Le script du POC mobile n'a pas pu être chargé."));
+          doc.body.appendChild(script);
+        }catch(error){
+          fail(error);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
