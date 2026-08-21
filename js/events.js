@@ -152,8 +152,26 @@ $("nextBeat").onclick=()=>runLooperAction("NEXT",()=>selectRelative(1));
 $("newPattern").onclick=makePractice;
 $("startPractice").onclick=startPractice;
 
-$("loadSampleBtn").onclick=()=>openFilePicker("sampleFile");
-$("sampleFile").onchange=()=>loadChopperSample($("sampleFile").files[0]);
+function openChopperSamplePicker(){
+  const input=$("sampleFile");
+  input.value="";
+  try{
+    if(typeof input.showPicker==="function"){
+      input.showPicker();
+      return;
+    }
+  }catch(error){
+    console.warn("Sample picker fallback:",error);
+  }
+  input.click();
+}
+
+$("loadSampleBtn").onclick=()=>openChopperSamplePicker();
+$("sampleFile").onchange=async()=>{
+  const file=$("sampleFile").files?.[0];
+  if(!file)return;
+  await loadChopperSample(file);
+};
 $("sliceCount").onchange=()=>{
   stopChopAudition();
   autoPlaceMarkers();
