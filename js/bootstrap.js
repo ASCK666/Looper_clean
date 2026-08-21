@@ -11,23 +11,6 @@ window.__SP.report=(scope,error)=>{
 window.addEventListener("error",event=>window.__SP.report("RUNTIME",event.error||event.message));
 window.addEventListener("unhandledrejection",event=>window.__SP.report("PROMISE",event.reason));
 
-// Practice remains in the runtime, but its desktop/mobile shortcuts are retired.
-// Keep the button in the layout so existing event wiring and responsive header
-// geometry stay stable, while removing it from sight, pointer input and tab order.
-(()=>{
-  const practiceShortcut=document.getElementById("practiceOverlayOpen");
-  if(practiceShortcut){
-    practiceShortcut.style.visibility="hidden";
-    practiceShortcut.style.pointerEvents="none";
-    practiceShortcut.tabIndex=-1;
-    practiceShortcut.disabled=true;
-    practiceShortcut.setAttribute("aria-hidden","true");
-  }
-
-  const looperPracticeLabel=document.querySelector('.mainModeTabs .tab[data-tab="looper"] .tabCopy small');
-  if(looperPracticeLabel)looperPracticeLabel.textContent="PLAY / BEATS";
-})();
-
 document.querySelectorAll("[data-range-knob]").forEach(knob=>{
   const input=document.getElementById(knob.dataset.rangeKnob);
   if(!input)return;
