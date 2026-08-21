@@ -51,12 +51,6 @@ $("headerCrateToggle").onclick=()=>{
   );
 };
 
-$("practiceOverlayOpen").onclick=()=>$("practice").classList.add("overlayOpen");
-$("practiceOverlayClose").onclick=()=>{
-  stopPractice();
-  $("practice").classList.remove("overlayOpen");
-};
-
 function openFilePicker(id){
   const input=$(id);
   input.value="";
