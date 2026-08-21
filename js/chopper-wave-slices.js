@@ -4,6 +4,10 @@
 // the actual slice editor lives in chopper-wave-slices-core.js so this loader
 // can also install the folder reconnect fix without touching main/base files.
 (() => {
+  const DEFAULT_SAMPLE_URL="./assets/Le%20altre%2010.mp3";
+  const DEFAULT_SAMPLE_NAME="Le altre 10.mp3";
+  let defaultSampleCancelled=false;
+
   function loadScript(src,dataKey,scope){
     const selector=`script[data-${dataKey.replace(/[A-Z]/g,m=>`-${m.toLowerCase()}`)}="1"]`;
     const existing=document.querySelector(selector);
@@ -25,13 +29,41 @@
     });
   }
 
+  async function loadDefaultSample(){
+    if(defaultSampleCancelled || sampleBuffer || typeof loadChopperSample!=="function")return;
+
+    try{
+      const response=await fetch(DEFAULT_SAMPLE_URL);
+      if(!response.ok)throw new Error(`HTTP ${response.status}`);
+      const blob=await response.blob();
+      if(defaultSampleCancelled || sampleBuffer)return;
+
+      const file=new File([blob],DEFAULT_SAMPLE_NAME,{type:blob.type||"audio/mpeg"});
+      await loadChopperSample(file);
+    }catch(error){
+      console.error("Default Chopper sample:",error);
+      const status=document.getElementById("chopStatus");
+      if(status && !sampleBuffer){
+        const message=typeof safeErrorMessage==="function"
+          ? safeErrorMessage(error)
+          : (error?.message||String(error));
+        status.textContent=`DEFAULT SAMPLE ERROR • ${message}`;
+      }
+    }
+  }
+
   async function boot(){
+    const sampleInput=document.getElementById("sampleFile");
+    sampleInput?.addEventListener("change",()=>{defaultSampleCancelled=true;},{once:true});
+
     if(!globalThis.ChopperWaveSlices){
       await loadScript("./js/chopper-wave-slices-core.js","chopperWaveSlicesCore","CHOPPER WAVE SLICES CORE");
     }
     if(!globalThis.ChopperFolderReconnect){
       await loadScript("./js/chopper-folder-reconnect.js","chopperFolderReconnect","CHOPPER FOLDER RECONNECT");
     }
+
+    await loadDefaultSample();
   }
 
   void boot().catch(error=>{
