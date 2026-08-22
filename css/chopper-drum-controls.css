@@ -652,21 +652,45 @@
   border-radius: 0 !important;
   outline: 0 !important;
   color: transparent !important;
-  background: var(--chopper-looper-button-art) center/227.273% 100% no-repeat !important;
+  background-image: var(--chopper-looper-button-art) !important;
+  background-repeat: no-repeat !important;
   box-shadow: none !important;
   filter: sepia(.08) saturate(.72) brightness(.88) !important;
   font-size: 0 !important;
   text-shadow: none !important;
 }
 
+/* Match the three physical crops used by the original Looper transport sprite.
+   Keeping the asset crop separate from the CSS lamp removes the black plate
+   that previously appeared around the Chopper transport controls. */
+#chopper #previewFlip {
+  background-position: left center !important;
+  background-size: 357.143% 113.706% !important;
+}
+
+#chopper #playDrumsOnly {
+  background-position: center !important;
+  background-size: 227.273% 100% !important;
+}
+
+#chopper #stopFlip {
+  background-position: right center !important;
+  background-size: 357.143% 113.706% !important;
+}
+
 #chopper .padTransport .btn::before {
   content: "";
   position: absolute;
   z-index: 0;
-  inset: 17% 12% 18%;
-  background:
-    radial-gradient(ellipse 30% 42% at 50% 44%,var(--chopper-light-core),var(--chopper-light-yellow) 48%,var(--chopper-light-edge) 72%,transparent 100%),
-    var(--deck-texture) center/256px 256px repeat;
+  inset: 12% 9% 14%;
+  background: radial-gradient(
+    ellipse 30% 42% at 50% 44%,
+    var(--chopper-light-core),
+    var(--chopper-light-yellow) 48%,
+    var(--chopper-light-edge) 72%,
+    transparent 100%
+  ) !important;
+  mix-blend-mode: screen;
   opacity: 1;
   pointer-events: none;
 }
