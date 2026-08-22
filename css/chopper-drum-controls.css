@@ -614,7 +614,7 @@
    Looper transport artwork. The bitmap owns only physical chrome/texture;
    labels and every amber/red lit state remain runtime HTML/CSS. */
 #chopper {
-  --chopper-looper-button-art: url("../assets/looper-ui/chopper-looper-button-off-1c6ae2d1.webp");
+  --chopper-looper-button-art: url("../assets/looper-ui/chopper-looper-button-off-alpha-6920266c.webp");
 }
 
 #chopper .samplerPadsModule {
