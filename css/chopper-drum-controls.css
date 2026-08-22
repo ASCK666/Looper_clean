@@ -609,3 +609,206 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,.015),0 4px 7px rgba(0,0,0,.28) !important;
   opacity: .58;
 }
+
+/* asset-ui-chopper: real Looper artwork test for CHOP PADS only.
+   No new bitmap is generated: button chrome comes from the powered-off Looper
+   transport asset and the inset face uses the same physical deck grain already
+   used by Looper66. CSS owns interaction light; HTML keeps the real controls. */
+#chopper {
+  --chopper-looper-button-art: url("../assets/looper-ui/looper66-desktop-transport-square-3d62809d.webp");
+}
+
+#chopper .samplerPadsModule {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--deck-texture) center/256px 256px repeat !important;
+  box-shadow: none !important;
+}
+
+#chopper .samplerPadsModule::before {
+  display: none !important;
+}
+
+#chopper .samplerPadsModule .samplerSectionTitle {
+  margin-bottom: 10px !important;
+}
+
+#chopper .padTransport {
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 7px;
+  width: min(100%,320px);
+}
+
+#chopper .padTransport .btn {
+  position: relative;
+  isolation: isolate;
+  min-height: 50px !important;
+  overflow: hidden;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  color: transparent !important;
+  background: var(--chopper-looper-button-art) center/227.273% 100% no-repeat !important;
+  box-shadow: none !important;
+  filter: brightness(.78) saturate(.58) !important;
+  font-size: 0 !important;
+  text-shadow: none !important;
+}
+
+#chopper .padTransport .btn::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 17% 12% 18%;
+  background: var(--deck-texture) center/256px 256px repeat;
+  opacity: .96;
+  pointer-events: none;
+}
+
+#chopper .padTransport .btn::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cdbd9f;
+  font: 800 9px/1 var(--font-mono);
+  letter-spacing: .7px;
+  pointer-events: none;
+}
+
+#chopper #previewFlip::after { content: "PLAY"; }
+#chopper #playDrumsOnly::after { content: "DRUMS"; }
+#chopper #stopFlip::after { content: "STOP"; }
+
+#chopper .padTransport .btn:is(:hover,:focus-visible) {
+  outline: 0 !important;
+  filter: sepia(.12) saturate(.82) brightness(.98) !important;
+}
+
+#chopper .padTransport .btn:active {
+  transform: translateY(1px);
+  filter: sepia(.28) saturate(1.2) brightness(1.16) !important;
+}
+
+#chopper .pads {
+  counter-reset: chopper-pad;
+  gap: 8px !important;
+}
+
+#chopper .pad,
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active),
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active):hover,
+#chopper.screen .pad.slice-selected:not(.hit):not(.active),
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad.unavailable:not(.hit):not(.active) {
+  counter-increment: chopper-pad;
+  position: relative;
+  isolation: isolate;
+  min-height: 66px !important;
+  overflow: hidden;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  color: transparent !important;
+  background: var(--chopper-looper-button-art) center/227.273% 100% no-repeat !important;
+  box-shadow: none !important;
+  filter: brightness(.74) saturate(.52) !important;
+  font-size: 0 !important;
+  text-shadow: none !important;
+}
+
+#chopper .pad::before,
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 16% 12% 17%;
+  background: var(--deck-texture) center/256px 256px repeat !important;
+  opacity: .96;
+  pointer-events: none;
+}
+
+#chopper .pad::after,
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad::after {
+  content: counter(chopper-pad, decimal-leading-zero);
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bbaa8f;
+  font: 800 13px/1 var(--font-mono);
+  letter-spacing: .7px;
+  pointer-events: none;
+}
+
+#chopper .pad:hover,
+#chopper .pad:focus-visible,
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active):hover {
+  outline: 0 !important;
+  filter: sepia(.10) saturate(.76) brightness(.94) !important;
+}
+
+#chopper .pad:hover::after,
+#chopper .pad:focus-visible::after {
+  color: #ded0b6;
+}
+
+#chopper .pad.selected,
+#chopper .pad.slice-selected {
+  outline: 0 !important;
+  filter: sepia(.16) saturate(.88) brightness(1.02) !important;
+}
+
+#chopper .pad.hit,
+#chopper .pad.active {
+  transform: translateY(1px);
+  border: 0 !important;
+  background: var(--chopper-looper-button-art) center/227.273% 100% no-repeat !important;
+  box-shadow: none !important;
+  filter: sepia(.36) saturate(1.35) brightness(1.18) !important;
+}
+
+#chopper .pad.hit::after,
+#chopper .pad.active::after,
+#chopper .pad.slice-selected::after {
+  color: #fff0c6;
+}
+
+#chopper .pad.unavailable,
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad.unavailable:not(.hit):not(.active) {
+  opacity: .34 !important;
+  filter: grayscale(.45) brightness(.58) !important;
+}
+
+@media (max-width:760px) {
+  #chopper .padTransport .btn {
+    min-height: 48px !important;
+  }
+
+  #chopper .pad {
+    min-height: 62px !important;
+  }
+}
+
+@media (max-width:430px) {
+  #chopper .padTransport {
+    gap: 5px;
+  }
+
+  #chopper .padTransport .btn {
+    min-height: 46px !important;
+  }
+
+  #chopper .pad {
+    min-height: 56px !important;
+  }
+
+  #chopper .pad::after {
+    font-size: 11px;
+  }
+}
