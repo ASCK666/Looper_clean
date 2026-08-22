@@ -51,8 +51,7 @@
   // A named 30 s bank remains one physical SP PCM. ALL is special on long
   // sources: use an aligned 30 s page (extended only as far as the current
   // audible request needs) so one pad never encodes a multi-minute file.
-  function workingEncodeRange(sourceBuffer,requestedStart=0,requestedEnd=sourceBuffer?.duration||0){
-    const bank=currentBank();
+  function workingEncodeRange(sourceBuffer,requestedStart=0,requestedEnd=sourceBuffer?.duration||0,bank=currentBank()){
     if(bank && bank.id!=="all"){
       return {
         start:Math.max(0,Math.min(sourceBuffer.duration,Number(bank.start)||0)),
@@ -73,25 +72,24 @@
     return {start:pageStart,end:pageEnd};
   }
 
-  async function encodedForPlayback(sourceBuffer,requestedStart,requestedEnd){
-    const encodeRange=workingEncodeRange(sourceBuffer,requestedStart,requestedEnd);
+  async function encodedForPlayback(sourceBuffer,requestedStart,requestedEnd,bank=currentBank()){
+    const encodeRange=workingEncodeRange(sourceBuffer,requestedStart,requestedEnd,bank);
     return await DSP.encodeBufferAsync(sourceBuffer,{
       startSec:encodeRange.start,
       endSec:encodeRange.end
     });
   }
 
-  function markerRange(index,sourceBuffer,cueMarkers){
+  function markerRange(index,sourceBuffer,cueMarkers,bank=currentBank()){
     const start=Math.max(0,Number(cueMarkers?.[index])||0);
-    const bank=currentBank();
     const end=bank && bank.id!=="all"
       ? Math.min(sourceBuffer.duration,Number(bank.end)||sourceBuffer.duration)
       : sourceBuffer.duration;
     return {start:Math.min(start,end),end};
   }
 
-  function sliceRange(index){
-    const range=globalThis.ChopperWaveSlices?.slices?.[index];
+  function sliceRange(index,slices=globalThis.ChopperWaveSlices?.slices||[]){
+    const range=slices?.[index];
     if(!range)return null;
     return {
       start:Math.max(0,Number(range.start)||0),
@@ -99,9 +97,9 @@
     };
   }
 
-  function rangeForPad(index,sourceBuffer,cueMarkers){
-    if(currentMode()==="slices")return sliceRange(index);
-    return markerRange(index,sourceBuffer,cueMarkers);
+  function rangeForPad(index,sourceBuffer,cueMarkers,mode=currentMode(),bank=currentBank(),slices=globalThis.ChopperWaveSlices?.slices||[]){
+    if(mode==="slices")return sliceRange(index,slices);
+    return markerRange(index,sourceBuffer,cueMarkers,bank);
   }
 
   async function maybeVinyl(buffer){
@@ -146,6 +144,24 @@
   async function renderSpSequence(events,sourceBuffer,cueMarkers,pitchRate){
     if(!sourceBuffer)throw new Error("Charge un sample");
     await ensureAudio();
+
+    // Freeze every Chopper-owned input before the first asynchronous encode.
+    // A bank/mode/marker edit made while rendering belongs to the next render,
+    // never to the in-flight one.
+    const renderMode=currentMode();
+    const activeBank=currentBank();
+    const renderBank=activeBank?Object.freeze({...activeBank}):null;
+    const renderEvents=Object.freeze(Array.from({length:16},(_,step)=>Number(events?.[step])||0));
+    const renderCueMarkers=Object.freeze(Array.isArray(cueMarkers)
+      ? cueMarkers.map(value=>Number(value)||0)
+      : []);
+    const renderSlices=Object.freeze(renderMode==="slices"
+      ? (globalThis.ChopperWaveSlices?.slices||[]).map(range=>Object.freeze({
+          start:Math.max(0,Number(range?.start)||0),
+          end:Math.max(0,Number(range?.end)||0)
+        }))
+      : []);
+
     const bpm=Math.max(40,Number($("sampleBpm")?.value)||90);
     const stepDur=(60/bpm)/2;
     const bars=2;
@@ -155,7 +171,7 @@
     const renderLevelCode=levelCodeForSampleVolume();
     const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
     const master=makePunchMaster(offline);
-    const slices=currentMode()==="slices";
+    const slices=renderMode==="slices";
 
     // renderSpChopBuffer() is the end of the SP sample-output chain. Do not run
     // Chopper's generic conditioner/auto-mix after it: RAW must remain RAW and
@@ -163,10 +179,10 @@
     // mix infrastructure; explicit VINYL is applied separately after rendering.
     const placed=[];
     for(let step=0;step<16;step++){
-      const chop=Number(events?.[step])||0;
+      const chop=renderEvents[step];
       const available=slices
-        ? chop>=1 && chop<=globalThis.ChopperWaveSlices.slices.length
-        : chop>=1 && chop<(cueMarkers?.length||0);
+        ? chop>=1 && chop<=renderSlices.length
+        : chop>=1 && chop<renderCueMarkers.length;
       if(available)placed.push({step,chop});
     }
     if(!placed.length)throw new Error("Place au moins un PAD sur la grille");
@@ -176,7 +192,7 @@
     const localEncoded=new Map();
 
     async function encodedForEvent(start,end){
-      const encodeRange=workingEncodeRange(sourceBuffer,start,end);
+      const encodeRange=workingEncodeRange(sourceBuffer,start,end,renderBank);
       const key=`${encodeRange.start}:${encodeRange.end}`;
       if(localEncoded.has(key))return localEncoded.get(key);
       const encoded=await DSP.encodeBufferAsync(sourceBuffer,{
@@ -192,7 +208,7 @@
       const startTime=event.step*stepDur;
       const nextTime=e+1<placed.length?placed[e+1].step*stepDur:targetDur;
       const index=event.chop-1;
-      const range=rangeForPad(index,sourceBuffer,cueMarkers);
+      const range=rangeForPad(index,sourceBuffer,renderCueMarkers,renderMode,renderBank,renderSlices);
       if(!range || range.end<=range.start)continue;
 
       const naturalDuration=(range.end-range.start)/ratio;
