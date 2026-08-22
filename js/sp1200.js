@@ -2,7 +2,7 @@
 
 // SP-1200 inspired DSP engine.
 // Scope is deliberately narrow: mono input, 26.04 kHz sampling, 12-bit linear
-// quantization, nearest-address pitch stepping and zero-order-hold output.
+// quantization, 7-bit carry address stepping and zero-order-hold output.
 // This is a behavioral approximation, not a bit-perfect hardware clone.
 (() => {
   const SP_SAMPLE_RATE=26040;
@@ -21,6 +21,7 @@
   const SP_TUNE_DEFAULT_MAX_SEMITONES=7;
   const SP_TUNE_CARRY_MAX=127;
   const SP_TUNE_MODEL="carry7-octave-derived-v1";
+  const SP_ADDRESSING_MODEL="carry7-pattern-v1";
 
   // SP-1200 exposes 32 total tune/decay positions (0..31), with INIT DK/TUNE
   // 16 as original pitch and only a 16-position window accessible at once.
@@ -124,6 +125,65 @@
       throw new Error("SP1200: invalid hardware tune plan");
     }
     return tune;
+  }
+
+  // Model the address generator as a deterministic 7-bit carry machine instead
+  // of deriving every source address from floor(tick * averageRatio). For the
+  // repeat side a carry inserts one extra hold of the current source address;
+  // for the skip side a carry advances by two source addresses. Outer tune codes
+  // wrap the same base pattern through a fixed octave repeat/skip stage.
+  // The PROM phase/reset state is not publicly dumped, so V1 starts the carry
+  // accumulator at zero and is deliberately labelled as a derived pattern model.
+  function addressStepper(plan){
+    const octaveCopies=Math.pow(2,Math.max(0,-plan.octaveShift));
+    const octaveScale=Math.pow(2,Math.max(0,plan.octaveShift));
+    let baseAddress=0;
+    let carryPhase=0;
+    let repeatPending=false;
+    let octaveCopiesLeft=octaveCopies;
+
+    function advanceBase(){
+      if(plan.carryDirection==="repeat"){
+        if(repeatPending){
+          repeatPending=false;
+          baseAddress++;
+          return;
+        }
+        carryPhase+=plan.carry;
+        if(carryPhase>=SP_TUNE_CARRY_MAX){
+          carryPhase-=SP_TUNE_CARRY_MAX;
+          repeatPending=true;
+        }else{
+          baseAddress++;
+        }
+        return;
+      }
+
+      if(plan.carryDirection==="skip"){
+        carryPhase+=plan.carry;
+        let advance=1;
+        if(carryPhase>=SP_TUNE_CARRY_MAX){
+          carryPhase-=SP_TUNE_CARRY_MAX;
+          advance=2;
+        }
+        baseAddress+=advance;
+        return;
+      }
+
+      baseAddress++;
+    }
+
+    return {
+      next(){
+        const address=baseAddress*octaveScale;
+        octaveCopiesLeft--;
+        if(octaveCopiesLeft<=0){
+          octaveCopiesLeft=octaveCopies;
+          advanceBase();
+        }
+        return address;
+      }
+    };
   }
 
   function rejectLegacySemitones(options){
@@ -391,17 +451,23 @@
     const plan=assertTunePlan(tune);
     const first=Math.max(0,Math.min(data.length-1,Math.floor(Number(startFrame)||0)));
     const last=Math.max(first+1,Math.min(data.length,Math.ceil(Number(endFrame) || data.length)));
-    const ratio=plan.ratio;
     const rate=Math.max(8000,Number(outputRate)||44100);
-    const naturalDuration=(last-first)/SP_SAMPLE_RATE/ratio;
+    const naturalDuration=(last-first)/SP_SAMPLE_RATE/plan.ratio;
     const limit=Number.isFinite(maxDuration)?Math.max(0,Number(maxDuration)||0):naturalDuration;
     const duration=Math.min(naturalDuration,limit);
     const length=Math.max(1,Math.ceil(duration*rate));
     const output=new Float32Array(length);
+    const stepper=addressStepper(plan);
+    let renderedTick=-1;
+    let sourceOffset=0;
 
     for(let i=0;i<length;i++){
       const spTick=Math.floor(i*SP_SAMPLE_RATE/rate);
-      const sourceIndex=first+Math.floor(spTick*ratio);
+      while(renderedTick<spTick){
+        sourceOffset=stepper.next();
+        renderedTick++;
+      }
+      const sourceIndex=first+sourceOffset;
       output[i]=sourceIndex<last?pcmValue(data,sourceIndex):0;
     }
     return output;
@@ -465,6 +531,7 @@
     pcmStorage:"int16",
     monoPolicy:"per-source",
     tuneModel:SP_TUNE_MODEL,
+    addressingModel:SP_ADDRESSING_MODEL,
     tuneCodes:Object.freeze({
       min:SP_TUNE_MIN_CODE,
       max:SP_TUNE_MAX_CODE,
