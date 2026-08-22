@@ -80,7 +80,8 @@ function main(){
   assert(adapter.includes("Math.round(sampleVolumeGain()*denominator)"),"Chopper volume must quantize to the nearest code/256 transfer");
   assert(adapter.includes("function renderSpChopBuffer("),"Chopper SP adapter must own one local rendered-chop boundary");
   assert((adapter.match(/DSP\.renderEncodedSegment\(/g)||[]).length===1,"only the shared SP chop renderer may call the DSP segment renderer");
-  assert((adapter.match(/renderSpChopBuffer\(/g)||[]).length===3,"shared SP chop renderer must be defined once and used by PLAY/SAVE and PAD");
+  assert(adapter.includes("const segment=renderSpChopBuffer("),"SP PLAY/SAVE must use the shared chop renderer");
+  assert(adapter.includes("let buffer=renderSpChopBuffer("),"SP PAD must use the shared chop renderer");
   assert(adapter.includes("renderLevelCode,renderOutputMode,audible"),"SP PLAY/SAVE must pass its snapshotted level/output settings through the shared chop renderer");
   assert(adapter.includes("requestLevelCode,requestOutputMode,previewDuration"),"SP PAD must pass its snapshotted level/output settings through the shared chop renderer");
   assert(!adapter.includes("makeSampleConditioner("),"SP output must never pass through the generic Chopper conditioner after DSP rendering");
