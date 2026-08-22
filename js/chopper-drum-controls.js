@@ -371,9 +371,11 @@
     startPlayheadAnimation();
   };
 
-  input.addEventListener("input",syncUI);
+  input.addEventListener("input",()=>{
+    syncUI();
+    invalidatePreviewRender();
+  });
   input.addEventListener("change",async()=>{
-    renderedFlip=null;
     if(!isLoopPlaying || (lastPreviewMode!=="full" && lastPreviewMode!=="drums"))return;
     const status=lastPreviewMode==="drums"?$("drumStatus"):$("chopStatus");
     try{
