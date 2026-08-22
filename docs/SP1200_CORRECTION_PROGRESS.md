@@ -4,6 +4,27 @@ Branch: `correct-SP1200`
 Baseline runtime commit: `8f9afac574bb8f201548f9f97139df33f8fd45da`
 Baseline audit: `docs/SP1200_CORRECTION_AUDIT_BASELINE.md`
 
+## Current accepted scores
+
+Current accepted audit state: C2
+Last runtime/test HEAD audited: `8e0a101a686e52bd10f898a243e2f6cfee56a323`
+Current documentation HEAD: this file may be one commit ahead of the runtime/test HEAD because rescoring is committed separately.
+Current merge verdict: **not mergeable** — B6 sample-load lifecycle remains open and the full browser/test suite has not been executed in this environment.
+
+| Area | Current score |
+| --- | ---: |
+| SP DSP | **8.3 / 10** |
+| `renderSpChop()` / PAD-PLAY boundary | **7.8 / 10** |
+| Claimable SP fidelity | **6.5 / 10** |
+| Async / race handling | **6.8 / 10** |
+| Ownership / architecture | **7.2 / 10** |
+| DSP tests | **7.5 / 10** |
+| Integration tests | **5.6 / 10** |
+| Overall maintainability | **6.4 / 10** |
+| **Total feature** | **6.6 / 10** |
+
+These scores use the same rubric as the immutable baseline. No score is raised solely because a correction was authored on this branch. B6, PUNCH timing debt, duplicate Drum invalidations, classic-script/global debt and missing full browser execution continue to cap the current scores.
+
 ## C1 — maintained PLAY race contract
 
 Runtime/test commit: `e69019ce9d540ab8b25bccd097ec3a37d29313cc`
