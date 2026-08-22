@@ -122,7 +122,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.wait_for_function('chopAuditionSource === null')
 
         # MARKERS / banked PAD: SP must replace the source with a rendered mono
-        # buffer, preserve -5 st duration behavior, and remain inside 0..30 s.
+        # buffer, preserve -5 st duration behavior, and use the live session rate.
         page.click('#sp1200Toggle')
         page.wait_for_function('ChopperSP1200.enabled === true')
         assert page.locator('#sp1200Toggle').get_attribute('data-active') == '1'
@@ -134,7 +134,10 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
           duration:chopAuditionSource.buffer.duration,
           offset:chopAuditionOffset,
           bank:ChopperBanks.active.label,
-          pitch:samplePitchSemitones
+          pitch:samplePitchSemitones,
+          rate:chopAuditionSource.buffer.sampleRate,
+          sessionRate:ctx.sampleRate,
+          settingsRate:ChopperSP1200.settings().reconstructionRate
         })''')
         assert marker_preview['isOriginal'] is False, marker_preview
         assert marker_preview['channels'] == 1, marker_preview
@@ -142,6 +145,8 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert abs(marker_preview['offset'] - 29) < .02, marker_preview
         assert marker_preview['pitch'] == -5, marker_preview
         assert 1.20 < marker_preview['duration'] < 1.50, marker_preview
+        assert marker_preview['rate'] == marker_preview['sessionRate'], marker_preview
+        assert marker_preview['settingsRate'] == marker_preview['sessionRate'], marker_preview
         page.click('#stopFlip')
 
         # SLICES uses the same SP engine with the independent START/END range.
@@ -225,8 +230,8 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
           vinyl.dispatchEvent(new Event('input',{bubbles:true}));
         }''')
 
-        # PLAY must render through the SP wrapper, then STOP must kill both the
-        # looping source and any pad audition state.
+        # PLAY must render through the SP wrapper at the same reconstruction
+        # rate as PAD audition, then STOP must kill all Chopper playback state.
         page.evaluate('''() => {
           ChopperBanks.selectBank(1);
           ChopperWaveSlices.setEditMode('markers');
@@ -244,26 +249,35 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
           enabled:ChopperSP1200.enabled,
           same:flipSource.buffer===renderedFlip,
           duration:renderedFlip.duration,
-          channels:renderedFlip.numberOfChannels
+          channels:renderedFlip.numberOfChannels,
+          rate:renderedFlip.sampleRate,
+          sessionRate:ctx.sampleRate,
+          settingsRate:ChopperSP1200.settings().reconstructionRate
         })''')
         assert play_state['enabled'] is True, play_state
         assert play_state['same'] is True, play_state
         assert 3.9 < play_state['duration'] < 4.1, play_state
         assert play_state['channels'] == 2, play_state
+        assert play_state['rate'] == play_state['sessionRate'], play_state
+        assert play_state['settingsRate'] == play_state['sessionRate'], play_state
+        assert play_state['rate'] == marker_preview['rate'], (marker_preview, play_state)
         page.click('#stopFlip')
         page.wait_for_function('isLoopPlaying === false && flipSource === null && chopAuditionSource === null')
         assert page.evaluate('lastPreviewMode === null') is True
 
         # SAVE: preserve the real button handler and real SP render, but replace
         # only filesystem permission/download side effects with deterministic
-        # browser-test hooks.
+        # browser-test hooks. The rendered save buffer must stay on the same rate.
         page.evaluate('''() => {
           window.__spSaved=null;
           window.__spSaveMode=null;
+          window.__spSaveRate=null;
           const renderSaveBase=renderCurrentBeatForSave;
           renderCurrentBeatForSave=async events=>{
             window.__spSaveMode=ChopperSP1200.enabled;
-            return await renderSaveBase(events);
+            const rendered=await renderSaveBase(events);
+            window.__spSaveRate=rendered?.sampleRate||null;
+            return rendered;
           };
           prepareBeatFolderFromSaveGesture=async()=>({direct:false,reason:'browser test'});
           downloadBeatFallback=(blob,filename)=>{
@@ -278,13 +292,19 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         saved = page.evaluate('''() => ({
           saved:window.__spSaved,
           mode:window.__spSaveMode,
+          saveRate:window.__spSaveRate,
           rendered:!!renderedFlip,
+          renderedRate:renderedFlip?.sampleRate||null,
+          sessionRate:ctx.sampleRate,
           status:document.getElementById('chopStatus').textContent
         })''')
         assert saved['mode'] is True, saved
         assert saved['rendered'] is True, saved
         assert saved['saved']['size'] > 44, saved
         assert saved['saved']['filename'].lower().endswith('.wav'), saved
+        assert saved['saveRate'] == saved['sessionRate'], saved
+        assert saved['renderedRate'] == saved['sessionRate'], saved
+        assert saved['saveRate'] == marker_preview['rate'], (marker_preview, saved)
         assert 'WAV DOWNLOADED' in saved['status'], saved
 
         # Turning SP OFF must immediately restore the original CLEAN audition
@@ -302,4 +322,4 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         context.close()
         browser.close()
 
-print('OK: SP1200 browser — ON/OFF, MARKERS, SLICES, BANK/ALL, pitch, VINYL, PLAY, SAVE and STOP')
+print('OK: SP1200 browser — shared PAD/PLAY/SAVE reconstruction rate, ON/OFF, BANK/SLICES, VINYL and STOP')
