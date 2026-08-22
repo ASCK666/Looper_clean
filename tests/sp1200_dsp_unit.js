@@ -38,6 +38,7 @@ async function main(){
   assert(dsp.bitDepth===12,"SP bit depth must be 12");
   assert(dsp.pcmStorage==="int16","stored SP PCM must use compact Int16 storage");
   assert(dsp.maxCacheEntries<=8,"SP PCM cache must stay small on mobile");
+  assert(dsp.monoPolicy==="per-source","mono policy must be fixed once per source buffer");
   assert(typeof dsp.encodeBuffer==="function" && typeof dsp.encodeBufferAsync==="function","encode contract missing");
   assert(typeof dsp.renderEncodedSegment==="function","encoded playback contract missing");
   assert(typeof dsp.resolveTune==="function","discrete tune resolver missing");
@@ -111,10 +112,51 @@ async function main(){
   assert(Math.abs(encoded.data.length-26040)<=2,"one second must encode to about 26040 SP frames");
   assert(encoded.sampleRate===26040 && encoded.bitDepth===12,"encoded metadata mismatch");
   assert(encoded.data.byteLength===encoded.data.length*2,"SP PCM storage must use two bytes per frame");
+  assert(encoded.monoScope==="source","encoded PCM must record source-scoped mono policy");
   for(let i=0;i<encoded.data.length;i+=Math.max(1,Math.floor(encoded.data.length/257))){
     const code=encoded.data[i];
     assert(code>=-2048 && code<=2047,"encoded PCM code must stay inside signed 12-bit range");
   }
+
+  // Regression: the two halves deliberately suggest different local downmixes.
+  // Half 1 is correlated stereo (would locally average). Half 2 is strongly
+  // anti-phase with a dominant left channel (would locally choose left). The
+  // SP policy must analyze the whole source once and use the same choice for
+  // every bank/page, regardless of which range is encoded first.
+  const stereoLength=rate*2;
+  const left=new Float32Array(stereoLength);
+  const right=new Float32Array(stereoLength);
+  for(let i=0;i<stereoLength;i++){
+    const tone=Math.sin(2*Math.PI*311*i/rate);
+    if(i<rate){
+      left[i]=tone*.2;
+      right[i]=tone*.2;
+    }else{
+      left[i]=tone*.8;
+      right[i]=-tone*.2;
+    }
+  }
+  const stereoBuffer={
+    numberOfChannels:2,
+    length:stereoLength,
+    sampleRate:rate,
+    duration:2,
+    getChannelData(channel){
+      if(channel===0)return left;
+      if(channel===1)return right;
+      throw new Error("unexpected stereo channel");
+    }
+  };
+
+  const firstHalf=dsp.encodeBuffer(stereoBuffer,{startSec:0,endSec:1});
+  const secondHalf=dsp.encodeBuffer(stereoBuffer,{startSec:1,endSec:2});
+  assert(firstHalf.monoMode==="single" && firstHalf.monoChannel===0,"whole-source mono analysis should choose dominant left channel");
+  assert(secondHalf.monoMode===firstHalf.monoMode && secondHalf.monoChannel===firstHalf.monoChannel,"mono policy must not change between SP banks/pages");
+  assert(firstHalf.monoScope==="source" && secondHalf.monoScope==="source","mono scope metadata mismatch");
+
+  dsp.clearCache(stereoBuffer);
+  const rebuiltSecond=dsp.encodeBuffer(stereoBuffer,{startSec:1,endSec:2});
+  assert(rebuiltSecond.monoMode===firstHalf.monoMode && rebuiltSecond.monoChannel===firstHalf.monoChannel,"clearing PCM cache must not change the source mono decision");
 
   const rendered=dsp.renderEncodedSegment(mockAudioContext(),encoded,{
     startSec:.2,
@@ -160,8 +202,9 @@ async function main(){
   assert(runtimeSource.includes("DSP.renderEncodedSegment"),"browser integration must explicitly render encoded PCM");
   assert(runtimeSource.includes("DSP.resolveTune(samplePitchSemitones)"),"Chopper must resolve UI semitones before SP playback");
   assert(!runtimeSource.includes("DSP.pitchRatio"),"browser integration must not derive pitch ratios directly");
+  assert(runtimeSource.includes("monoPlanFor(sourceBuffer)"),"SP encoder must reuse a source-scoped mono plan");
 
-  console.log("OK: SP1200 DSP — discrete tune plans, strict encode/playback boundary, compact PCM and skip/repeat pitch");
+  console.log("OK: SP1200 DSP — per-source mono policy, discrete tune plans, strict encode/playback boundary and compact PCM");
 }
 
 main().catch(error=>{
