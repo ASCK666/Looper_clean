@@ -46,7 +46,8 @@ assert 'generation!==previewGeneration' in adapter_source, 'stale SP pad continu
 play_start = events_source.index('async function playCurrentBeat')
 play_end = events_source.index('$("previewFlip").onclick=playCurrentBeat', play_start)
 play_block = events_source[play_start:play_end]
-assert 'const generation=++previewRenderGeneration' in play_block, 'full PLAY must allocate a renderer generation'
+assert 'const generation=invalidatePreviewRender()' in play_block, 'full PLAY must allocate its generation through the renderer owner'
+assert '++previewRenderGeneration' not in play_block, 'full PLAY must not bypass renderer-owned invalidation'
 assert play_block.count('generation!==previewRenderGeneration') >= 2, 'full PLAY must recheck generation across async boundaries'
 assert 'playRendered(buffer,generation)' in play_block, 'full PLAY must pass its generation into playback'
 
