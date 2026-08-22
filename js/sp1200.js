@@ -21,6 +21,7 @@
   const BUTTERWORTH_6_Q=Object.freeze([.5176380902,.7071067812,1.9318516526]);
   const encodedCache=new WeakMap();
   const pendingEncodes=new WeakMap();
+  const monoPlans=new WeakMap();
 
   function clampUnit(value){
     const x=Number(value)||0;
@@ -96,17 +97,20 @@
     return y;
   }
 
-  function channelPlan(sourceBuffer,startFrame,endFrame){
+  // Mono is a property of the loaded source, not of an arbitrary bank/page.
+  // Analyze the whole source once (bounded to ~100k probe points), freeze that
+  // decision, and reuse it for every subsequent encode window of this buffer.
+  function analyzeMonoPlan(sourceBuffer){
     const channels=Math.max(1,Number(sourceBuffer?.numberOfChannels)||1);
-    if(channels===1)return {mode:"single",channel:0};
-    if(channels!==2)return {mode:"average",channels};
+    if(channels===1)return Object.freeze({mode:"single",channel:0});
+    if(channels!==2)return Object.freeze({mode:"average",channels});
 
     const left=sourceBuffer.getChannelData(0);
     const right=sourceBuffer.getChannelData(1);
-    const span=Math.max(1,endFrame-startFrame);
+    const span=Math.max(1,sourceBuffer.length);
     const stride=Math.max(1,Math.floor(span/100000));
     let ll=0,rr=0,lr=0;
-    for(let i=startFrame;i<endFrame;i+=stride){
+    for(let i=0;i<sourceBuffer.length;i+=stride){
       const l=Number.isFinite(left[i])?left[i]:0;
       const r=Number.isFinite(right[i])?right[i]:0;
       ll+=l*l;
@@ -115,9 +119,18 @@
     }
     const corr=lr/Math.max(1e-12,Math.sqrt(ll*rr));
     if(corr<-.35){
-      return {mode:"single",channel:rr>ll?1:0};
+      return Object.freeze({mode:"single",channel:rr>ll?1:0});
     }
-    return {mode:"average",channels:2};
+    return Object.freeze({mode:"average",channels:2});
+  }
+
+  function monoPlanFor(sourceBuffer){
+    let plan=monoPlans.get(sourceBuffer);
+    if(!plan){
+      plan=analyzeMonoPlan(sourceBuffer);
+      monoPlans.set(sourceBuffer,plan);
+    }
+    return plan;
   }
 
   function monoSample(sourceBuffer,frame,plan){
@@ -191,7 +204,7 @@
   // Playback below never receives or reads the original AudioBuffer.
   function* encodeSteps(sourceBuffer,request){
     const {inputRate,startFrame,endFrame,processStartFrame}=request;
-    const plan=channelPlan(sourceBuffer,processStartFrame,endFrame);
+    const plan=monoPlanFor(sourceBuffer);
     const sections=BUTTERWORTH_6_Q.map(q=>makeLowpass(inputRate,INPUT_LOWPASS_HZ,q));
     const filteredLength=endFrame-processStartFrame;
     const requestedSeconds=(endFrame-startFrame)/inputRate;
@@ -235,7 +248,8 @@
       sourceStartSec:startFrame/inputRate,
       sourceEndSec:endFrame/inputRate,
       monoMode:plan.mode,
-      monoChannel:plan.mode==="single"?plan.channel:null
+      monoChannel:plan.mode==="single"?plan.channel:null,
+      monoScope:"source"
     });
   }
 
@@ -377,6 +391,8 @@
     if(sourceBuffer){
       encodedCache.delete(sourceBuffer);
       pendingEncodes.delete(sourceBuffer);
+      // Keep monoPlans: the per-source mono decision must remain stable even if
+      // encoded PCM pages are evicted or explicitly rebuilt.
     }
   }
 
@@ -386,6 +402,7 @@
     inputLowpassHz:INPUT_LOWPASS_HZ,
     maxCacheEntries:MAX_CACHE_ENTRIES,
     pcmStorage:"int16",
+    monoPolicy:"per-source",
     tuneCodes:Object.freeze({
       min:SP_TUNE_MIN_CODE,
       max:SP_TUNE_MAX_CODE,
