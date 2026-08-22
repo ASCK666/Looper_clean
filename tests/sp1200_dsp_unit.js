@@ -6,6 +6,7 @@ const vm=require("vm");
 
 const ROOT=path.resolve(__dirname,"..");
 const runtimePath=path.join(ROOT,"js","sp1200.js");
+const integrationPath=path.join(ROOT,"js","chopper-sp1200.js");
 const loaderPath=path.join(ROOT,"js","chopper-wave-slices.js");
 
 function assert(condition,message){
@@ -119,10 +120,7 @@ async function main(){
   }
 
   // Regression: the two halves deliberately suggest different local downmixes.
-  // Half 1 is correlated stereo (would locally average). Half 2 is strongly
-  // anti-phase with a dominant left channel (would locally choose left). The
-  // SP policy must analyze the whole source once and use the same choice for
-  // every bank/page, regardless of which range is encoded first.
+  // The whole source must still resolve one stable mono decision for every page.
   const stereoLength=rate*2;
   const left=new Float32Array(stereoLength);
   const right=new Float32Array(stereoLength);
@@ -193,18 +191,36 @@ async function main(){
   );
 
   const loader=fs.readFileSync(loaderPath,"utf8");
-  assert(loader.includes("./js/sp1200.js"),"Chopper feature loader must load sp1200.js");
-  assert(loader.includes("SP1200DSP"),"Chopper feature loader must guard SP1200DSP");
+  assert(loader.includes("./js/sp1200.js"),"Chopper feature loader must load pure sp1200.js DSP");
+  assert(loader.includes("./js/chopper-sp1200.js"),"Chopper feature loader must load the Chopper SP adapter");
+  assert(loader.indexOf("./js/sp1200.js")<loader.indexOf("./js/chopper-sp1200.js"),"SP DSP must load before the Chopper SP adapter");
+  assert(loader.includes("SP1200DSP") && loader.includes("ChopperSP1200"),"loader must guard both SP ownership boundaries");
 
   const runtimeSource=fs.readFileSync(runtimePath,"utf8");
-  assert(!runtimeSource.includes("DSP.renderSegmentAsync"),"browser integration must not use mixed encode/playback helpers");
-  assert(runtimeSource.includes("DSP.encodeBufferAsync"),"browser integration must explicitly encode source audio");
-  assert(runtimeSource.includes("DSP.renderEncodedSegment"),"browser integration must explicitly render encoded PCM");
-  assert(runtimeSource.includes("DSP.resolveTune(samplePitchSemitones)"),"Chopper must resolve UI semitones before SP playback");
-  assert(!runtimeSource.includes("DSP.pitchRatio"),"browser integration must not derive pitch ratios directly");
-  assert(runtimeSource.includes("monoPlanFor(sourceBuffer)"),"SP encoder must reuse a source-scoped mono plan");
+  const integrationSource=fs.readFileSync(integrationPath,"utf8");
 
-  console.log("OK: SP1200 DSP — per-source mono policy, discrete tune plans, strict encode/playback boundary and compact PCM");
+  // The DSP owns audio transformation only. DOM and Chopper feature knowledge
+  // belong exclusively to the Chopper adapter.
+  for(const forbidden of [
+    "document.","getElementById","ChopperWaveSlices","ChopperBanks",
+    "ChopperVinyl","samplePitchSemitones","previewSlice","renderSequence",
+    "chopStatus","sp1200Toggle"
+  ]){
+    assert(!runtimeSource.includes(forbidden),`pure SP DSP must not depend on ${forbidden}`);
+  }
+  assert(runtimeSource.includes("monoPlanFor(sourceBuffer)"),"SP encoder must reuse a source-scoped mono plan");
+  assert(!runtimeSource.includes("ALL_ENCODE_PAGE_SECONDS"),"Chopper paging policy must not live in the DSP");
+  assert(!runtimeSource.includes("MAX_PAD_PREVIEW_SECONDS"),"pad-preview policy must not live in the DSP");
+
+  assert(integrationSource.includes("globalThis.SP1200DSP"),"Chopper SP adapter must consume the public DSP contract");
+  assert(integrationSource.includes("DSP.encodeBufferAsync"),"Chopper adapter must explicitly encode source audio");
+  assert(integrationSource.includes("DSP.renderEncodedSegment"),"Chopper adapter must explicitly render encoded PCM");
+  assert(integrationSource.includes("DSP.resolveTune(samplePitchSemitones)"),"Chopper adapter must resolve UI semitones before SP playback");
+  assert(!integrationSource.includes("DSP.pitchRatio"),"Chopper adapter must not derive pitch ratios directly");
+  assert(integrationSource.includes("globalThis.ChopperWaveSlices") && integrationSource.includes("globalThis.ChopperBanks"),"Chopper-only feature dependencies must remain in the Chopper adapter");
+  assert(integrationSource.includes("globalThis.ChopperVinyl"),"VINYL post-processing must remain a Chopper adapter concern");
+
+  console.log("OK: SP1200 DSP — pure audio boundary, Chopper adapter ownership, per-source mono policy and discrete tune plans");
 }
 
 main().catch(error=>{
