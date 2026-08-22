@@ -287,23 +287,13 @@ async function refreshDrumsAfterFolderChange(kind,count,origin){
   // Folder changes stay on the AUTO groove path while rerolling sound files.
   const wasPlaying=isLoopPlaying;
   const modeBefore=lastPreviewMode;
+  invalidatePreviewRender();
 
   try{
     await generateDrumSelection(true);
 
     if(wasPlaying){
-      if(modeBefore==="drums"){
-        renderedFlip=await renderDrumsOnly();
-        lastPreviewMode="drums";
-        await playRendered(renderedFlip);
-      }else if(modeBefore==="full" && sampleBuffer){
-        const events=gridEventsForRender();
-        if(events.some(Boolean)){
-          renderedFlip=await renderSequence(events,sampleBuffer,markers,samplePitchRate());
-          lastPreviewMode="full";
-          await playRendered(renderedFlip);
-        }
-      }
+      await rerenderPreviewMode(modeBefore);
     }
 
     const selected={
@@ -489,6 +479,7 @@ function renderDrumPatternPreview(){
 
 function markDrumSelectionEdited(){
   if(!currentDrumSelection || currentDrumSelection.mode==="off")return;
+  invalidatePreviewRender();
   if(currentDrumSelection.patternId!=="EDIT"){
     currentDrumSelection.patternName=`${currentDrumSelection.patternName} / CUSTOM`;
   }
@@ -531,6 +522,7 @@ async function rerenderAfterDrumEdit(){
 }
 
 async function clearDrumEdits(){
+  invalidatePreviewRender();
   try{
     await ensureDrumSelection();
     currentDrumSelection.kicks=[];
@@ -554,6 +546,7 @@ async function generateNewDrums(){
   try{
     const wasPlaying=isLoopPlaying;
     const modeBefore=lastPreviewMode;
+    invalidatePreviewRender();
 
     await generateDrumSelection(true);
 
@@ -639,6 +632,7 @@ function renderDrumEditor(){
       }
 
       cell.onclick=async()=>{
+        invalidatePreviewRender();
         if(!currentDrumSelection || currentDrumSelection.mode==="off"){
           try{
             await generateDrumSelection(false);
