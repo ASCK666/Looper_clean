@@ -129,6 +129,20 @@
     return Math.max(0,Math.min(max,code));
   }
 
+  // One local boundary owns the translation from a Chopper chop to the pure DSP
+  // playback contract. PAD and PLAY/SAVE both stop here before product routing
+  // (edge fades, PUNCH/master, VINYL or loop finalization) is applied.
+  function renderSpChopBuffer(audioContext,encoded,startSec,endSec,tune,levelCode,outputProfile,maxDuration){
+    return DSP.renderEncodedSegment(audioContext,encoded,{
+      startSec,
+      endSec,
+      tune,
+      levelCode,
+      outputMode:outputProfile,
+      maxDuration
+    });
+  }
+
   async function renderSpSequence(events,sourceBuffer,cueMarkers,pitchRate){
     if(!sourceBuffer)throw new Error("Charge un sample");
     await ensureAudio();
@@ -143,7 +157,7 @@
     const master=makePunchMaster(offline);
     const slices=currentMode()==="slices";
 
-    // renderEncodedSegment() is the end of the SP sample-output chain. Do not run
+    // renderSpChopBuffer() is the end of the SP sample-output chain. Do not run
     // Chopper's generic conditioner/auto-mix after it: RAW must remain RAW and
     // FILTER must remain only the DSP-owned SP output filter. The master below is
     // mix infrastructure; explicit VINYL is applied separately after rendering.
@@ -189,14 +203,10 @@
         range.start+audible*ratio+1/SP_SAMPLE_RATE
       );
       const encoded=await encodedForEvent(range.start,sourceEnd);
-      const segment=DSP.renderEncodedSegment(offline,encoded,{
-        startSec:range.start,
-        endSec:sourceEnd,
-        tune,
-        levelCode:renderLevelCode,
-        outputMode:renderOutputMode,
-        maxDuration:audible
-      });
+      const segment=renderSpChopBuffer(
+        offline,encoded,range.start,sourceEnd,tune,
+        renderLevelCode,renderOutputMode,audible
+      );
       const source=offline.createBufferSource();
       source.buffer=segment;
 
@@ -248,14 +258,10 @@
     const encoded=await encodedForPlayback(sourceBuffer,range.start,sourceEnd);
     if(generation!==previewGeneration || !enabled || sampleBuffer!==sourceBuffer)return;
 
-    let buffer=DSP.renderEncodedSegment(ctx,encoded,{
-      startSec:range.start,
-      endSec:sourceEnd,
-      tune,
-      levelCode:requestLevelCode,
-      outputMode:requestOutputMode,
-      maxDuration:previewDuration
-    });
+    let buffer=renderSpChopBuffer(
+      ctx,encoded,range.start,sourceEnd,tune,
+      requestLevelCode,requestOutputMode,previewDuration
+    );
     buffer=await maybeVinyl(buffer);
     if(generation!==previewGeneration || !enabled || sampleBuffer!==sourceBuffer)return;
 
