@@ -368,10 +368,9 @@
     if(next===enabled)return enabled;
     stopChopAudition();
     // A pending full render belongs to the old SP/CLEAN mode even if playback
-    // has not started yet. Invalidate it using the renderer's existing token.
-    if(typeof previewRenderGeneration==="number")previewRenderGeneration++;
+    // has not started yet. Route it through the renderer-owned invalidation.
+    invalidatePreviewRender();
     enabled=next;
-    renderedFlip=null;
     const button=document.getElementById("sp1200Toggle");
     const filterButton=document.getElementById("sp1200FilterToggle");
     syncButton(button);
@@ -402,9 +401,8 @@
     if(!DSP.outputModes?.includes(next))throw new Error("SP output mode invalide");
     if(next===outputMode)return outputMode;
     stopChopAudition();
-    if(typeof previewRenderGeneration==="number")previewRenderGeneration++;
+    invalidatePreviewRender();
     outputMode=next;
-    renderedFlip=null;
     syncButton(document.getElementById("sp1200Toggle"));
     syncFilterButton(document.getElementById("sp1200FilterToggle"));
 
