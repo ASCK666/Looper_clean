@@ -844,3 +844,30 @@
     font-size: 11px;
   }
 }
+
+/* STOP stays physically identical to the Looper-derived transport keys, but
+   uses a muted red lamp so destructive transport intent is unmistakable. */
+#chopper #stopFlip {
+  --chopper-light-core: rgba(255,170,154,.10);
+  --chopper-light-yellow: rgba(255,92,76,.035);
+  --chopper-light-edge: rgba(197,48,36,.014);
+  filter: sepia(.10) saturate(.78) hue-rotate(316deg) brightness(.80) !important;
+}
+
+#chopper #stopFlip::after {
+  color: #d6a096;
+}
+
+#chopper #stopFlip:is(:hover,:focus-visible) {
+  --chopper-light-core: rgba(255,176,158,.28);
+  --chopper-light-yellow: rgba(255,86,70,.10);
+  --chopper-light-edge: rgba(204,48,35,.04);
+  filter: sepia(.24) saturate(1.05) hue-rotate(316deg) brightness(.99) !important;
+}
+
+#chopper #stopFlip:active {
+  --chopper-light-core: rgba(255,190,170,.68);
+  --chopper-light-yellow: rgba(255,82,65,.25);
+  --chopper-light-edge: rgba(210,44,30,.10);
+  filter: sepia(.38) saturate(1.35) hue-rotate(316deg) brightness(1.13) !important;
+}
