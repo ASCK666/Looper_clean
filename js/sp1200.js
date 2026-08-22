@@ -28,6 +28,10 @@
   const SP_ADDRESSING_MODEL="carry7-pattern-v1";
   const SP_MONO_LEVEL_MODEL="fixed-equal-power-v1";
   const SP_STEREO_DOWNMIX_COEFFICIENT=Math.SQRT1_2;
+  const SP_INPUT_STAGE_MODEL="discrete-preamp-v1";
+  const SP_INPUT_GAIN_STEPS_DB=Object.freeze([0,20,40]);
+  const SP_INPUT_GAIN_DEFAULT_DB=0;
+  const SP_INPUT_OVERLOAD_THRESHOLD=1;
   const SP_RECONSTRUCTION_MODEL="mux8-sh-zoh-v1";
   const SP_DAC_CHANNELS=8;
   const SP_DAC_MULTIPLEX_RATE=SP_SAMPLE_RATE*SP_DAC_CHANNELS;
@@ -224,6 +228,14 @@
     return value;
   }
 
+  function resolveInputGain(inputGainDb=SP_INPUT_GAIN_DEFAULT_DB){
+    const db=Number(inputGainDb);
+    if(!SP_INPUT_GAIN_STEPS_DB.includes(db)){
+      throw new Error("SP1200: input gain must be 0, 20 or 40 dB");
+    }
+    return Object.freeze({db,linear:Math.pow(10,db/20)});
+  }
+
   function safeFilterCutoff(sampleRate,cutoff){
     const rate=Math.max(1,Number(sampleRate)||44100);
     return Math.max(10,Math.min(Number(cutoff)||SP_INPUT_FILTER_CUTOFF_HZ,rate*.45));
@@ -329,9 +341,9 @@
   // The physical SP sample input is mono; loading a stereo browser file therefore
   // needs an app-side ingestion rule before the SP model. Use one fixed equal-power
   // sum (L/sqrt(2) + R/sqrt(2)) rather than content-dependent RMS/peak makeup.
-  // This policy is deterministic and deliberately separate from the later input-
-  // amplifier model. Strong anti-phase material keeps the existing dominant-
-  // channel fallback to avoid destructive cancellation from a stereo file.
+  // This policy is deterministic and deliberately separate from the input preamp.
+  // Strong anti-phase material keeps the existing dominant-channel fallback to
+  // avoid destructive cancellation from a stereo file.
   function analyzeMonoPlan(sourceBuffer){
     const channels=Math.max(1,Number(sourceBuffer?.numberOfChannels)||1);
     if(channels===1)return Object.freeze({mode:"single",channel:0});
@@ -415,12 +427,17 @@
     return value;
   }
 
-  function encodeRequest(sourceBuffer,{startSec=0,endSec=sourceBuffer?.duration||0}={}){
+  function encodeRequest(sourceBuffer,{
+    startSec=0,
+    endSec=sourceBuffer?.duration||0,
+    inputGainDb=SP_INPUT_GAIN_DEFAULT_DB
+  }={}){
     if(!sourceBuffer || !sourceBuffer.length || !sourceBuffer.sampleRate){
       throw new Error("SP1200: source audio missing");
     }
 
     const inputRate=sourceBuffer.sampleRate;
+    const inputGain=resolveInputGain(inputGainDb);
     const sourceDuration=sourceBuffer.duration;
     const safeStart=Math.max(0,Math.min(sourceDuration,Number(startSec)||0));
     const safeEnd=Math.max(safeStart,Math.min(sourceDuration,Number(endSec)||sourceDuration));
@@ -429,10 +446,11 @@
     const processStartFrame=Math.max(0,startFrame-Math.ceil(FILTER_PREROLL_SECONDS*inputRate));
     return {
       inputRate,
+      inputGain,
       startFrame,
       endFrame,
       processStartFrame,
-      cacheKey:`${startFrame}:${endFrame}`
+      cacheKey:`${startFrame}:${endFrame}:g${inputGain.db}`
     };
   }
 
@@ -443,9 +461,13 @@
   }
 
   // ENCODE contract: source audio enters here and leaves as immutable SP PCM.
+  // The discrete preamp gain is applied before the anti-alias filter/ADC. The
+  // original machine reports Sample Overload but still keeps the sample, so V1
+  // records overload metadata and lets the 12-bit ADC hard-clip naturally. It
+  // deliberately adds no unmeasured preamp saturation, compression or noise.
   // Playback below never receives or reads the original AudioBuffer.
   function* encodeSteps(sourceBuffer,request){
-    const {inputRate,startFrame,endFrame,processStartFrame}=request;
+    const {inputRate,inputGain,startFrame,endFrame,processStartFrame}=request;
     const plan=monoPlanFor(sourceBuffer);
     const firstOrder=makeOnePoleLowpass(inputRate,SP_INPUT_FILTER_CUTOFF_HZ);
     const sections=BUTTERWORTH_7_Q.map(q=>makeLowpass(
@@ -462,23 +484,32 @@
     let outputIndex=0;
     let targetPosition=requestedOffset;
     let previous=0;
+    let adcPeak=0;
+    let overloadSamples=0;
+
+    function storeAdcSample(value){
+      const magnitude=Math.abs(Number(value)||0);
+      adcPeak=Math.max(adcPeak,magnitude);
+      if(magnitude>SP_INPUT_OVERLOAD_THRESHOLD)overloadSamples++;
+      data[outputIndex++]=quantize12Code(value);
+    }
 
     for(let offset=0;offset<filteredLength;offset++){
-      let current=monoSample(sourceBuffer,processStartFrame+offset,plan);
+      let current=monoSample(sourceBuffer,processStartFrame+offset,plan)*inputGain.linear;
       current=filterOnePole(firstOrder,current);
       for(const section of sections)current=filterSample(section,current);
 
       if(offset===0){
         previous=current;
         while(outputIndex<length && targetPosition<=0){
-          data[outputIndex++]=quantize12Code(current);
+          storeAdcSample(current);
           targetPosition=requestedOffset+outputIndex*sourcePerTarget;
         }
       }else{
         while(outputIndex<length && targetPosition<=offset){
           const fraction=Math.max(0,Math.min(1,targetPosition-(offset-1)));
           const value=previous+(current-previous)*fraction;
-          data[outputIndex++]=quantize12Code(value);
+          storeAdcSample(value);
           targetPosition=requestedOffset+outputIndex*sourcePerTarget;
         }
         previous=current;
@@ -487,7 +518,7 @@
       if(offset>0 && offset%ENCODE_YIELD_INPUT_FRAMES===0)yield;
     }
 
-    while(outputIndex<length)data[outputIndex++]=quantize12Code(previous);
+    while(outputIndex<length)storeAdcSample(previous);
 
     return Object.freeze({
       data,
@@ -498,7 +529,12 @@
       monoMode:plan.mode,
       monoChannel:plan.mode==="single"?plan.channel:null,
       monoCoefficient:plan.mode==="stereo-equal-power"?plan.coefficient:null,
-      monoScope:"source"
+      monoScope:"source",
+      inputGainDb:inputGain.db,
+      inputGainLinear:inputGain.linear,
+      adcPeak,
+      overload:overloadSamples>0,
+      overloadSamples
     });
   }
 
@@ -649,6 +685,14 @@
     sampleRate:SP_SAMPLE_RATE,
     bitDepth:SP_BITS,
     inputLowpassHz:SP_INPUT_FILTER_CUTOFF_HZ,
+    inputStage:Object.freeze({
+      model:SP_INPUT_STAGE_MODEL,
+      gainStepsDb:SP_INPUT_GAIN_STEPS_DB,
+      defaultGainDb:SP_INPUT_GAIN_DEFAULT_DB,
+      overloadThreshold:SP_INPUT_OVERLOAD_THRESHOLD,
+      overloadMode:"hard-adc-clip",
+      nonlinearPreamp:"not-modeled"
+    }),
     inputFilter:Object.freeze({
       model:SP_INPUT_FILTER_MODEL,
       family:"butterworth-derived",
