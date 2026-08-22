@@ -7,7 +7,7 @@ except Exception:
 
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE_ASSET_NAME='looper66-desktop-transport-square-3d62809d.webp'
-BUTTON_ASSET_NAME='chopper-looper-button-off-1c6ae2d1.webp'
+BUTTON_ASSET_NAME='chopper-looper-button-off-alpha-6920266c.webp'
 source_asset=ROOT/'assets/looper-ui'/SOURCE_ASSET_NAME
 button_asset=ROOT/'assets/looper-ui'/BUTTON_ASSET_NAME
 assert source_asset.exists(),f'Missing Looper source transport asset: {source_asset}'
@@ -25,7 +25,7 @@ for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.j
     html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
 
 asset_css=(ROOT/'css/chopper-drum-controls.css').read_text(encoding='utf-8')
-assert BUTTON_ASSET_NAME in asset_css,'Chopper pads/transport must use the isolated Looper-derived button artwork'
+assert BUTTON_ASSET_NAME in asset_css,'Chopper pads/transport must use the isolated transparent Looper-derived button artwork'
 assert SOURCE_ASSET_NAME not in asset_css,'Chopper must not use the complete Looper transport sprite as a button texture'
 assert '--chopper-looper-button-art' in asset_css
 assert 'center/227.273% 100%' not in asset_css,'Legacy Looper light-crop sizing must not be used as Chopper button artwork'
@@ -192,4 +192,4 @@ with sync_playwright() as p:
 
     browser.close()
 
-print('OK: Chopper sampler layout — isolated Looper-derived button asset, no CSS frame lines, responsive workflow layout')
+print('OK: Chopper sampler layout — isolated transparent Looper-derived button asset, no CSS frame lines, responsive workflow layout')
