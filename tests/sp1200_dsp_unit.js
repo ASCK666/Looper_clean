@@ -12,6 +12,22 @@ function assert(condition,message){
   if(!condition)throw new Error(message);
 }
 
+function mockAudioContext(sampleRate=48000){
+  return {
+    sampleRate,
+    createBuffer(channels,length,rate){
+      const data=Array.from({length:channels},()=>new Float32Array(length));
+      return {
+        numberOfChannels:channels,
+        length,
+        sampleRate:rate,
+        duration:length/rate,
+        getChannelData(channel){return data[channel];}
+      };
+    }
+  };
+}
+
 async function main(){
   const runtime=fs.readFileSync(runtimePath,"utf8");
   vm.runInThisContext(runtime,{filename:runtimePath});
@@ -22,6 +38,10 @@ async function main(){
   assert(dsp.bitDepth===12,"SP bit depth must be 12");
   assert(dsp.pcmStorage==="int16","stored SP PCM must use compact Int16 storage");
   assert(dsp.maxCacheEntries<=8,"SP PCM cache must stay small on mobile");
+  assert(typeof dsp.encodeBuffer==="function" && typeof dsp.encodeBufferAsync==="function","encode contract missing");
+  assert(typeof dsp.renderEncodedSegment==="function","encoded playback contract missing");
+  assert(typeof dsp.renderSegment==="undefined","playback must not accept a source AudioBuffer");
+  assert(typeof dsp.renderSegmentAsync==="undefined","async mixed encode/playback helper must stay removed");
   assert(dsp.quantize12(0)===0,"zero must quantize to zero");
   assert(dsp.quantize12(-1)===-1,"negative full scale must survive");
   assert(dsp.quantize12(1)===2047/2048,"positive full scale must clamp to 12-bit code 2047");
@@ -73,6 +93,23 @@ async function main(){
     assert(code>=-2048 && code<=2047,"encoded PCM code must stay inside signed 12-bit range");
   }
 
+  const rendered=dsp.renderEncodedSegment(mockAudioContext(),encoded,{
+    startSec:.2,
+    endSec:.4,
+    semitones:-12
+  });
+  assert(rendered.numberOfChannels===1,"encoded playback must render mono");
+  assert(rendered.sampleRate===48000,"encoded playback must target the audio context rate");
+  assert(.39<rendered.duration && rendered.duration<.41,"-12 st encoded segment duration mismatch");
+
+  let rejected=false;
+  try{
+    dsp.renderEncodedSegment(mockAudioContext(),mockBuffer,{startSec:0,endSec:.1});
+  }catch(error){
+    rejected=/encoded PCM/.test(String(error?.message||error));
+  }
+  assert(rejected,"playback must reject an unencoded source AudioBuffer");
+
   dsp.clearCache(mockBuffer);
   const first=dsp.encodeBuffer(mockBuffer,{startSec:0,endSec:.08});
   for(let i=1;i<=dsp.maxCacheEntries;i++){
@@ -94,7 +131,12 @@ async function main(){
   assert(loader.includes("./js/sp1200.js"),"Chopper feature loader must load sp1200.js");
   assert(loader.includes("SP1200DSP"),"Chopper feature loader must guard SP1200DSP");
 
-  console.log("OK: SP1200 DSP — compact 12-bit PCM, bounded cache, async encoder, skip/repeat pitch");
+  const runtimeSource=fs.readFileSync(runtimePath,"utf8");
+  assert(!runtimeSource.includes("DSP.renderSegmentAsync"),"browser integration must not use mixed encode/playback helpers");
+  assert(runtimeSource.includes("DSP.encodeBufferAsync"),"browser integration must explicitly encode source audio");
+  assert(runtimeSource.includes("DSP.renderEncodedSegment"),"browser integration must explicitly render encoded PCM");
+
+  console.log("OK: SP1200 DSP — strict encode/playback boundary, compact PCM, bounded cache and skip/repeat pitch");
 }
 
 main().catch(error=>{
