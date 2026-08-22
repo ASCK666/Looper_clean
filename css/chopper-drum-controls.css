@@ -610,12 +610,11 @@
   opacity: .58;
 }
 
-/* asset-ui-chopper: real Looper artwork test for CHOP PADS only.
-   No new bitmap is generated: button chrome comes from the powered-off Looper
-   transport asset and the inset face uses the same physical deck grain already
-   used by Looper66. CSS owns interaction light; HTML keeps the real controls. */
+/* asset-ui-chopper: one neutral powered-off button is derived from the real
+   Looper transport artwork. The bitmap owns only physical chrome/texture;
+   labels and every amber/red lit state remain runtime HTML/CSS. */
 #chopper {
-  --chopper-looper-button-art: url("../assets/looper-ui/looper66-desktop-transport-square-3d62809d.webp");
+  --chopper-looper-button-art: url("../assets/looper-ui/chopper-looper-button-off-1c6ae2d1.webp");
 }
 
 #chopper .samplerPadsModule {
@@ -652,16 +651,15 @@
   border-radius: 0 !important;
   outline: 0 !important;
   color: transparent !important;
-  background: var(--chopper-looper-button-art) center/227.273% 100% no-repeat !important;
+  background: var(--chopper-looper-button-art) center/100% 100% no-repeat !important;
   box-shadow: none !important;
   filter: sepia(.08) saturate(.72) brightness(.88) !important;
   font-size: 0 !important;
   text-shadow: none !important;
 }
 
-/* Transport buttons intentionally use the exact same asset crop + textured
-   inset as the pads. This hides all original Looper labels (including SPEED UP)
-   and leaves the physical button chrome visible around the Chopper label. */
+/* Transport and pads now share one isolated Looper-derived physical button.
+   The inset layer stays responsible only for the runtime lamp and face grain. */
 #chopper .padTransport .btn::before {
   content: "";
   position: absolute;
@@ -758,7 +756,7 @@
   border-radius: 0 !important;
   outline: 0 !important;
   color: transparent !important;
-  background: var(--chopper-looper-button-art) center/227.273% 100% no-repeat !important;
+  background: var(--chopper-looper-button-art) center/100% 100% no-repeat !important;
   box-shadow: none !important;
   filter: sepia(.05) saturate(.64) brightness(.82) !important;
   font-size: 0 !important;
@@ -824,7 +822,7 @@
   --chopper-light-edge: rgba(244,169,20,.07);
   transform: translateY(1px);
   border: 0 !important;
-  background: var(--chopper-looper-button-art) center/227.273% 100% no-repeat !important;
+  background: var(--chopper-looper-button-art) center/100% 100% no-repeat !important;
   box-shadow: none !important;
   filter: sepia(.36) saturate(1.35) brightness(1.18) !important;
 }
@@ -907,9 +905,7 @@
   }
 }
 
-/* asset-ui-chopper: the Looper transport crop only reads correctly at the
-   physical square-ish ratio used by the pads. Wide cells crop away the chrome
-   and leave a black rectangle. Keep the exact pad artwork; fix only geometry. */
+/* Keep transport controls on the same physical ratio as the isolated button. */
 #chopper .padTransport {
   grid-template-columns: repeat(3,88px) !important;
   width: auto !important;
