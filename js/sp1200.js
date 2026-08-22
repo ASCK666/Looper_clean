@@ -153,9 +153,8 @@
     return cached?touchCache(cache,request.cacheKey,cached):null;
   }
 
-  // Streaming encoder: it never allocates a full-rate filtered copy of the
-  // working window. The filtered input is consumed once and target SP frames
-  // are emitted as soon as their interpolation interval is available.
+  // ENCODE contract: source audio enters here and leaves as immutable SP PCM.
+  // Playback below never receives or reads the original AudioBuffer.
   function* encodeSteps(sourceBuffer,request){
     const {inputRate,startFrame,endFrame,processStartFrame}=request;
     const plan=channelPlan(sourceBuffer,processStartFrame,endFrame);
@@ -267,6 +266,7 @@
     return data instanceof Int16Array ? data[index]/PCM_SCALE : data[index];
   }
 
+  // PLAYBACK contract: only stored SP PCM enters from here downward.
   function renderPcm(encodedData,{
     semitones=0,
     outputRate=44100,
@@ -294,6 +294,19 @@
     return output;
   }
 
+  function assertEncodedPcm(encoded){
+    if(!encoded || !pcmData(encoded) || !encoded.data.length){
+      throw new Error("SP1200: encoded PCM missing");
+    }
+    if(encoded.sampleRate!==SP_SAMPLE_RATE || encoded.bitDepth!==SP_BITS){
+      throw new Error("SP1200: incompatible encoded PCM");
+    }
+    if(!Number.isFinite(encoded.sourceStartSec) || !Number.isFinite(encoded.sourceEndSec)){
+      throw new Error("SP1200: encoded PCM source range missing");
+    }
+    return encoded;
+  }
+
   function renderEncodedSegment(audioContext,encoded,{
     startSec=encoded?.sourceStartSec||0,
     endSec=encoded?.sourceEndSec||0,
@@ -301,6 +314,8 @@
     maxDuration=Infinity
   }={}){
     if(!audioContext?.createBuffer)throw new Error("SP1200: AudioContext unavailable");
+    assertEncodedPcm(encoded);
+
     const relativeStart=Math.max(0,(Number(startSec)||0)-encoded.sourceStartSec);
     const relativeEnd=Math.max(relativeStart,(Number(endSec)||0)-encoded.sourceStartSec);
     const first=Math.max(0,Math.min(encoded.data.length-1,Math.floor(relativeStart*SP_SAMPLE_RATE)));
@@ -315,30 +330,6 @@
     const buffer=audioContext.createBuffer(1,Math.max(1,output.length),audioContext.sampleRate);
     buffer.getChannelData(0).set(output);
     return buffer;
-  }
-
-  function renderSegment(audioContext,sourceBuffer,{
-    startSec=0,
-    endSec=sourceBuffer?.duration||0,
-    semitones=0,
-    maxDuration=Infinity,
-    encodeStartSec=startSec,
-    encodeEndSec=endSec
-  }={}){
-    const encoded=encodeBuffer(sourceBuffer,{startSec:encodeStartSec,endSec:encodeEndSec});
-    return renderEncodedSegment(audioContext,encoded,{startSec,endSec,semitones,maxDuration});
-  }
-
-  async function renderSegmentAsync(audioContext,sourceBuffer,{
-    startSec=0,
-    endSec=sourceBuffer?.duration||0,
-    semitones=0,
-    maxDuration=Infinity,
-    encodeStartSec=startSec,
-    encodeEndSec=endSec
-  }={}){
-    const encoded=await encodeBufferAsync(sourceBuffer,{startSec:encodeStartSec,endSec:encodeEndSec});
-    return renderEncodedSegment(audioContext,encoded,{startSec,endSec,semitones,maxDuration});
   }
 
   function clearCache(sourceBuffer=null){
@@ -359,15 +350,13 @@
     encodeBuffer,
     encodeBufferAsync,
     renderPcm,
-    renderSegment,
-    renderSegmentAsync,
+    renderEncodedSegment,
     clearCache
   });
   globalThis.SP1200DSP=DSP;
 
-  // Node/unit-test loading stops here. Browser integration is intentionally
-  // kept in this same feature file so the classic runtime needs only one new
-  // script for the complete SP responsibility.
+  // Node/unit-test loading stops here. Browser integration remains beside the
+  // feature for now, but must cross the same ENCODE -> PLAYBACK boundary.
   if(typeof document==="undefined")return;
   const root=document.getElementById("chopper");
   if(!root || root.dataset.sp1200Installed==="1")return;
@@ -406,6 +395,14 @@
       Math.max(pageStart+ALL_ENCODE_PAGE_SECONDS,end)
     );
     return {start:pageStart,end:pageEnd};
+  }
+
+  async function encodedForPlayback(sourceBuffer,requestedStart,requestedEnd){
+    const encodeRange=workingEncodeRange(sourceBuffer,requestedStart,requestedEnd);
+    return await DSP.encodeBufferAsync(sourceBuffer,{
+      startSec:encodeRange.start,
+      endSec:encodeRange.end
+    });
   }
 
   function markerRange(index,sourceBuffer,cueMarkers){
@@ -463,6 +460,19 @@
 
     const semitones=Number(samplePitchSemitones)||0;
     const ratio=DSP.pitchRatio(semitones);
+    const localEncoded=new Map();
+
+    async function encodedForEvent(start,end){
+      const encodeRange=workingEncodeRange(sourceBuffer,start,end);
+      const key=`${encodeRange.start}:${encodeRange.end}`;
+      if(localEncoded.has(key))return localEncoded.get(key);
+      const encoded=await DSP.encodeBufferAsync(sourceBuffer,{
+        startSec:encodeRange.start,
+        endSec:encodeRange.end
+      });
+      localEncoded.set(key,encoded);
+      return encoded;
+    }
 
     for(let e=0;e<placed.length;e++){
       const event=placed[e];
@@ -479,14 +489,12 @@
         range.end,
         range.start+audible*ratio+1/SP_SAMPLE_RATE
       );
-      const encodeRange=workingEncodeRange(sourceBuffer,range.start,sourceEnd);
-      const segment=await DSP.renderSegmentAsync(offline,sourceBuffer,{
+      const encoded=await encodedForEvent(range.start,sourceEnd);
+      const segment=DSP.renderEncodedSegment(offline,encoded,{
         startSec:range.start,
         endSec:sourceEnd,
         semitones,
-        maxDuration:audible,
-        encodeStartSec:encodeRange.start,
-        encodeEndSec:encodeRange.end
+        maxDuration:audible
       });
       const source=offline.createBufferSource();
       source.buffer=segment;
@@ -529,16 +537,15 @@
       range.end,
       range.start+previewDuration*ratio+1/SP_SAMPLE_RATE
     );
-    const encodeRange=workingEncodeRange(sourceBuffer,range.start,sourceEnd);
-    let buffer=await DSP.renderSegmentAsync(ctx,sourceBuffer,{
+    const encoded=await encodedForPlayback(sourceBuffer,range.start,sourceEnd);
+    if(!enabled || sampleBuffer!==sourceBuffer)return;
+
+    let buffer=DSP.renderEncodedSegment(ctx,encoded,{
       startSec:range.start,
       endSec:sourceEnd,
       semitones:samplePitchSemitones,
-      maxDuration:previewDuration,
-      encodeStartSec:encodeRange.start,
-      encodeEndSec:encodeRange.end
+      maxDuration:previewDuration
     });
-    if(!enabled || sampleBuffer!==sourceBuffer)return;
     buffer=await maybeVinyl(buffer);
     if(!enabled || sampleBuffer!==sourceBuffer)return;
 
