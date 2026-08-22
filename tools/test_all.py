@@ -13,6 +13,7 @@ steps=[
   ['tests/auto_mix_unit.js'],
   ['tests/sp1200_dsp_unit.js'],
   ['tests/sp1200_browser.py'],
+  ['tests/sp1200_races.py'],
   ['tests/regression_v63.py'],
   ['tests/css_health.py'],
   ['tests/css_redundancy.py'],
