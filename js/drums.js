@@ -73,13 +73,102 @@ function synthHit(kind,rate){
   return out;
 }
 
-function sampleDensity(buffer){
-  const data=buffer.getChannelData(0),hop=1024;let hits=0,total=0,prev=0;
-  for(let i=0;i+hop<data.length;i+=hop){
-    let e=0;for(let j=0;j<hop;j++){const v=data[i+j];e+=v*v;}
-    e=Math.sqrt(e/hop);if(e-prev>.025)hits++;prev=e;total++;
+const AUTO_MIX_DRUM_PEAK_TARGET_DB={kick:-2.5,snare:-3.5,hat:-7.5};
+const AUTO_MIX_DRUM_COMPENSATION_DB=6;
+const AUTO_MIX_SAMPLE_RMS_TARGET_DB=-13.5;
+const AUTO_MIX_SAMPLE_CUT_DB=-3;
+const AUTO_MIX_SAMPLE_BOOST_DB=4;
+const FINAL_MIX_CEILING_DB=-1;
+const CHOP_EDGE_FADE_SECONDS=.0025;
+const mixAnalysisCache=new WeakMap();
+let previewRenderGeneration=0;
+
+function analyzeMixBuffer(buffer){
+  if(!buffer || !buffer.length || !buffer.numberOfChannels){
+    return {peak:0,peakDb:-120,rms:0,rmsDb:-120};
   }
-  return total?clamp(hits/total*5,0,1):.5;
+  const cached=mixAnalysisCache.get(buffer);
+  if(cached)return cached;
+
+  const stride=Math.max(1,Math.floor(buffer.length/250000));
+  let peak=0,sumSq=0,count=0;
+  for(let ch=0;ch<buffer.numberOfChannels;ch++){
+    const data=buffer.getChannelData(ch);
+    for(let i=0;i<data.length;i+=stride){
+      const v=Number.isFinite(data[i])?data[i]:0;
+      const a=Math.abs(v);
+      if(a>peak)peak=a;
+      sumSq+=v*v;
+      count++;
+    }
+  }
+
+  const rms=Math.sqrt(sumSq/Math.max(1,count));
+  const result={
+    peak,
+    peakDb:20*Math.log10(Math.max(peak,1e-8)),
+    rms,
+    rmsDb:20*Math.log10(Math.max(rms,1e-8))
+  };
+  mixAnalysisCache.set(buffer,result);
+  return result;
+}
+
+function drumAutoGain(kind,buffer){
+  const target=AUTO_MIX_DRUM_PEAK_TARGET_DB[kind]??-4;
+  const level=analyzeMixBuffer(buffer);
+  if(level.peak<=1e-8)return 1;
+  const correctionDb=clamp(
+    target-level.peakDb,
+    -AUTO_MIX_DRUM_COMPENSATION_DB,
+    AUTO_MIX_DRUM_COMPENSATION_DB
+  );
+  return dbToGain(correctionDb);
+}
+
+function sampleAutoMixGain(){
+  if(!sampleConditionProfile)return 1;
+  const rmsDb=Number(sampleConditionProfile.rmsDb);
+  if(!Number.isFinite(rmsDb) || rmsDb<=-119)return 1;
+  const postTrimRmsDb=rmsDb+(Number(sampleConditionProfile.trimDb)||0);
+  const correctionDb=clamp(
+    AUTO_MIX_SAMPLE_RMS_TARGET_DB-postTrimRmsDb,
+    AUTO_MIX_SAMPLE_CUT_DB,
+    AUTO_MIX_SAMPLE_BOOST_DB
+  );
+  return dbToGain(correctionDb);
+}
+
+function sampleDensity(buffer){
+  if(!buffer || !buffer.length || !buffer.numberOfChannels)return .5;
+  const hop=1024;
+  const env=[];
+  let maxEnv=0;
+
+  for(let i=0;i+hop<buffer.length;i+=hop){
+    let sumSq=0,count=0;
+    for(let ch=0;ch<buffer.numberOfChannels;ch++){
+      const data=buffer.getChannelData(ch);
+      for(let j=0;j<hop;j++){
+        const v=Number.isFinite(data[i+j])?data[i+j]:0;
+        sumSq+=v*v;
+        count++;
+      }
+    }
+    const rms=Math.sqrt(sumSq/Math.max(1,count));
+    env.push(rms);
+    if(rms>maxEnv)maxEnv=rms;
+  }
+
+  if(!env.length || maxEnv<=1e-8)return .5;
+  const threshold=maxEnv*.055;
+  let hits=0;
+  let prev=env[0];
+  for(let i=1;i<env.length;i++){
+    if(env[i]-prev>threshold)hits++;
+    prev=env[i];
+  }
+  return clamp(hits/env.length*5,0,1);
 }
 
 function autoDrumStyle(density,previousMode=null){
@@ -122,7 +211,6 @@ async function chooseDrumFolder(kind){
   if(button)button.disabled=true;
 
   try{
-    // Native directory handle when available.
     if(window.isSecureContext && "showDirectoryPicker" in window){
       try{
         const handle=await window.showDirectoryPicker({id:`scratch-${kind}-folder`,mode:"read"});
@@ -153,8 +241,6 @@ async function chooseDrumFolder(kind){
       }
     }
 
-    // file:// / browsers without File System Access API.
-    // webkitdirectory remains the functional fallback.
     const input=$(`${kind}FolderFallback`);
     input.value="";
     input.click();
@@ -185,7 +271,6 @@ async function setFallbackDrumFolder(kind,fileList){
 }
 
 async function refreshDrumsAfterFolderChange(kind,count,origin){
-  // Folder changes stay on the AUTO groove path while rerolling sound files.
   const wasPlaying=isLoopPlaying;
   const modeBefore=lastPreviewMode;
 
@@ -251,7 +336,6 @@ async function randomAudioFileFromDirectory(kind,excludeName=null){
   return pool[randomIndex(pool.length)];
 }
 
-
 function makeSynthBuffer(kind,rate){
   const mono=synthHit(kind,rate);
   const b=ctx.createBuffer(1,mono.length,rate);
@@ -270,46 +354,30 @@ async function loadSelectedDrum(kind,rate,excludeName=null){
         drumDecodeCache.delete(first);
       }
     }
-    return {
-      buffer:drumDecodeCache.get(key),
-      name:file.name
-    };
+    return {buffer:drumDecodeCache.get(key),name:file.name};
   }
-  return {
-    buffer:makeSynthBuffer(kind,rate),
-    name:`SYNTH-${Math.floor(performance.now())}-${randomIndex(999)}`
-  };
+  return {buffer:makeSynthBuffer(kind,rate),name:`SYNTH-${Math.floor(performance.now())}-${randomIndex(999)}`};
 }
 
 function drumSelectionSignature(sel){
   if(!sel||sel.mode==="off")return "OFF";
-  return [
-    sel.patternId||"",
-    sel.mode,
-    sel.kick?.name||"",
-    sel.snare?.name||"",
-    sel.hat?.name||""
-  ].join("|");
+  return [sel.patternId||"",sel.mode,sel.kick?.name||"",sel.snare?.name||"",sel.hat?.name||""].join("|");
 }
 
 function drumVelocityMap(lane){
   if(!currentDrumSelection)return {};
-
   if(lane==="kick"){
     if(!currentDrumSelection.kickVelocity)currentDrumSelection.kickVelocity={};
     return currentDrumSelection.kickVelocity;
   }
-
   if(lane==="snare"){
     if(!currentDrumSelection.snareVelocity)currentDrumSelection.snareVelocity={};
     return currentDrumSelection.snareVelocity;
   }
-
   if(lane==="hat"){
     if(!currentDrumSelection.hatVelocity)currentDrumSelection.hatVelocity={};
     return currentDrumSelection.hatVelocity;
   }
-
   return {};
 }
 
@@ -334,9 +402,7 @@ function drumArrayForLane(lane){
   if(lane==="kick")return currentDrumSelection.kicks;
   if(lane==="snare")return currentDrumSelection.snares;
   if(lane==="hat"){
-    if(!currentDrumSelection.hatSteps){
-      currentDrumSelection.hatSteps=(currentDrumSelection.hats||[]).map(x=>x*2);
-    }
+    if(!currentDrumSelection.hatSteps)currentDrumSelection.hatSteps=(currentDrumSelection.hats||[]).map(x=>x*2);
     return currentDrumSelection.hatSteps;
   }
   return [];
@@ -347,11 +413,7 @@ function drumPreviewSteps(lane){
   if(!selection || selection.mode==="off")return [];
   if(lane==="kick")return selection.kicks||[];
   if(lane==="snare")return selection.snares||[];
-  if(lane==="hat"){
-    return Array.isArray(selection.hatSteps)
-      ? selection.hatSteps
-      : (selection.hats||[]).map(x=>x*2);
-  }
+  if(lane==="hat")return Array.isArray(selection.hatSteps)?selection.hatSteps:(selection.hats||[]).map(x=>x*2);
   return [];
 }
 
@@ -359,24 +421,16 @@ function renderDrumPatternPreview(){
   const grid=$("drumPatternPreview");
   if(!grid)return;
   grid.textContent="";
-
-  const lanes=[
-    ["kick","KICK"],
-    ["snare","SNARE"],
-    ["hat","HAT"]
-  ];
-
+  const lanes=[["kick","KICK"],["snare","SNARE"],["hat","HAT"]];
   for(const [lane,labelText] of lanes){
     const label=document.createElement("div");
     label.className="drumPatternPreviewLabel";
     label.textContent=labelText;
     grid.appendChild(label);
-
     const activeSteps=new Set(drumPreviewSteps(lane));
     for(let sequenceStep=0;sequenceStep<16;sequenceStep++){
       const pair=document.createElement("div");
       pair.className=`drumPatternPreviewPair ${lane}`;
-
       for(let subStep=0;subStep<2;subStep++){
         const patternStep=(sequenceStep*2+subStep)%16;
         const step=document.createElement("span");
@@ -390,35 +444,32 @@ function renderDrumPatternPreview(){
 
 function markDrumSelectionEdited(){
   if(!currentDrumSelection || currentDrumSelection.mode==="off")return;
-  if(currentDrumSelection.patternId!=="EDIT"){
-    currentDrumSelection.patternName=`${currentDrumSelection.patternName} / CUSTOM`;
-  }
+  if(currentDrumSelection.patternId!=="EDIT")currentDrumSelection.patternName=`${currentDrumSelection.patternName} / CUSTOM`;
   currentDrumSelection.patternId="EDIT";
-  currentDrumSelection.ghosts=(currentDrumSelection.ghosts||[]).filter(
-    step=>!currentDrumSelection.snares.includes(step)
-  );
+  currentDrumSelection.ghosts=(currentDrumSelection.ghosts||[]).filter(step=>!currentDrumSelection.snares.includes(step));
   $("currentPattern").textContent=`EDIT • ${currentDrumSelection.patternName}`;
   $("drumSelectionStatus").textContent="Groove modifié manuellement • NEW DRUMS pour repartir d'un nouveau pattern.";
 }
 
 async function rerenderPreviewMode(mode=lastPreviewMode){
+  const generation=++previewRenderGeneration;
   if(mode==="drums"){
-    renderedFlip=await renderDrumsOnly();
+    const buffer=await renderDrumsOnly();
+    if(generation!==previewRenderGeneration)return false;
+    renderedFlip=buffer;
     lastPreviewMode="drums";
-    await playRendered(renderedFlip);
-    return true;
+    return await playRendered(buffer,generation);
   }
-
   if(mode==="full" && sampleBuffer){
     const events=gridEventsForRender();
     if(events.some(Boolean)){
-      renderedFlip=await renderSequence(events,sampleBuffer,markers,samplePitchRate());
+      const buffer=await renderSequence(events,sampleBuffer,markers,samplePitchRate());
+      if(generation!==previewRenderGeneration)return false;
+      renderedFlip=buffer;
       lastPreviewMode="full";
-      await playRendered(renderedFlip);
-      return true;
+      return await playRendered(buffer,generation);
     }
   }
-
   return false;
 }
 
@@ -451,13 +502,8 @@ async function generateNewDrums(){
   try{
     const wasPlaying=isLoopPlaying;
     const modeBefore=lastPreviewMode;
-
     await generateDrumSelection(true);
-
-    if(wasPlaying){
-      await rerenderPreviewMode(modeBefore);
-    }
-
+    if(wasPlaying)await rerenderPreviewMode(modeBefore);
     $("drumStatus").textContent="NEW DRUMS ✓";
   }catch(error){
     $("drumStatus").textContent=`DRUM ERROR: ${safeErrorMessage(error)}`;
@@ -468,42 +514,27 @@ function renderDrumEditor(){
   const grid=$("drumEditor");
   if(!grid)return;
   grid.textContent="";
-
   const view=Number($("drumEditView")?.value)||16;
-  const visibleSteps=view===8 ? 8 : 16;
-  const stepScale=view===8 ? 2 : 1;
+  const visibleSteps=view===8?8:16;
+  const stepScale=view===8?2:1;
   grid.classList.toggle("view8",view===8);
   grid.classList.toggle("view16",view===16);
-
   const corner=document.createElement("div");
   grid.appendChild(corner);
-
   for(let visualStep=0;visualStep<visibleSteps;visualStep++){
     const actualStep=visualStep*stepScale;
     const h=document.createElement("div");
     h.className="drumEditHeadStep";
-
     if(view===8){
       const beat=Math.floor(visualStep/2)+1;
       h.textContent=visualStep%2===0?String(beat):"&";
     }else{
       const withinBeat=actualStep%4;
-      h.textContent=withinBeat===0
-        ? String(Math.floor(actualStep/4)+1)
-        : withinBeat===2
-          ? "&"
-          : "·";
+      h.textContent=withinBeat===0?String(Math.floor(actualStep/4)+1):withinBeat===2?"&":"·";
     }
-
     grid.appendChild(h);
   }
-
-  const lanes=[
-    ["kick","KICK"],
-    ["snare","SNARE"],
-    ["hat","HI-HAT"]
-  ];
-
+  const lanes=[["kick","KICK"],["snare","SNARE"],["hat","HI-HAT"]];
   for(const [lane,labelText] of lanes){
     const loadButton=document.createElement("button");
     loadButton.type="button";
@@ -514,92 +545,47 @@ function renderDrumEditor(){
     loadButton.setAttribute("aria-label",`Charger le dossier ${labelText}`);
     loadButton.onclick=()=>chooseDrumFolder(lane);
     grid.appendChild(loadButton);
-
     const arr=drumArrayForLane(lane);
-
     for(let visualStep=0;visualStep<visibleSteps;visualStep++){
       const step=visualStep*stepScale;
       const cell=document.createElement("button");
       const active=arr.includes(step);
       const velocity=active?drumStepVelocity(lane,step):1;
       const percent=Math.round(velocity*100);
-
       cell.className=`drumEditStep ${lane}${step%4===0?" beat":""}${active?" active":""}`;
-      cell.title=active
-        ? `${labelText} • ${percent}% • molette = volume • clic = enlever`
-        : `${labelText} • clic = ajouter à 100%`;
-
+      cell.title=active?`${labelText} • ${percent}% • molette = volume • clic = enlever`:`${labelText} • clic = ajouter à 100%`;
       if(active){
         cell.style.setProperty("--stepVelocity",String(velocity));
         cell.setAttribute("data-velocity",`${percent}%`);
         cell.setAttribute("aria-label",`${labelText} step ${visualStep+1}, volume ${percent}%`);
       }
-
       cell.onclick=async()=>{
         if(!currentDrumSelection || currentDrumSelection.mode==="off"){
-          try{
-            await generateDrumSelection(false);
-          }catch(e){
-            $("drumStatus").textContent="DRUM ERROR: "+e.message;
-            return;
-          }
+          try{await generateDrumSelection(false);}catch(e){$("drumStatus").textContent="DRUM ERROR: "+e.message;return;}
         }
-
         const values=drumArrayForLane(lane);
         const index=values.indexOf(step);
-
-        if(index>=0){
-          values.splice(index,1);
-          removeDrumStepVelocity(lane,step);
-        }else{
-          values.push(step);
-          values.sort((a,b)=>a-b);
-          setDrumStepVelocity(lane,step,1);
-        }
-
+        if(index>=0){values.splice(index,1);removeDrumStepVelocity(lane,step);}else{values.push(step);values.sort((a,b)=>a-b);setDrumStepVelocity(lane,step,1);}
         markDrumSelectionEdited();
         renderDrumEditor();
-
-        try{
-          await rerenderAfterDrumEdit();
-          $("drumStatus").textContent=`EDIT ${labelText} ✓`;
-        }catch(e){
-          $("drumStatus").textContent="DRUM EDIT ERROR: "+e.message;
-        }
+        try{await rerenderAfterDrumEdit();$("drumStatus").textContent=`EDIT ${labelText} ✓`;}catch(e){$("drumStatus").textContent="DRUM EDIT ERROR: "+e.message;}
       };
-
       cell.addEventListener("wheel",async ev=>{
         if(!currentDrumSelection || currentDrumSelection.mode==="off")return;
         if(!drumArrayForLane(lane).includes(step))return;
-
         ev.preventDefault();
-
         const current=drumStepVelocity(lane,step);
-        const direction=ev.deltaY>0 ? -1 : 1;
-        const next=clamp(
-          Math.round((current + direction*.05)*20)/20,
-          .10,
-          1
-        );
-
+        const direction=ev.deltaY>0?-1:1;
+        const next=clamp(Math.round((current+direction*.05)*20)/20,.10,1);
         if(next===current)return;
-
         setDrumStepVelocity(lane,step,next);
         markDrumSelectionEdited();
         renderDrumEditor();
-
-        try{
-          await rerenderAfterDrumEdit();
-          $("drumStatus").textContent=`${labelText} ${Math.round(next*100)}%`;
-        }catch(e){
-          $("drumStatus").textContent="DRUM VELOCITY ERROR: "+e.message;
-        }
+        try{await rerenderAfterDrumEdit();$("drumStatus").textContent=`${labelText} ${Math.round(next*100)}%`;}catch(e){$("drumStatus").textContent="DRUM VELOCITY ERROR: "+e.message;}
       },{passive:false});
-
       grid.appendChild(cell);
     }
   }
-
   renderDrumPatternPreview();
 }
 
@@ -613,7 +599,6 @@ function updateDrumSelectionUI(){
     renderDrumEditor();
     return;
   }
-
   if(currentDrumSelection.mode==="off"){
     $("drumSelectionStatus").textContent="Batterie désactivée. NEW DRUMS pour changer.";
     $("currentKick").textContent="KICK —";
@@ -623,7 +608,6 @@ function updateDrumSelectionUI(){
     renderDrumEditor();
     return;
   }
-
   $("drumSelectionStatus").textContent=`Sélection #${drumGenerationNumber} verrouillée jusqu\'à NEW DRUMS.`;
   $("currentKick").textContent=`KICK ${currentDrumSelection.kick.name}`;
   $("currentSnare").textContent=`SNARE ${currentDrumSelection.snare.name}`;
@@ -637,50 +621,29 @@ async function generateDrumSelection(forceDifferent=false){
   const requested="auto";
   const previous=currentDrumSelection;
   const previousSignature=drumSelectionSignature(previous);
-  const density=sampleBuffer ? sampleDensity(sampleBuffer) : .5;
+  const density=sampleBuffer?sampleDensity(sampleBuffer):.5;
   const rate=44100;
-
   async function buildOne(){
     const pat=drumPattern(requested,density,previous,forceDifferent);
-    const prevKick=forceDifferent ? previous?.kick?.name || null : null;
-    const prevSnare=forceDifferent ? previous?.snare?.name || null : null;
-    const prevHat=forceDifferent ? previous?.hat?.name || null : null;
-
+    const prevKick=forceDifferent?previous?.kick?.name||null:null;
+    const prevSnare=forceDifferent?previous?.snare?.name||null:null;
+    const prevHat=forceDifferent?previous?.hat?.name||null:null;
     const [kick,snare,hat]=await Promise.all([
-      loadSelectedDrum("kick",rate,prevKick),
-      loadSelectedDrum("snare",rate,prevSnare),
-      loadSelectedDrum("hat",rate,prevHat)
+      loadSelectedDrum("kick",rate,prevKick),loadSelectedDrum("snare",rate,prevSnare),loadSelectedDrum("hat",rate,prevHat)
     ]);
-
     return {
-      mode:pat.mode,
-      patternId:pat.id,
-      patternName:pat.name,
-      kicks:[...pat.kicks],
-      snares:[...(pat.snares||[4,12])],
-      ghosts:[...(pat.ghosts||[])],
-      hats:[...(pat.hats||[0,1,2,3,4,5,6,7])],
+      mode:pat.mode,patternId:pat.id,patternName:pat.name,
+      kicks:[...pat.kicks],snares:[...(pat.snares||[4,12])],ghosts:[...(pat.ghosts||[])],hats:[...(pat.hats||[0,1,2,3,4,5,6,7])],
       hatSteps:[...(pat.hats||[0,1,2,3,4,5,6,7])].map(x=>x*2),
       kickVelocity:Object.fromEntries((pat.kicks||[]).map(step=>[step,1])),
       snareVelocity:Object.fromEntries((pat.snares||[4,12]).map(step=>[step,1])),
       hatVelocity:Object.fromEntries((pat.hats||[0,1,2,3,4,5,6,7]).map(x=>[x*2,1])),
-      hatSwing:pat.hatSwing??.034,
-      hatOn:pat.hatOn??.31,
-      hatOff:pat.hatOff??.24,
-      snareDelay:pat.snareDelay??.008,
-      kickNudge:{...(pat.kickNudge||{})},
-      kick,
-      snare,
-      hat
+      hatSwing:pat.hatSwing??.034,hatOn:pat.hatOn??.31,hatOff:pat.hatOff??.24,snareDelay:pat.snareDelay??.008,
+      kickNudge:{...(pat.kickNudge||{})},kick,snare,hat
     };
   }
-
   let next=await buildOne();
-
-  if(forceDifferent && previous && drumSelectionSignature(next)===previousSignature){
-    next=await buildOne();
-  }
-
+  if(forceDifferent && previous && drumSelectionSignature(next)===previousSignature)next=await buildOne();
   currentDrumSelection=next;
   drumGenerationNumber++;
   updateDrumSelectionUI();
@@ -703,45 +666,10 @@ function punchModeName(){
 function punchSettings(){
   const mode=punchModeName();
   const presets={
-    off:{
-      mode:"off"
-    },
-    // V60: PUNCH is now deliberately conservative. The previous values
-    // compressed the full sample+drums bus too early and then drove a
-    // waveshaper, which could turn a good source into a dense/dirty export.
-    warm:{
-      mode:"warm",
-      threshold:-12,
-      knee:12,
-      ratio:1.5,
-      attack:.035,
-      release:.20,
-      drive:1.03,
-      makeup:1.00,
-      ceiling:.97
-    },
-    knock:{
-      mode:"knock",
-      threshold:-14,
-      knee:10,
-      ratio:1.8,
-      attack:.030,
-      release:.13,
-      drive:1.08,
-      makeup:1.01,
-      ceiling:.965
-    },
-    hard:{
-      mode:"hard",
-      threshold:-18,
-      knee:8,
-      ratio:2.6,
-      attack:.018,
-      release:.10,
-      drive:1.18,
-      makeup:1.02,
-      ceiling:.95
-    }
+    off:{mode:"off"},
+    warm:{mode:"warm",threshold:-12,knee:12,ratio:1.5,attack:.035,release:.20,drive:1.03,makeup:1.00,ceiling:.97},
+    knock:{mode:"knock",threshold:-14,knee:10,ratio:1.8,attack:.030,release:.13,drive:1.08,makeup:1.01,ceiling:.965},
+    hard:{mode:"hard",threshold:-18,knee:8,ratio:2.6,attack:.018,release:.10,drive:1.18,makeup:1.02,ceiling:.95}
   };
   return presets[mode]||presets.warm;
 }
@@ -760,47 +688,30 @@ function makeSoftClipCurve(drive=1.35){
 function makePunchMaster(offline){
   const preset=punchSettings();
   const input=offline.createGain();
-
   if(preset.mode==="off"){
     input.connect(offline.destination);
     return {input,mode:"off"};
   }
-
-  // Glue compressor: slow enough to keep the front of kick/snare alive.
   const comp=offline.createDynamicsCompressor();
   comp.threshold.value=preset.threshold;
   comp.knee.value=preset.knee;
   comp.ratio.value=preset.ratio;
   comp.attack.value=preset.attack;
   comp.release.value=preset.release;
-
-  // Gentle saturation / soft clipping to catch peaks musically before limiting.
   const clip=offline.createWaveShaper();
   clip.curve=makeSoftClipCurve(preset.drive);
   clip.oversample="4x";
-
   const makeup=offline.createGain();
   makeup.gain.value=preset.makeup;
-
-  // Final peak catcher. Web Audio has no dedicated brickwall limiter node,
-  // so a high-ratio DynamicsCompressorNode is used as the last safety stage.
   const limiter=offline.createDynamicsCompressor();
   limiter.threshold.value=-.8;
   limiter.knee.value=1;
   limiter.ratio.value=12;
   limiter.attack.value=.003;
   limiter.release.value=.080;
-
   const ceiling=offline.createGain();
   ceiling.gain.value=preset.ceiling;
-
-  input.connect(comp);
-  comp.connect(clip);
-  clip.connect(makeup);
-  makeup.connect(limiter);
-  limiter.connect(ceiling);
-  ceiling.connect(offline.destination);
-
+  input.connect(comp);comp.connect(clip);clip.connect(makeup);makeup.connect(limiter);limiter.connect(ceiling);ceiling.connect(offline.destination);
   return {input,mode:preset.mode};
 }
 
@@ -810,11 +721,7 @@ function refreshPunchUI(){
 
 function snareReverbSettings(){
   const mix=clamp((Number($("snareReverbMix").value)||0)/100,0,.70);
-  return {
-    on:mix>0,
-    type:"plate",
-    mix
-  };
+  return {on:mix>0,type:"plate",mix};
 }
 
 function deterministicNoise(seed){
@@ -840,16 +747,10 @@ function reverbSeed(type,sampleRate){
 
 function makeReverbImpulse(offline,type){
   const rate=offline.sampleRate;
-  const preset={
-    room:{seconds:.55,decay:5.4,dark:.16},
-    plate:{seconds:1.15,decay:3.8,dark:.08},
-    dark:{seconds:1.55,decay:3.2,dark:.44}
-  }[type] || {seconds:1.15,decay:3.8,dark:.08};
-
+  const preset={room:{seconds:.55,decay:5.4,dark:.16},plate:{seconds:1.15,decay:3.8,dark:.08},dark:{seconds:1.55,decay:3.2,dark:.44}}[type]||{seconds:1.15,decay:3.8,dark:.08};
   const length=Math.max(1,Math.floor(rate*preset.seconds));
   const impulse=offline.createBuffer(2,length,rate);
   const random=deterministicNoise(reverbSeed(type,rate));
-
   for(let ch=0;ch<2;ch++){
     const data=impulse.getChannelData(ch);
     let lp=0;
@@ -857,7 +758,7 @@ function makeReverbImpulse(offline,type){
       const t=i/length;
       const env=Math.pow(1-t,preset.decay);
       const noise=(random()*2-1);
-      lp=lp*(preset.dark)+noise*(1-preset.dark);
+      lp=lp*preset.dark+noise*(1-preset.dark);
       data[i]=lp*env*(ch===0?1:.96);
     }
   }
@@ -866,19 +767,15 @@ function makeReverbImpulse(offline,type){
 
 function makeSnareBus(offline,destination=offline.destination){
   const fx=snareReverbSettings();
-  if(!fx.on || fx.mix<=0){
-    return {input:destination};
-  }
-
+  if(!fx.on || fx.mix<=0)return {input:destination};
   const input=offline.createGain();
   const dry=offline.createGain();
   const wet=offline.createGain();
   const conv=offline.createConvolver();
-
   conv.buffer=makeReverbImpulse(offline,fx.type);
-  dry.gain.value=1-fx.mix*.45;
-  wet.gain.value=fx.mix;
-
+  const norm=1/Math.sqrt(1+fx.mix*fx.mix);
+  dry.gain.value=norm;
+  wet.gain.value=fx.mix*norm;
   input.connect(dry).connect(destination);
   input.connect(conv).connect(wet).connect(destination);
   return {input};
@@ -886,13 +783,14 @@ function makeSnareBus(offline,destination=offline.destination){
 
 function renderSelectedDrums(offline,selection,bpm,bars,targetDur,destination=offline.destination){
   if(!selection || selection.mode==="off")return;
-
   const kick=selection.kick.buffer;
   const snare=selection.snare.buffer;
   const hat=selection.hat.buffer;
   const beat=60/bpm;
   const snareBus=makeSnareBus(offline,destination);
-
+  const kickMixGain=drumAutoGain("kick",kick);
+  const snareMixGain=drumAutoGain("snare",snare);
+  const hatMixGain=drumAutoGain("hat",hat);
   const add=(buf,time,gain,target=destination)=>{
     if(time<0||time>=targetDur)return;
     const s=offline.createBufferSource();
@@ -902,58 +800,62 @@ function renderSelectedDrums(offline,selection,bpm,bars,targetDur,destination=of
     s.connect(g).connect(target);
     s.start(time);
   };
-
   for(let bar=0;bar<bars;bar++){
     const base=bar*4*beat;
-
     for(const step of selection.snares){
       const t=base+step*beat/4+selection.snareDelay*beat;
       const velocity=clamp(Number(selection.snareVelocity?.[step]??1),.10,1);
-      add(snare,t,.72*velocity,snareBus.input);
+      add(snare,t,.72*snareMixGain*velocity,snareBus.input);
     }
-
     for(const step of selection.ghosts){
       const t=base+step*beat/4+selection.snareDelay*beat*.55;
-      add(snare,t,.18,snareBus.input);
+      add(snare,t,.18*snareMixGain,snareBus.input);
     }
-
     for(const step of selection.kicks){
       const nudge=Number(selection.kickNudge?.[step]||0);
       const t=base+step*beat/4+nudge*beat;
       const velocity=clamp(Number(selection.kickVelocity?.[step]??1),.10,1);
-      const gain=(step===0?.86:.80)*velocity;
-      add(kick,t,gain);
+      add(kick,t,(step===0?.86:.80)*kickMixGain*velocity);
     }
-
-    const hatSteps=selection.hatSteps || (selection.hats||[]).map(x=>x*2);
+    const hatSteps=selection.hatSteps||(selection.hats||[]).map(x=>x*2);
     for(const step of hatSteps){
-      // 16-step editor. The classic eighth-note "and" is step 2 mod 4:
-      // keep it slightly late and slightly quieter.
       const isAnd=step%4===2;
       const isSixteenth=step%2===1;
       const t=base+step*beat/4+(isAnd?selection.hatSwing*beat:0);
-      const baseGain=isAnd
-        ? selection.hatOff
-        : isSixteenth
-          ? Math.max(.12,selection.hatOff*.78)
-          : selection.hatOn;
+      const baseGain=isAnd?selection.hatOff:isSixteenth?Math.max(.12,selection.hatOff*.78):selection.hatOn;
       const velocity=clamp(Number(selection.hatVelocity?.[step]??1),.10,1);
-      add(hat,t,baseGain*velocity);
+      add(hat,t,baseGain*hatMixGain*velocity);
     }
   }
 }
 
-function finalizeLoopBuffer(buffer,fadeMs=3){
-  if(!buffer || !buffer.length || buffer.length<4)return buffer;
-  const frames=Math.min(
-    Math.max(2,Math.round(buffer.sampleRate*fadeMs/1000)),
-    Math.max(2,Math.floor(buffer.length/8))
-  );
-
+function applyFinalPeakGuard(buffer,ceilingDb=FINAL_MIX_CEILING_DB){
+  if(!buffer || !buffer.length)return buffer;
+  const ceiling=dbToGain(ceilingDb);
+  let peak=0;
   for(let ch=0;ch<buffer.numberOfChannels;ch++){
     const data=buffer.getChannelData(ch);
-    // Force both sides of the circular boundary to meet at the same value,
-    // then return to the untouched audio over only a few milliseconds.
+    for(let i=0;i<data.length;i++){
+      const v=data[i];
+      if(!Number.isFinite(v)){data[i]=0;continue;}
+      const a=Math.abs(v);
+      if(a>peak)peak=a;
+    }
+  }
+  if(peak<=ceiling || peak<=1e-8)return buffer;
+  const scale=ceiling/peak;
+  for(let ch=0;ch<buffer.numberOfChannels;ch++){
+    const data=buffer.getChannelData(ch);
+    for(let i=0;i<data.length;i++)data[i]*=scale;
+  }
+  return buffer;
+}
+
+function finalizeLoopBuffer(buffer,fadeMs=3){
+  if(!buffer || !buffer.length || buffer.length<4)return applyFinalPeakGuard(buffer);
+  const frames=Math.min(Math.max(2,Math.round(buffer.sampleRate*fadeMs/1000)),Math.max(2,Math.floor(buffer.length/8)));
+  for(let ch=0;ch<buffer.numberOfChannels;ch++){
+    const data=buffer.getChannelData(ch);
     const edgeSamples=Math.min(4,frames);
     let startMean=0,endMean=0;
     for(let i=0;i<edgeSamples;i++){
@@ -961,19 +863,17 @@ function finalizeLoopBuffer(buffer,fadeMs=3){
       endMean+=data[data.length-1-i];
     }
     const boundary=(startMean+endMean)/(2*edgeSamples);
-
     const startOriginal=new Float32Array(frames);
     const endOriginal=new Float32Array(frames);
     startOriginal.set(data.subarray(0,frames));
     endOriginal.set(data.subarray(data.length-frames));
-
     for(let i=0;i<frames;i++){
       const t=frames===1?1:i/(frames-1);
       data[i]=boundary*(1-t)+startOriginal[i]*t;
       data[data.length-frames+i]=endOriginal[i]*(1-t)+boundary*t;
     }
   }
-  return buffer;
+  return applyFinalPeakGuard(buffer);
 }
 
 async function renderDrumsOnly(){
@@ -984,7 +884,6 @@ async function renderDrumsOnly(){
   const rate=44100;
   const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
   const master=makePunchMaster(offline);
-
   renderSelectedDrums(offline,selection,bpm,bars,targetDur,master.input);
   return finalizeLoopBuffer(await offline.startRendering());
 }
@@ -992,23 +891,19 @@ async function renderDrumsOnly(){
 async function renderSequence(events,sourceBuffer,cueMarkers,pitchRate){
   if(!sourceBuffer)throw new Error("Charge un sample");
   const bpm=Math.max(40,Number($("sampleBpm").value)||90);
-  const stepDur=(60/bpm)/2; // eighth note
+  const stepDur=(60/bpm)/2;
   const bars=2;
-  const targetDur=8*60/bpm; // 2 bars x 4 beats
+  const targetDur=8*60/bpm;
   const rate=44100;
   const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
   const master=makePunchMaster(offline);
-  const sampleConditioner=makeSampleConditioner(offline,master.input,.72*sampleVolumeGain());
-
+  const sampleConditioner=makeSampleConditioner(offline,master.input,.72*sampleVolumeGain()*sampleAutoMixGain());
   const placed=[];
   for(let step=0;step<16;step++){
     const chop=Number(events[step])||0;
     if(chop>=1 && chop<cueMarkers.length)placed.push({step,chop});
   }
   if(!placed.length)throw new Error("Place au moins un PAD sur la grille");
-
-  // Monophonic chop lane: a pad plays from its cue until the next active
-  // eighth-note trigger, or until the sample itself ends.
   for(let e=0;e<placed.length;e++){
     const ev=placed[e];
     const startTime=ev.step*stepDur;
@@ -1017,36 +912,37 @@ async function renderSequence(events,sourceBuffer,cueMarkers,pitchRate){
     const sampleStart=cueMarkers[idx];
     const available=Math.max(.01,sourceBuffer.duration-sampleStart);
     const wanted=Math.max(.01,nextTime-startTime);
-
+    const maxAudible=available/pitchRate;
+    const stopTime=Math.min(targetDur,startTime+Math.min(wanted,maxAudible));
+    const audibleDur=Math.max(.001,stopTime-startTime);
+    const edgeFade=Math.min(CHOP_EDGE_FADE_SECONDS,audibleDur*.5);
     const src=offline.createBufferSource();
     src.buffer=sourceBuffer;
     src.playbackRate.value=pitchRate;
-    src.connect(sampleConditioner.input);
+    const edge=offline.createGain();
+    edge.gain.setValueAtTime(0,startTime);
+    edge.gain.linearRampToValueAtTime(1,startTime+edgeFade);
+    edge.gain.setValueAtTime(1,Math.max(startTime+edgeFade,stopTime-edgeFade));
+    edge.gain.linearRampToValueAtTime(0,stopTime);
+    src.connect(edge).connect(sampleConditioner.input);
     src.start(startTime,sampleStart);
-
-    const maxAudible=available/pitchRate;
-    src.stop(Math.min(targetDur,startTime+Math.min(wanted,maxAudible)));
+    src.stop(stopTime);
   }
-
   const selection=await ensureDrumSelection();
   renderSelectedDrums(offline,selection,bpm,bars,targetDur,master.input);
   return finalizeLoopBuffer(await offline.startRendering());
 }
 
-async function playRendered(buffer){
+async function playRendered(buffer,expectedGeneration=null){
   await ensureAudio();
-
-  if(flipSource){
-    try{flipSource.stop()}catch{}
-  }
-
+  if(expectedGeneration!==null && expectedGeneration!==previewRenderGeneration)return false;
+  if(flipSource){try{flipSource.stop()}catch{}}
   flipSource=ctx.createBufferSource();
   flipSource.buffer=buffer;
   flipSource.loop=true;
   connectLive(flipSource);
   flipSource.start();
   isLoopPlaying=true;
-
   if(lastPreviewMode==="full" && sampleBuffer){
     loopPlayheadState=buildLoopPlayheadState();
     loopPlayheadStartedAt=ctx.currentTime;
@@ -1054,39 +950,35 @@ async function playRendered(buffer){
   }else{
     loopPlayheadState=null;
     loopPlayheadStartedAt=0;
-    if(!chopAuditionSource){
-      stopPlayheadAnimation(true);
-    }
+    if(!chopAuditionSource)stopPlayheadAnimation(true);
   }
+  return true;
 }
 
 async function playDrumsPreview(){
   stopChopAudition();
+  const generation=++previewRenderGeneration;
   try{
     const selection=await ensureDrumSelection();
-    renderedFlip=await renderDrumsOnly();
+    const buffer=await renderDrumsOnly();
+    if(generation!==previewRenderGeneration)return false;
+    renderedFlip=buffer;
     lastPreviewMode="drums";
     $("drumStatus").textContent=`DRUMS • ${$("sampleBpm").value} BPM • ${selection.mode.toUpperCase()}`;
-    await playRendered(renderedFlip);
+    return await playRendered(buffer,generation);
   }catch(e){
-    $("drumStatus").textContent="DRUM ERROR: "+e.message;
+    if(generation===previewRenderGeneration)$("drumStatus").textContent="DRUM ERROR: "+e.message;
+    return false;
   }
 }
 
 function stopCurrentBeat(){
-  if(flipSource){
-    try{flipSource.stop()}catch{}
-    flipSource=null;
-  }
-
+  previewRenderGeneration++;
+  if(flipSource){try{flipSource.stop()}catch{}flipSource=null;}
   isLoopPlaying=false;
   lastPreviewMode=null;
   loopPlayheadState=null;
   loopPlayheadStartedAt=0;
-
-  if(chopAuditionSource){
-    startPlayheadAnimation();
-  }else{
-    stopPlayheadAnimation(true);
-  }
+  if(chopAuditionSource)startPlayheadAnimation();
+  else stopPlayheadAnimation(true);
 }
