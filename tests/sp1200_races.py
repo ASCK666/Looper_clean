@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # Cheap source-contract checks still run when Playwright is unavailable.
 adapter_source = (ROOT / 'js' / 'chopper-sp1200.js').read_text(encoding='utf-8')
+drums_source = (ROOT / 'js' / 'drums.js').read_text(encoding='utf-8')
 events_source = (ROOT / 'js' / 'events.js').read_text(encoding='utf-8')
 
 render_start = adapter_source.index('async function renderSpSequence')
@@ -42,6 +43,16 @@ assert 'cueMarkers?.[' not in post_snapshot_block, 'SP full render must use its 
 assert 'let previewGeneration=0' in adapter_source, 'SP pad audition needs an async generation token'
 assert 'const stopChopAuditionBase=stopChopAudition' in adapter_source, 'normal Chopper stop must invalidate pending SP auditions'
 assert 'generation!==previewGeneration' in adapter_source, 'stale SP pad continuations must be rejected'
+
+# The combined PLAY/DRUMS preview generation has one runtime writer. The SP
+# pad-audition token above is intentionally separate because it owns a different
+# async lifecycle and must not be folded into the combined-preview generation.
+assert drums_source.count('previewRenderGeneration++') == 1, 'invalidatePreviewRender() must be the only combined-preview generation writer'
+assert 'function invalidatePreviewRender(){\n  previewRenderGeneration++;' in drums_source, 'renderer owner must advance the combined-preview generation'
+assert '++previewRenderGeneration' not in drums_source, 'renderer internals must not bypass invalidatePreviewRender()'
+assert 'previewRenderGeneration+=' not in drums_source, 'renderer internals must not mutate the generation with +='
+assert 'previewRenderGeneration++' not in adapter_source, 'SP adapter must route combined-preview invalidation through the renderer owner'
+assert '++previewRenderGeneration' not in adapter_source, 'SP adapter must not mutate the combined-preview generation directly'
 
 play_start = events_source.index('async function playCurrentBeat')
 play_end = events_source.index('$("previewFlip").onclick=playCurrentBeat', play_start)
