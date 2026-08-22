@@ -166,7 +166,57 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert slice_preview['isOriginal'] is False, slice_preview
         assert abs(slice_preview['range']['end'] - .5) < .01, slice_preview
         assert .60 < slice_preview['duration'] < .75, slice_preview
+
+        # With product effects neutral and SLICES avoiding the marker edge fade,
+        # the audible chop produced for PAD and for the sequence must be the same
+        # SP buffer. Compare the interior only because finalizeLoopBuffer() owns
+        # a deliberate few-ms circular-loop boundary treatment.
+        page.evaluate('''() => {
+          window.__spPadReference=new Float32Array(chopAuditionSource.buffer.getChannelData(0));
+          window.__spPadReferenceRate=chopAuditionSource.buffer.sampleRate;
+        }''')
         page.click('#stopFlip')
+        page.evaluate('''() => {
+          loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+          loopGridEvents[0]=1;
+          renderLoopGrid();
+          renderedFlip=null;
+        }''')
+        page.click('#previewFlip')
+        page.wait_for_function(
+            "renderedFlip && isLoopPlaying === true && lastPreviewMode === 'full'",
+            timeout=30000,
+        )
+        pad_play_match = page.evaluate('''() => {
+          const reference=window.__spPadReference;
+          const rendered=renderedFlip.getChannelData(0);
+          const rate=renderedFlip.sampleRate;
+          const skip=Math.ceil(rate*.006);
+          const end=Math.max(skip,Math.min(reference.length,rendered.length)-8);
+          let maxDiff=0,sumDiff=0,sumRef=0,count=0;
+          for(let i=skip;i<end;i++){
+            const diff=rendered[i]-reference[i];
+            maxDiff=Math.max(maxDiff,Math.abs(diff));
+            sumDiff+=diff*diff;
+            sumRef+=reference[i]*reference[i];
+            count++;
+          }
+          return {
+            count,
+            rate,
+            referenceRate:window.__spPadReferenceRate,
+            maxDiff,
+            rmsDiff:Math.sqrt(sumDiff/Math.max(1,count)),
+            referenceRms:Math.sqrt(sumRef/Math.max(1,count))
+          };
+        }''')
+        assert pad_play_match['count'] > 1000, pad_play_match
+        assert pad_play_match['rate'] == pad_play_match['referenceRate'], pad_play_match
+        assert pad_play_match['referenceRms'] > .01, pad_play_match
+        assert pad_play_match['maxDiff'] < 5e-5, pad_play_match
+        assert pad_play_match['rmsDiff'] < 1e-5, pad_play_match
+        page.click('#stopFlip')
+        page.wait_for_function('isLoopPlaying === false && flipSource === null')
 
         # A later overlapping bank must keep global source coordinates while the
         # SP engine encodes only that working bank.
@@ -322,4 +372,4 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         context.close()
         browser.close()
 
-print('OK: SP1200 browser — shared PAD/PLAY/SAVE reconstruction rate, ON/OFF, BANK/SLICES, VINYL and STOP')
+print('OK: SP1200 browser — PAD/PLAY audio parity, shared reconstruction rate, ON/OFF, BANK/SLICES, VINYL and STOP')
