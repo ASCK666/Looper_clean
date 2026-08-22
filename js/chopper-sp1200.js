@@ -119,6 +119,16 @@
     return Number.isFinite(rate) && rate>=8000 ? rate : 44100;
   }
 
+  // Chopper's existing 0..100% SAMPLE VOL becomes the SP sound-level register.
+  // Map the desired linear gain to the nearest AD7524 code/256 transfer value.
+  // Full-scale 100% therefore lands at code 255 (255/256), as on the ideal MDAC.
+  function levelCodeForSampleVolume(){
+    const max=Math.max(0,Number(DSP.levelDac?.maxCode)||255);
+    const denominator=Math.max(1,Number(DSP.levelDac?.denominator)||256);
+    const code=Math.round(sampleVolumeGain()*denominator);
+    return Math.max(0,Math.min(max,code));
+  }
+
   async function renderSpSequence(events,sourceBuffer,cueMarkers,pitchRate){
     if(!sourceBuffer)throw new Error("Charge un sample");
     await ensureAudio();
@@ -128,10 +138,13 @@
     const targetDur=8*60/bpm;
     const rate=sessionOutputRate();
     const renderOutputMode=outputMode;
+    const renderLevelCode=levelCodeForSampleVolume();
     const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
     const master=makePunchMaster(offline);
     const slices=currentMode()==="slices";
-    const conditionerGain=.72*sampleVolumeGain()*(slices?1:sampleAutoMixGain(sourceBuffer));
+    // SAMPLE VOL is already quantized in the SP level DAC. Keep only product-side
+    // conditioner/auto-mix gain here so volume is never applied twice.
+    const conditionerGain=.72*(slices?1:sampleAutoMixGain(sourceBuffer));
     const sampleConditioner=makeSampleConditioner(offline,master.input,conditionerGain);
 
     const placed=[];
@@ -180,6 +193,7 @@
         startSec:range.start,
         endSec:sourceEnd,
         tune,
+        levelCode:renderLevelCode,
         outputMode:renderOutputMode,
         maxDuration:audible
       });
@@ -212,6 +226,7 @@
     const generation=++previewGeneration;
     const sourceBuffer=sampleBuffer;
     const requestOutputMode=outputMode;
+    const requestLevelCode=levelCodeForSampleVolume();
     const range=rangeForPad(index,sourceBuffer,markers);
     if(!range || range.end<=range.start)return;
 
@@ -237,6 +252,7 @@
       startSec:range.start,
       endSec:sourceEnd,
       tune,
+      levelCode:requestLevelCode,
       outputMode:requestOutputMode,
       maxDuration:previewDuration
     });
@@ -247,11 +263,14 @@
     source.buffer=buffer;
     const previewOutput=ctx.createGain();
     connectLive(previewOutput);
-    const conditioner=makeSampleConditioner(ctx,previewOutput,sampleVolumeGain());
+    // SP SAMPLE VOL has already been rendered through the 8-bit level DAC.
+    const conditioner=makeSampleConditioner(ctx,previewOutput,1);
     source.connect(conditioner.input);
 
     chopAuditionSource=source;
-    chopAuditionGain=conditioner.gain;
+    // Do not expose the clean-path continuous volume GainNode while SP is active;
+    // changing SAMPLE VOL takes effect on the next hardware-style pad trigger.
+    chopAuditionGain=null;
     chopAuditionPad=index;
     chopAuditionOffset=range.start;
     chopAuditionStartedAt=ctx.currentTime;
@@ -483,11 +502,16 @@
     setOutputMode,
     settings(){
       const tune=DSP.resolveTune(samplePitchSemitones);
+      const levelCode=levelCodeForSampleVolume();
+      const level=DSP.resolveLevelCode(levelCode);
       return Object.freeze({
         enabled,
         sampleRate:DSP.sampleRate,
         bitDepth:DSP.bitDepth,
         inputLowpassHz:DSP.inputLowpassHz,
+        levelCode,
+        levelGain:level.gain,
+        levelDac:DSP.levelDac,
         output:outputMode,
         outputFilter:outputMode==="filter"?DSP.outputFilter:null,
         reconstructionRate:sessionOutputRate(),
