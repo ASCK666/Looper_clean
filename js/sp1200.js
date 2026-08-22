@@ -9,7 +9,10 @@
   const SP_SAMPLE_RATE=26040;
   const SP_BITS=12;
   const PCM_SCALE=2048;
-  const INPUT_LOWPASS_HZ=10500;
+  const SP_INPUT_FILTER_MODEL="service-manual-42dboct-derived-v1";
+  const SP_INPUT_FILTER_CUTOFF_HZ=10500;
+  const SP_INPUT_FILTER_ORDER=7;
+  const SP_INPUT_FILTER_SLOPE_DB_PER_OCTAVE=42;
   const FILTER_PREROLL_SECONDS=.05;
   const MAX_CACHE_ENTRIES=6;
   const ENCODE_YIELD_INPUT_FRAMES=32768;
@@ -77,7 +80,16 @@
     });
   }));
 
-  const BUTTERWORTH_6_Q=Object.freeze([.5176380902,.7071067812,1.9318516526]);
+  // A 7th-order Butterworth factors into one real pole plus three complex-pole
+  // pairs. Its asymptotic slope is 7 * 6 = 42 dB/octave, matching the service
+  // manual description of the SP sample-input anti-alias filter. The original
+  // analog network is more complex, so this remains an explicitly derived V1
+  // magnitude model rather than a claim of exact TL084/circuit equivalence.
+  const BUTTERWORTH_7_Q=Object.freeze([
+    .5549581321,
+    .8019377358,
+    2.2469796037
+  ]);
   const BUTTERWORTH_4_Q=Object.freeze([.5411961001,1.3065629649]);
   const encodedCache=new WeakMap();
   const pendingEncodes=new WeakMap();
@@ -208,9 +220,33 @@
     return value;
   }
 
+  function safeFilterCutoff(sampleRate,cutoff){
+    const rate=Math.max(1,Number(sampleRate)||44100);
+    return Math.max(10,Math.min(Number(cutoff)||SP_INPUT_FILTER_CUTOFF_HZ,rate*.45));
+  }
+
+  function makeOnePoleLowpass(sampleRate,cutoff){
+    const rate=Math.max(1,Number(sampleRate)||44100);
+    const fc=safeFilterCutoff(rate,cutoff);
+    const k=Math.tan(Math.PI*fc/rate);
+    const norm=1/(1+k);
+    return {
+      b0:k*norm,
+      b1:k*norm,
+      a1:(k-1)*norm,
+      z1:0
+    };
+  }
+
+  function filterOnePole(section,x){
+    const y=section.b0*x+section.z1;
+    section.z1=section.b1*x-section.a1*y;
+    return y;
+  }
+
   function makeLowpass(sampleRate,cutoff,q){
     const rate=Math.max(1,Number(sampleRate)||44100);
-    const fc=Math.max(10,Math.min(Number(cutoff)||INPUT_LOWPASS_HZ,rate*.45));
+    const fc=safeFilterCutoff(rate,cutoff);
     const w0=2*Math.PI*fc/rate;
     const cos=Math.cos(w0);
     const sin=Math.sin(w0);
@@ -381,7 +417,12 @@
   function* encodeSteps(sourceBuffer,request){
     const {inputRate,startFrame,endFrame,processStartFrame}=request;
     const plan=monoPlanFor(sourceBuffer);
-    const sections=BUTTERWORTH_6_Q.map(q=>makeLowpass(inputRate,INPUT_LOWPASS_HZ,q));
+    const firstOrder=makeOnePoleLowpass(inputRate,SP_INPUT_FILTER_CUTOFF_HZ);
+    const sections=BUTTERWORTH_7_Q.map(q=>makeLowpass(
+      inputRate,
+      SP_INPUT_FILTER_CUTOFF_HZ,
+      q
+    ));
     const filteredLength=endFrame-processStartFrame;
     const requestedSeconds=(endFrame-startFrame)/inputRate;
     const length=Math.max(1,Math.ceil(requestedSeconds*SP_SAMPLE_RATE));
@@ -394,6 +435,7 @@
 
     for(let offset=0;offset<filteredLength;offset++){
       let current=monoSample(sourceBuffer,processStartFrame+offset,plan);
+      current=filterOnePole(firstOrder,current);
       for(const section of sections)current=filterSample(section,current);
 
       if(offset===0){
@@ -588,7 +630,15 @@
   globalThis.SP1200DSP=Object.freeze({
     sampleRate:SP_SAMPLE_RATE,
     bitDepth:SP_BITS,
-    inputLowpassHz:INPUT_LOWPASS_HZ,
+    inputLowpassHz:SP_INPUT_FILTER_CUTOFF_HZ,
+    inputFilter:Object.freeze({
+      model:SP_INPUT_FILTER_MODEL,
+      family:"butterworth-derived",
+      cutoffHz:SP_INPUT_FILTER_CUTOFF_HZ,
+      order:SP_INPUT_FILTER_ORDER,
+      slopeDbPerOctave:SP_INPUT_FILTER_SLOPE_DB_PER_OCTAVE,
+      exactCircuit:false
+    }),
     maxCacheEntries:MAX_CACHE_ENTRIES,
     pcmStorage:"int16",
     monoPolicy:"per-source",
