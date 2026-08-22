@@ -14,6 +14,7 @@
   const ALL_ENCODE_PAGE_SECONDS=30;
   const MAX_PAD_PREVIEW_SECONDS=30;
   let enabled=false;
+  let previewGeneration=0;
 
   function currentMode(){
     return globalThis.ChopperWaveSlices?.mode||"markers";
@@ -21,6 +22,25 @@
 
   function currentBank(){
     return globalThis.ChopperBanks?.active||null;
+  }
+
+  function invalidatePendingPreview(){
+    previewGeneration++;
+    return previewGeneration;
+  }
+
+  // Any normal Chopper stop/change must also invalidate an SP encode that has
+  // not created its AudioBufferSource yet. The base stop remains the one owner
+  // of the actual audition source/playhead cleanup.
+  const stopChopAuditionBase=stopChopAudition;
+  stopChopAudition=function(...args){
+    invalidatePendingPreview();
+    return stopChopAuditionBase(...args);
+  };
+
+  function tuneForPitchRate(pitchRate){
+    const ratio=Math.max(.000001,Number(pitchRate)||1);
+    return DSP.resolveTune(Math.round(12*Math.log2(ratio)));
   }
 
   // A named 30 s bank remains one physical SP PCM. ALL is special on long
@@ -94,7 +114,7 @@
     return Number.isFinite(rate) && rate>=8000 ? rate : 44100;
   }
 
-  async function renderSpSequence(events,sourceBuffer,cueMarkers){
+  async function renderSpSequence(events,sourceBuffer,cueMarkers,pitchRate){
     if(!sourceBuffer)throw new Error("Charge un sample");
     await ensureAudio();
     const bpm=Math.max(40,Number($("sampleBpm")?.value)||90);
@@ -118,7 +138,7 @@
     }
     if(!placed.length)throw new Error("Place au moins un PAD sur la grille");
 
-    const tune=DSP.resolveTune(samplePitchSemitones);
+    const tune=tuneForPitchRate(pitchRate);
     const ratio=tune.ratio;
     const localEncoded=new Map();
 
@@ -182,12 +202,16 @@
 
   async function previewSpSlice(index){
     if(!sampleBuffer || index<0)return;
+    const generation=++previewGeneration;
     const sourceBuffer=sampleBuffer;
     const range=rangeForPad(index,sourceBuffer,markers);
     if(!range || range.end<=range.start)return;
 
+    // Stop the currently audible pad without invalidating this newly-created
+    // request generation. External stop/change calls go through the wrapper.
+    stopChopAuditionBase();
     await ensureAudio();
-    stopChopAudition();
+    if(generation!==previewGeneration || !enabled || sampleBuffer!==sourceBuffer)return;
     setActivePad(index);
 
     const tune=DSP.resolveTune(samplePitchSemitones);
@@ -199,7 +223,7 @@
       range.start+previewDuration*ratio+1/SP_SAMPLE_RATE
     );
     const encoded=await encodedForPlayback(sourceBuffer,range.start,sourceEnd);
-    if(!enabled || sampleBuffer!==sourceBuffer)return;
+    if(generation!==previewGeneration || !enabled || sampleBuffer!==sourceBuffer)return;
 
     let buffer=DSP.renderEncodedSegment(ctx,encoded,{
       startSec:range.start,
@@ -208,7 +232,7 @@
       maxDuration:previewDuration
     });
     buffer=await maybeVinyl(buffer);
-    if(!enabled || sampleBuffer!==sourceBuffer)return;
+    if(generation!==previewGeneration || !enabled || sampleBuffer!==sourceBuffer)return;
 
     const source=ctx.createBufferSource();
     source.buffer=buffer;
@@ -243,7 +267,7 @@
   const renderSequenceBase=renderSequence;
   renderSequence=async function(events,sourceBuffer,cueMarkers,pitchRate){
     if(!enabled)return await renderSequenceBase(events,sourceBuffer,cueMarkers,pitchRate);
-    return await renderSpSequence(events,sourceBuffer,cueMarkers);
+    return await renderSpSequence(events,sourceBuffer,cueMarkers,pitchRate);
   };
 
   const previewSliceBase=previewSlice;
@@ -265,6 +289,9 @@
     const next=Boolean(value);
     if(next===enabled)return enabled;
     stopChopAudition();
+    // A pending full render belongs to the old SP/CLEAN mode even if playback
+    // has not started yet. Invalidate it using the renderer's existing token.
+    if(typeof previewRenderGeneration==="number")previewRenderGeneration++;
     enabled=next;
     renderedFlip=null;
     const button=document.getElementById("sp1200Toggle");
