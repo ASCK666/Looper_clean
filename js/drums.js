@@ -126,11 +126,12 @@ function drumAutoGain(kind,buffer){
   return dbToGain(correctionDb);
 }
 
-function sampleAutoMixGain(){
-  if(!sampleConditionProfile)return 1;
-  const rmsDb=Number(sampleConditionProfile.rmsDb);
+function sampleAutoMixGain(buffer){
+  if(!buffer)return 1;
+  const profile=analyzeSampleCondition(buffer);
+  const rmsDb=Number(profile?.rmsDb);
   if(!Number.isFinite(rmsDb) || rmsDb<=-119)return 1;
-  const postTrimRmsDb=rmsDb+(Number(sampleConditionProfile.trimDb)||0);
+  const postTrimRmsDb=rmsDb+(Number(profile?.trimDb)||0);
   const correctionDb=clamp(
     AUTO_MIX_SAMPLE_RMS_TARGET_DB-postTrimRmsDb,
     AUTO_MIX_SAMPLE_CUT_DB,
@@ -617,6 +618,7 @@ function renderDrumEditor(){
       const velocity=active?drumStepVelocity(lane,step):1;
       const percent=Math.round(velocity*100);
 
+      cell.className=`drumEditStep ${lane}${step%4===0?" beat":""}${barStart?" barStart":""}`;
       cell.className=`drumEditStep ${lane}${step%4===0?" beat":""}${active?" active":""}`;
       cell.title=active
         ? `${labelText} • ${percent}% • molette = volume • clic = enlever`
@@ -1127,7 +1129,7 @@ async function renderSequence(events,sourceBuffer,cueMarkers,pitchRate){
   const sampleConditioner=makeSampleConditioner(
     offline,
     master.input,
-    .72*sampleVolumeGain()*sampleAutoMixGain()
+    .72*sampleVolumeGain()*sampleAutoMixGain(sourceBuffer)
   );
 
   const placed=[];
