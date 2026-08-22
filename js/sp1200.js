@@ -13,9 +13,34 @@
   const MAX_CACHE_ENTRIES=6;
   const ENCODE_YIELD_INPUT_FRAMES=32768;
   const SP_TUNE_MIN_CODE=0;
-  const SP_TUNE_MAX_CODE=31;
-  const SP_TUNE_CENTER_CODE=16;
-  const SP_TUNE_MODEL="ideal-v1";
+  const SP_TUNE_MAX_CODE=15;
+  const SP_TUNE_CENTER_CODE=8;
+  const SP_TUNE_MIN_SEMITONES=-8;
+  const SP_TUNE_MAX_SEMITONES=7;
+  const SP_TUNE_CARRY_MAX=127;
+  const SP_TUNE_MODEL="carry7-derived-v1";
+
+  // The original SP family exposes 16 discrete tuning positions (-8..+7), not
+  // 32 user pitches. The counts below are the nearest 7-bit carry populations
+  // to publicly measured SP-12 negative tuning ratios, mirrored for the positive
+  // skip side. They put V1 on the documented hardware grid without pretending
+  // that the exact PROM/address pattern has already been recovered.
+  const SP_TUNE_CARRY_COUNTS=Object.freeze([
+    73,64,51,42,32,23,15,7,
+    0,
+    7,15,23,32,42,51,64
+  ]);
+  const SP_TUNE_TABLE=Object.freeze(SP_TUNE_CARRY_COUNTS.map((carry,code)=>{
+    const nominalSemitones=code-SP_TUNE_CENTER_CODE;
+    const direction=nominalSemitones<0?"repeat":nominalSemitones>0?"skip":"normal";
+    const ratio=direction==="repeat"
+      ? 1/(1+carry/SP_TUNE_CARRY_MAX)
+      : direction==="skip"
+        ? 1+carry/SP_TUNE_CARRY_MAX
+        : 1;
+    return Object.freeze({code,nominalSemitones,carry,direction,ratio});
+  }));
+
   const BUTTERWORTH_6_Q=Object.freeze([.5176380902,.7071067812,1.9318516526]);
   const encodedCache=new WeakMap();
   const pendingEncodes=new WeakMap();
@@ -35,21 +60,22 @@
     return quantize12Code(value)/PCM_SCALE;
   }
 
-  // V1 mapping only. Callers may still speak in semitones, but playback receives
-  // a discrete tune plan so measured SP-1200 code/pattern tables can replace the
-  // ideal ratio later without changing the playback contract.
+  // Callers may still speak in nominal semitones, but playback receives one of
+  // the 16 immutable hardware-grid plans. `actualSemitones` exposes the slight
+  // detune caused by the finite carry grid; `effectiveSemitones` remains the
+  // nominal front-panel position for compatibility with existing callers.
   function resolveTune(semitones=0){
     const requestedSemitones=Math.round(Number(semitones)||0);
-    const code=Math.max(
-      SP_TUNE_MIN_CODE,
-      Math.min(SP_TUNE_MAX_CODE,SP_TUNE_CENTER_CODE+requestedSemitones)
+    const nominalSemitones=Math.max(
+      SP_TUNE_MIN_SEMITONES,
+      Math.min(SP_TUNE_MAX_SEMITONES,requestedSemitones)
     );
-    const effectiveSemitones=code-SP_TUNE_CENTER_CODE;
+    const base=SP_TUNE_TABLE[nominalSemitones-SP_TUNE_MIN_SEMITONES];
     return Object.freeze({
-      code,
+      ...base,
       requestedSemitones,
-      effectiveSemitones,
-      ratio:Math.pow(2,effectiveSemitones/12),
+      effectiveSemitones:base.nominalSemitones,
+      actualSemitones:12*Math.log2(base.ratio),
       model:SP_TUNE_MODEL
     });
   }
@@ -59,6 +85,13 @@
        tune.code<SP_TUNE_MIN_CODE || tune.code>SP_TUNE_MAX_CODE ||
        !Number.isFinite(tune.ratio) || tune.ratio<=0){
       throw new Error("SP1200: discrete tune plan missing");
+    }
+    const expected=SP_TUNE_TABLE[tune.code];
+    if(!expected || tune.model!==SP_TUNE_MODEL ||
+       tune.nominalSemitones!==expected.nominalSemitones ||
+       tune.carry!==expected.carry || tune.direction!==expected.direction ||
+       Math.abs(tune.ratio-expected.ratio)>1e-12){
+      throw new Error("SP1200: invalid hardware tune plan");
     }
     return tune;
   }
@@ -401,10 +434,15 @@
     maxCacheEntries:MAX_CACHE_ENTRIES,
     pcmStorage:"int16",
     monoPolicy:"per-source",
+    tuneModel:SP_TUNE_MODEL,
     tuneCodes:Object.freeze({
       min:SP_TUNE_MIN_CODE,
       max:SP_TUNE_MAX_CODE,
       center:SP_TUNE_CENTER_CODE
+    }),
+    tuneRange:Object.freeze({
+      minSemitones:SP_TUNE_MIN_SEMITONES,
+      maxSemitones:SP_TUNE_MAX_SEMITONES
     }),
     quantize12,
     resolveTune,
