@@ -369,7 +369,7 @@
 
     independentDirty=true;
     selectedSlice=i;
-    renderedFlip=null;
+    invalidatePreviewRender();
     syncPadSelection();
     if(redraw)drawWave();
     return true;
@@ -434,7 +434,7 @@
 
     independentDirty=true;
     selectedSlice=insertAt;
-    renderedFlip=null;
+    invalidatePreviewRender();
     shiftGridForInsertion(insertAt);
     stopChopAudition();
     renderPads();
@@ -602,7 +602,7 @@
     }
     stopChopAudition();
     if(typeof stopCurrentBeat==="function" && isLoopPlaying)stopCurrentBeat();
-    renderedFlip=null;
+    else invalidatePreviewRender();
     clearDrag();
     if(typeof draggingMarker!=="undefined")draggingMarker=-1;
 
@@ -943,7 +943,6 @@
     if(moved && range){
       independentDirty=true;
       stopChopAudition();
-      renderedFlip=null;
       renderSampleTimeline();
       const startMs=Math.round(range.start*1000);
       const endMs=Math.round(range.end*1000);
@@ -1002,6 +1001,7 @@
       return viewportPinned;
     },
     resetSlices(){
+      invalidatePreviewRender();
       seedInitialSlices();
       renderPads();
       drawWave();
