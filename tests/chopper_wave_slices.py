@@ -22,6 +22,21 @@ runtime_order=[
 positions=[html.index(f'src="{path}"') for path in runtime_order]
 assert positions==sorted(positions),'Chopper feature scripts must stay explicit and ordered in index.html'
 
+core=(ROOT/'js/chopper-wave-slices-core.js').read_text(encoding='utf-8')
+for invariant in [
+    'const visibleRatio=1/zoom;',
+    'waveScroll.style.setProperty("--wave-scroll-thumb"',
+    'waveScroll.disabled=!canScroll;',
+    'let viewportPinned=false;',
+    'const result=viewportPinned',
+    '? drawPinnedPlayheadFrame()',
+    'waveCanvas.addEventListener("pointerdown",()=>{pinEditedViewport();},true);',
+    'waveScroll?.addEventListener("input",()=>{',
+    'get viewportPinned(){return viewportPinned;}',
+    'resumePlayheadFollow(){',
+]:
+    assert invariant in core,f'Missing waveform viewport invariant: {invariant}'
+
 legacy=ROOT/'tests/chopper_wave_slices_legacy.py'
 source=legacy.read_text(encoding='utf-8')
 needle="js/chopper-wave-slices.js"
