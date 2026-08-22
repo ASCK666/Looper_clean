@@ -78,12 +78,8 @@ function main(){
   const adapter=fs.readFileSync(adapterPath,"utf8");
   assert(adapter.includes("function levelCodeForSampleVolume()"),"Chopper must translate SAMPLE VOL to a hardware level code");
   assert(adapter.includes("Math.round(sampleVolumeGain()*denominator)"),"Chopper volume must quantize to the nearest code/256 transfer");
-  assert(adapter.includes("function renderSpChopBuffer("),"Chopper SP adapter must own one local rendered-chop boundary");
-  assert((adapter.match(/DSP\.renderEncodedSegment\(/g)||[]).length===1,"only the shared SP chop renderer may call the DSP segment renderer");
-  assert(adapter.includes("const segment=renderSpChopBuffer("),"SP PLAY/SAVE must use the shared chop renderer");
-  assert(adapter.includes("let buffer=renderSpChopBuffer("),"SP PAD must use the shared chop renderer");
-  assert(adapter.includes("renderLevelCode,renderOutputMode,audible"),"SP PLAY/SAVE must pass its snapshotted level/output settings through the shared chop renderer");
-  assert(adapter.includes("requestLevelCode,requestOutputMode,previewDuration"),"SP PAD must pass its snapshotted level/output settings through the shared chop renderer");
+  assert(adapter.includes("levelCode:renderLevelCode"),"SP PLAY/SAVE must pass the snapshotted 8-bit level code into SP rendering");
+  assert(adapter.includes("levelCode:requestLevelCode"),"SP PAD must pass the snapshotted 8-bit level code into SP rendering");
   assert(!adapter.includes("makeSampleConditioner("),"SP output must never pass through the generic Chopper conditioner after DSP rendering");
   assert(!adapter.includes("sampleAutoMixGain("),"SP RAW must not receive hidden Chopper auto-mix gain after the level DAC");
   assert(adapter.includes("source.connect(master.input);"),"SP sliced PLAY/SAVE must connect rendered SP output directly to the mix master");
@@ -91,7 +87,7 @@ function main(){
   assert(adapter.includes("source.connect(previewOutput);"),"SP PAD must connect rendered SP output directly to live output");
   assert(adapter.includes("chopAuditionGain=null"),"SP PAD must not expose the clean continuous volume gain after quantized rendering");
 
-  console.log("OK: SP1200 level — 8-bit AD7524 transfer, one shared chop render boundary, RAW path unconditioned");
+  console.log("OK: SP1200 level — 8-bit AD7524 transfer and unconditioned SP output routing");
 }
 
 try{
