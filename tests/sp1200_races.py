@@ -3,6 +3,7 @@ import contextlib
 import http.server
 import math
 import os
+import re
 import socketserver
 import struct
 import sys
@@ -52,11 +53,12 @@ assert 'function invalidatePreviewRender(){\n  previewRenderGeneration++;' in dr
 assert '++previewRenderGeneration' not in drums_source, 'renderer internals must not bypass invalidatePreviewRender()'
 assert 'previewRenderGeneration+=' not in drums_source, 'renderer internals must not mutate the generation with +='
 for js_path in sorted((ROOT / 'js').glob('*.js')):
-    if js_path.name == 'drums.js':
-        continue
     source = js_path.read_text(encoding='utf-8')
-    for direct_write in ('previewRenderGeneration++', '++previewRenderGeneration', 'previewRenderGeneration+='):
-        assert direct_write not in source, f'{js_path.name} must route combined-preview invalidation through invalidatePreviewRender()'
+    if js_path.name != 'drums.js':
+        for direct_write in ('previewRenderGeneration++', '++previewRenderGeneration', 'previewRenderGeneration+='):
+            assert direct_write not in source, f'{js_path.name} must route combined-preview invalidation through invalidatePreviewRender()'
+    if js_path.name not in ('core.js', 'drums.js'):
+        assert not re.search(r'\brenderedFlip\s*=\s*null\b', source), f'{js_path.name} must not bypass renderer-owned preview invalidation'
 
 play_start = events_source.index('async function playCurrentBeat')
 play_end = events_source.index('$("previewFlip").onclick=playCurrentBeat', play_start)
@@ -258,9 +260,9 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert play_stop['starts'] == 0, play_stop
         assert play_stop['status'] == 'STOP', play_stop
 
-        # Regression 4: a marker edit during a cooperative encode belongs to the
-        # next render. The in-flight render must keep the marker value captured at
-        # PLAY time instead of turning into a hybrid old/new Chopper state.
+        # Regression 4: a direct internal marker mutation during cooperative
+        # encode cannot turn an already-started snapshot into hybrid audio. Real
+        # UI marker mutations use the renderer invalidation contract instead.
         page.evaluate('''() => {
           SP1200DSP.clearCache(sampleBuffer);
           renderedFlip=null;
@@ -290,9 +292,68 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert snapshot_render['peak'] < 1e-5, snapshot_render
         page.click('#stopFlip')
 
+        # Regression 5: changing MARKERS/SLICES while PLAY is still rendering
+        # invalidates the old combined preview before it can start a live source.
+        page.evaluate('''() => {
+          ChopperWaveSlices.setEditMode('markers');
+          SP1200DSP.clearCache(sampleBuffer);
+          window.__spLiveStarts=0;
+          loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+          loopGridEvents[0]=1;
+          renderLoopGrid();
+        }''')
+        page.click('#previewFlip')
+        page.wait_for_timeout(5)
+        page.evaluate("ChopperWaveSlices.setEditMode('slices')")
+        page.wait_for_timeout(1200)
+        slice_invalidation = page.evaluate('''() => ({
+          playing:isLoopPlaying,
+          source:flipSource,
+          starts:window.__spLiveStarts,
+          mode:ChopperWaveSlices.mode
+        })''')
+        assert slice_invalidation['playing'] is False, slice_invalidation
+        assert slice_invalidation['source'] is None, slice_invalidation
+        assert slice_invalidation['starts'] == 0, slice_invalidation
+        assert slice_invalidation['mode'] == 'slices', slice_invalidation
+        page.evaluate("ChopperWaveSlices.setEditMode('markers')")
+
+        # Regression 6: VINYL changes invalidate on input, not only on release,
+        # so a pending render using an older effect amount cannot start later.
+        page.evaluate('''() => {
+          const vinyl=document.getElementById('vinylAmount');
+          vinyl.value='0';
+          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
+          SP1200DSP.clearCache(sampleBuffer);
+          window.__spLiveStarts=0;
+        }''')
+        page.click('#previewFlip')
+        page.wait_for_timeout(5)
+        page.evaluate('''() => {
+          const vinyl=document.getElementById('vinylAmount');
+          vinyl.value='35';
+          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
+        }''')
+        page.wait_for_timeout(1200)
+        vinyl_invalidation = page.evaluate('''() => ({
+          playing:isLoopPlaying,
+          source:flipSource,
+          starts:window.__spLiveStarts,
+          amount:document.getElementById('vinylAmount').value
+        })''')
+        assert vinyl_invalidation['playing'] is False, vinyl_invalidation
+        assert vinyl_invalidation['source'] is None, vinyl_invalidation
+        assert vinyl_invalidation['starts'] == 0, vinyl_invalidation
+        assert vinyl_invalidation['amount'] == '35', vinyl_invalidation
+        page.evaluate('''() => {
+          const vinyl=document.getElementById('vinylAmount');
+          vinyl.value='0';
+          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
+        }''')
+
         assert page.evaluate('window.__SP.errors.length') == 0
         assert not page_errors, page_errors
         context.close()
         browser.close()
 
-print('OK: SP1200 async races — STOP-safe PAD/PLAY plus immutable full-render Chopper snapshots')
+print('OK: SP1200 async races — single-owner preview invalidation plus STOP-safe PAD/PLAY snapshots')
