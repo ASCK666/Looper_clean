@@ -51,7 +51,7 @@
   // A named 30 s bank remains one physical SP PCM. ALL is special on long
   // sources: use an aligned 30 s page (extended only as far as the current
   // audible request needs) so one pad never encodes a multi-minute file.
-  function workingEncodeRange(sourceBuffer,requestedStart=0,requestedEnd=sourceBuffer?.duration||0,bank=currentBank()){
+  function workingEncodeRange(sourceBuffer,requestedStart=0,requestedEnd=sourceBuffer?.duration||0,bank=null){
     if(bank && bank.id!=="all"){
       return {
         start:Math.max(0,Math.min(sourceBuffer.duration,Number(bank.start)||0)),
@@ -70,14 +70,6 @@
       Math.max(pageStart+ALL_ENCODE_PAGE_SECONDS,end)
     );
     return {start:pageStart,end:pageEnd};
-  }
-
-  async function encodedForPlayback(sourceBuffer,requestedStart,requestedEnd,bank=currentBank()){
-    const encodeRange=workingEncodeRange(sourceBuffer,requestedStart,requestedEnd,bank);
-    return await DSP.encodeBufferAsync(sourceBuffer,{
-      startSec:encodeRange.start,
-      endSec:encodeRange.end
-    });
   }
 
   function markerRange(index,sourceBuffer,cueMarkers,bank=currentBank()){
@@ -127,18 +119,59 @@
     return Math.max(0,Math.min(max,code));
   }
 
-  // One local boundary owns the translation from a Chopper chop to the pure DSP
-  // playback contract. PAD and PLAY/SAVE both stop here before product routing
-  // (edge fades, PUNCH/master, VINYL or loop finalization) is applied.
-  function renderSpChopBuffer(audioContext,encoded,startSec,endSec,tune,levelCode,outputProfile,maxDuration){
-    return DSP.renderEncodedSegment(audioContext,encoded,{
-      startSec,
-      endSec,
+  // One operation owns the complete SP chop transition shared by PAD and
+  // PLAY/SAVE: source range -> audible duration -> encoded PCM page -> playback
+  // reconstruction. Product routing (edge fade, PUNCH/master, VINYL/finalize)
+  // stays outside this boundary.
+  async function renderSpChop(audioContext,{
+    sourceBuffer,
+    range,
+    tune,
+    levelCode,
+    outputMode:outputProfile,
+    durationLimit,
+    bank=null,
+    encodedCache=null,
+    shouldContinue=null
+  }){
+    if(!sourceBuffer || !range || range.end<=range.start){
+      throw new Error("SP1200: invalid chop render range");
+    }
+
+    const naturalDuration=(range.end-range.start)/tune.ratio;
+    const limit=Number.isFinite(durationLimit)
+      ? Math.max(.001,Number(durationLimit)||0)
+      : naturalDuration;
+    const audible=Math.max(.001,Math.min(naturalDuration,limit));
+    const sourceEnd=Math.min(
+      range.end,
+      range.start+audible*tune.ratio+1/SP_SAMPLE_RATE
+    );
+    const encodeRange=workingEncodeRange(sourceBuffer,range.start,sourceEnd,bank);
+    const cacheKey=`${encodeRange.start}:${encodeRange.end}`;
+    let encoded=encodedCache?.get(cacheKey)||null;
+    if(!encoded){
+      encoded=await DSP.encodeBufferAsync(sourceBuffer,{
+        startSec:encodeRange.start,
+        endSec:encodeRange.end
+      });
+      encodedCache?.set(cacheKey,encoded);
+    }
+
+    // PAD requests can become stale while an encode is pending. Preserve the
+    // previous early-cancellation behavior so a stale 30 s request never spends
+    // time reconstructing a buffer that cannot be played.
+    if(typeof shouldContinue==="function" && !shouldContinue())return null;
+
+    const buffer=DSP.renderEncodedSegment(audioContext,encoded,{
+      startSec:range.start,
+      endSec:sourceEnd,
       tune,
       levelCode,
       outputMode:outputProfile,
-      maxDuration
+      maxDuration:audible
     });
+    return {buffer,audible,sourceEnd};
   }
 
   async function renderSpSequence(events,sourceBuffer,cueMarkers,pitchRate){
@@ -173,10 +206,6 @@
     const master=makePunchMaster(offline);
     const slices=renderMode==="slices";
 
-    // renderSpChopBuffer() is the end of the SP sample-output chain. Do not run
-    // Chopper's generic conditioner/auto-mix after it: RAW must remain RAW and
-    // FILTER must remain only the DSP-owned SP output filter. The master below is
-    // mix infrastructure; explicit VINYL is applied separately after rendering.
     const placed=[];
     for(let step=0;step<16;step++){
       const chop=renderEvents[step];
@@ -188,20 +217,7 @@
     if(!placed.length)throw new Error("Place au moins un PAD sur la grille");
 
     const tune=tuneForPitchRate(pitchRate);
-    const ratio=tune.ratio;
     const localEncoded=new Map();
-
-    async function encodedForEvent(start,end){
-      const encodeRange=workingEncodeRange(sourceBuffer,start,end,renderBank);
-      const key=`${encodeRange.start}:${encodeRange.end}`;
-      if(localEncoded.has(key))return localEncoded.get(key);
-      const encoded=await DSP.encodeBufferAsync(sourceBuffer,{
-        startSec:encodeRange.start,
-        endSec:encodeRange.end
-      });
-      localEncoded.set(key,encoded);
-      return encoded;
-    }
 
     for(let e=0;e<placed.length;e++){
       const event=placed[e];
@@ -211,20 +227,20 @@
       const range=rangeForPad(index,sourceBuffer,renderCueMarkers,renderMode,renderBank,renderSlices);
       if(!range || range.end<=range.start)continue;
 
-      const naturalDuration=(range.end-range.start)/ratio;
-      const wanted=Math.max(.001,nextTime-startTime);
-      const audible=Math.max(.001,Math.min(wanted,naturalDuration,targetDur-startTime));
-      const sourceEnd=Math.min(
-        range.end,
-        range.start+audible*ratio+1/SP_SAMPLE_RATE
-      );
-      const encoded=await encodedForEvent(range.start,sourceEnd);
-      const segment=renderSpChopBuffer(
-        offline,encoded,range.start,sourceEnd,tune,
-        renderLevelCode,renderOutputMode,audible
-      );
+      const durationLimit=Math.max(.001,Math.min(nextTime-startTime,targetDur-startTime));
+      const renderedChop=await renderSpChop(offline,{
+        sourceBuffer,
+        range,
+        tune,
+        levelCode:renderLevelCode,
+        outputMode:renderOutputMode,
+        durationLimit,
+        bank:renderBank,
+        encodedCache:localEncoded
+      });
+      const audible=renderedChop.audible;
       const source=offline.createBufferSource();
-      source.buffer=segment;
+      source.buffer=renderedChop.buffer;
 
       if(slices){
         source.connect(master.input);
@@ -253,8 +269,13 @@
     const sourceBuffer=sampleBuffer;
     const requestOutputMode=outputMode;
     const requestLevelCode=levelCodeForSampleVolume();
-    const range=rangeForPad(index,sourceBuffer,markers);
+    const activeBank=currentBank();
+    const requestBank=activeBank?Object.freeze({...activeBank}):null;
+    const requestMode=currentMode();
+    const requestSlices=requestMode==="slices" ? globalThis.ChopperWaveSlices?.slices||[] : [];
+    const range=rangeForPad(index,sourceBuffer,markers,requestMode,requestBank,requestSlices);
     if(!range || range.end<=range.start)return;
+    const requestTune=DSP.resolveTune(samplePitchSemitones);
 
     // Stop the currently audible pad without invalidating this newly-created
     // request generation. External stop/change calls go through the wrapper.
@@ -263,22 +284,19 @@
     if(generation!==previewGeneration || !enabled || sampleBuffer!==sourceBuffer)return;
     setActivePad(index);
 
-    const tune=DSP.resolveTune(samplePitchSemitones);
-    const ratio=tune.ratio;
-    const naturalDuration=(range.end-range.start)/ratio;
-    const previewDuration=Math.min(naturalDuration,MAX_PAD_PREVIEW_SECONDS);
-    const sourceEnd=Math.min(
-      range.end,
-      range.start+previewDuration*ratio+1/SP_SAMPLE_RATE
-    );
-    const encoded=await encodedForPlayback(sourceBuffer,range.start,sourceEnd);
-    if(generation!==previewGeneration || !enabled || sampleBuffer!==sourceBuffer)return;
+    let renderedChop=await renderSpChop(ctx,{
+      sourceBuffer,
+      range,
+      tune:requestTune,
+      levelCode:requestLevelCode,
+      outputMode:requestOutputMode,
+      durationLimit:MAX_PAD_PREVIEW_SECONDS,
+      bank:requestBank,
+      shouldContinue:()=>generation===previewGeneration && enabled && sampleBuffer===sourceBuffer
+    });
+    if(!renderedChop)return;
 
-    let buffer=renderSpChopBuffer(
-      ctx,encoded,range.start,sourceEnd,tune,
-      requestLevelCode,requestOutputMode,previewDuration
-    );
-    buffer=await maybeVinyl(buffer);
+    let buffer=await maybeVinyl(renderedChop.buffer);
     if(generation!==previewGeneration || !enabled || sampleBuffer!==sourceBuffer)return;
 
     const source=ctx.createBufferSource();
