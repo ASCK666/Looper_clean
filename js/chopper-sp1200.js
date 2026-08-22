@@ -143,11 +143,9 @@
 
   async function renderSpSequence(events,sourceBuffer,cueMarkers,pitchRate){
     if(!sourceBuffer)throw new Error("Charge un sample");
-    await ensureAudio();
 
-    // Freeze every Chopper-owned input before the first asynchronous encode.
-    // A bank/mode/marker edit made while rendering belongs to the next render,
-    // never to the in-flight one.
+    // Freeze every Chopper-owned input before any asynchronous work. A bank,
+    // mode, marker, volume or output change belongs to the next render only.
     const renderMode=currentMode();
     const activeBank=currentBank();
     const renderBank=activeBank?Object.freeze({...activeBank}):null;
@@ -161,14 +159,16 @@
           end:Math.max(0,Number(range?.end)||0)
         }))
       : []);
-
+    const renderOutputMode=outputMode;
+    const renderLevelCode=levelCodeForSampleVolume();
     const bpm=Math.max(40,Number($("sampleBpm")?.value)||90);
+
+    await ensureAudio();
+
     const stepDur=(60/bpm)/2;
     const bars=2;
     const targetDur=8*60/bpm;
     const rate=sessionOutputRate();
-    const renderOutputMode=outputMode;
-    const renderLevelCode=levelCodeForSampleVolume();
     const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
     const master=makePunchMaster(offline);
     const slices=renderMode==="slices";
