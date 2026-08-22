@@ -10,6 +10,7 @@ steps=[
   ['tests/looper66_contract.py'],
   ['tests/js_health.py'],
   ['tests/core_unit.js'],
+  ['tests/auto_mix_unit.js'],
   ['tests/regression_v63.py'],
   ['tests/css_health.py'],
   ['tests/css_redundancy.py'],
