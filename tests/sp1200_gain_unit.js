@@ -57,6 +57,13 @@ function main(){
   assert(dsp,"SP1200DSP global missing");
   assert(dsp.monoLevelPolicy==="fixed-equal-power-v1","SP stereo ingestion must use a fixed equal-power rule");
   assert(Math.abs(dsp.stereoDownmixCoefficient-Math.SQRT1_2)<1e-12,"stereo channels must use fixed -3.01 dB coefficients");
+  assert(dsp.inputFilter?.model==="service-manual-42dboct-derived-v1","SP input filter must expose the service-manual-derived model");
+  assert(dsp.inputFilter?.family==="butterworth-derived","SP input filter family must remain explicitly derived");
+  assert(dsp.inputFilter?.cutoffHz===10500,"SP input filter calibration point must stay at 10.5 kHz");
+  assert(dsp.inputFilter?.order===7,"SP input filter must use seven poles for 42 dB/octave asymptotic slope");
+  assert(dsp.inputFilter?.slopeDbPerOctave===42,"SP input filter slope metadata must match the service manual");
+  assert(dsp.inputFilter?.exactCircuit===false,"derived SP input filter must not claim exact circuit equivalence");
+  assert(!runtime.includes("BUTTERWORTH_6_Q"),"old six-pole input placeholder must stay removed");
   for(const forbidden of ["energyGain","peakGain","stereoEnergy","sourcePeak","mixedPeak"]){
     assert(!runtime.includes(forbidden),`SP input staging must not use adaptive ${forbidden}`);
   }
@@ -104,16 +111,23 @@ function main(){
   const hotStereo=dsp.encodeBuffer(makeBuffer([hot,hot],rate));
   assert(clippedCodes(hotStereo)>0,"hot fixed stereo sum should be able to clip the 12-bit input");
 
-  // Do not hide the anti-alias stage behind normalization. At 10.5 kHz the
-  // six-pole filter plus finite-rate encode interpolation should remain clearly
-  // attenuated rather than receiving any automatic post-filter makeup.
+  // The service manual describes an input anti-alias filter with an asymptotic
+  // slope around 42 dB/octave. The calibrated seven-pole V1 keeps its 10.5 kHz
+  // corner while rejecting the near-Nyquist region much harder than the old
+  // six-pole placeholder. No makeup is allowed after this attenuation.
   const cutoffAmplitude=.2;
   const cutoff=sine(length,rate,10500,cutoffAmplitude);
   const cutoffEncoded=dsp.encodeBuffer(makeBuffer([cutoff],rate));
   const cutoffDelta=dbRatio(rmsEncoded(cutoffEncoded),cutoffAmplitude/Math.sqrt(2));
-  assert(cutoffDelta>-5.2 && cutoffDelta<-3.5,`anti-alias encode attenuation should stay intact, got ${cutoffDelta.toFixed(2)} dB`);
+  assert(cutoffDelta>-5.2 && cutoffDelta<-3.5,`anti-alias 10.5 kHz calibration should stay near -4.4 dB after resampling, got ${cutoffDelta.toFixed(2)} dB`);
 
-  console.log("OK: SP1200 gain — fixed mono ingestion, no adaptive normalization, filter attenuation untouched");
+  const guardAmplitude=.2;
+  const guard=sine(length,rate,12000,guardAmplitude);
+  const guardEncoded=dsp.encodeBuffer(makeBuffer([guard],rate));
+  const guardDelta=dbRatio(rmsEncoded(guardEncoded),guardAmplitude/Math.sqrt(2));
+  assert(guardDelta<-12.5,`calibrated anti-alias filter must strongly reject 12 kHz before the 13.02 kHz Nyquist point, got ${guardDelta.toFixed(2)} dB`);
+
+  console.log(`OK: SP1200 input — fixed mono staging, 7-pole 42 dB/oct anti-alias model, ${guardDelta.toFixed(1)} dB @ 12 kHz`);
 }
 
 try{
