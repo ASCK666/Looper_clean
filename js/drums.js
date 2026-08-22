@@ -618,7 +618,6 @@ function renderDrumEditor(){
       const velocity=active?drumStepVelocity(lane,step):1;
       const percent=Math.round(velocity*100);
 
-      cell.className=`drumEditStep ${lane}${step%4===0?" beat":""}${barStart?" barStart":""}`;
       cell.className=`drumEditStep ${lane}${step%4===0?" beat":""}${active?" active":""}`;
       cell.title=active
         ? `${labelText} • ${percent}% • molette = volume • clic = enlever`
