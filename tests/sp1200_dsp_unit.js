@@ -219,8 +219,12 @@ async function main(){
   assert(!integrationSource.includes("DSP.pitchRatio"),"Chopper adapter must not derive pitch ratios directly");
   assert(integrationSource.includes("globalThis.ChopperWaveSlices") && integrationSource.includes("globalThis.ChopperBanks"),"Chopper-only feature dependencies must remain in the Chopper adapter");
   assert(integrationSource.includes("globalThis.ChopperVinyl"),"VINYL post-processing must remain a Chopper adapter concern");
+  assert(integrationSource.includes("function sessionOutputRate()"),"Chopper SP adapter must define one session reconstruction rate");
+  assert(integrationSource.includes("const rate=sessionOutputRate();"),"offline SP render must use the live-session reconstruction rate");
+  assert(integrationSource.includes("reconstructionRate:sessionOutputRate()"),"SP settings must expose the active reconstruction rate");
+  assert(!integrationSource.includes("const rate=44100;"),"SP PLAY/SAVE must not force a separate 44.1 kHz ZOH grid");
 
-  console.log("OK: SP1200 DSP — pure audio boundary, Chopper adapter ownership, per-source mono policy and discrete tune plans");
+  console.log("OK: SP1200 DSP — shared session reconstruction rate, pure audio boundary and Chopper adapter ownership");
 }
 
 main().catch(error=>{
