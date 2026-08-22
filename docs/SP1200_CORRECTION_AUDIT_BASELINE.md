@@ -13,6 +13,32 @@ Every runtime or test change on `correct-SP1200` must be evaluated against this 
 
 The goal is not to improve scores by changing the rubric. Scores are reassessed from the resulting code and maintained tests, with the same criteria after every step.
 
+## Mandatory pre-push impact gate
+
+**No code or test modification may be pushed before its impact on the existing codebase has been audited.** This gate applies even to changes that look trivial or local.
+
+Before pushing a proposed modification, the change must be checked against the current accepted branch state and this baseline. The review must explicitly cover, when relevant:
+
+- direct callers and downstream callees of every changed function;
+- shared globals/state read or written by the changed code;
+- async boundaries, pending work, cancellation and generation/token semantics;
+- PAD, PLAY, SAVE and STOP behavior where the changed path can affect them;
+- CLEAN versus SP behavior and SP RAW/FILTER behavior where relevant;
+- Banks, MARKERS, SLICES, Drums, PUNCH and VINYL interactions where relevant;
+- wrapper/load order and ownership boundaries between files;
+- maintained unit, source-contract, browser and race tests affected by the change;
+- mobile/performance consequences, especially additional encoding, rendering, allocation or repeated work;
+- whether the modification introduces a new writer, duplicate responsibility, hidden fallback, compatibility path or abstraction;
+- whether any existing score in this document could decrease as a consequence.
+
+The pre-push decision must be neutral: evidence against the proposed change counts the same as evidence in its favor. A change must not be accepted merely because it fixes its target bug. If it creates a new regression, worsens an ownership boundary, weakens a maintained test, adds unjustified complexity or lowers any baseline score, it must be reworked or rejected before push.
+
+After the push, the actual Git diff must be audited again against the pre-push expectation. Any unexpected file, formatting churn, behavior change or dependency is grounds for rejecting/reverting the commit.
+
+**Each accepted correction must be committed as an explicit Git commit.** Runtime/test changes must not remain as an undocumented working-state correction. The commit boundary is part of the audit trail and must be small enough to attribute consequences to the correction being evaluated.
+
+Documentation-only baseline/gate changes are also committed separately from runtime fixes.
+
 ## Baseline verdict
 
 Overall feature score: **5.8 / 10**
@@ -138,15 +164,17 @@ Treat this after the primary pending-render ownership gaps unless a test demonst
 ## Required correction strategy
 
 1. Work only on branch `correct-SP1200`.
-2. Before each runtime change, identify the exact baseline finding it addresses.
-3. Keep each commit limited to one ownership/race problem where practical.
-4. Compare the resulting diff against the previous accepted commit and this baseline.
-5. Re-run/review the relevant maintained tests before accepting the commit.
-6. Reject/revert changes that introduce unrelated formatting churn, new abstractions or cross-domain writes.
-7. Re-score the same table after every accepted correction step.
-8. **No score may decrease below this baseline.** A lower score means the change is rejected/reworked rather than rationalized.
-9. Do not change the scoring rubric to make a modification appear successful.
-10. No additional SP DSP/fidelity layers until lifecycle/integration blockers are closed.
+2. Before each runtime or test change, identify the exact baseline finding it addresses.
+3. **Before pushing, audit the proposed modification's impacts across callers, state, async lifecycle, neighboring domains and maintained tests.**
+4. Keep each commit limited to one ownership/race problem where practical.
+5. Compare the resulting diff against the previous accepted commit and this baseline.
+6. Re-run/review the relevant maintained tests before accepting the commit.
+7. Reject/revert changes that introduce unrelated formatting churn, new abstractions or cross-domain writes.
+8. Re-score the same table after every accepted correction step.
+9. **No score may decrease below this baseline.** A lower score means the change is rejected/reworked rather than rationalized.
+10. Do not change the scoring rubric to make a modification appear successful.
+11. Commit every accepted correction as its own auditable Git commit.
+12. No additional SP DSP/fidelity layers until lifecycle/integration blockers are closed.
 
 ## Target lifecycle contract
 
