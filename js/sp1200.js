@@ -2,9 +2,9 @@
 
 // SP-1200 inspired DSP engine.
 // Scope is deliberately narrow: mono input, 26.04 kHz sampling, 12-bit linear
-// quantization, 7-bit carry address stepping, zero-order-hold reconstruction and
-// an optional derived fixed-output filter. This is a behavioral approximation,
-// not a bit-perfect hardware clone.
+// quantization, 7-bit carry address stepping, multiplexed DAC/sample-hold
+// reconstruction and an optional derived fixed-output filter. This is a
+// behavioral approximation, not a bit-perfect hardware clone.
 (() => {
   const SP_SAMPLE_RATE=26040;
   const SP_BITS=12;
@@ -28,6 +28,10 @@
   const SP_ADDRESSING_MODEL="carry7-pattern-v1";
   const SP_MONO_LEVEL_MODEL="fixed-equal-power-v1";
   const SP_STEREO_DOWNMIX_COEFFICIENT=Math.SQRT1_2;
+  const SP_RECONSTRUCTION_MODEL="mux8-sh-zoh-v1";
+  const SP_DAC_CHANNELS=8;
+  const SP_DAC_MULTIPLEX_RATE=SP_SAMPLE_RATE*SP_DAC_CHANNELS;
+  const SP_HOLD_MODEL="ideal-zoh-v1";
   const SP_OUTPUT_FILTER_MODEL="fixed34-derived-v1";
   const SP_OUTPUT_FILTER_CUTOFF_HZ=9000;
   const SP_OUTPUT_FILTER_ORDER=4;
@@ -270,13 +274,39 @@
     return y;
   }
 
+  // The original hardware uses one 12-bit DAC shared across eight audio channels.
+  // The DAC/level path is multiplexed at eight times the per-channel sample rate;
+  // a 4051 then routes each channel into its own sample/hold. For one isolated
+  // voice, the observable result is an exact held value until that channel's next
+  // 26.04 kHz refresh. V1 models that topology explicitly without inventing
+  // unmeasured capacitor droop, DAC settling error or inter-channel bleed.
+  function reconstructSampleHold(data,{first,last,plan,rate,length}){
+    const output=new Float32Array(length);
+    const stepper=addressStepper(plan);
+    let renderedHold=-1;
+    let heldValue=0;
+
+    for(let i=0;i<length;i++){
+      const dacSlot=Math.floor(i*SP_DAC_MULTIPLEX_RATE/rate);
+      const holdTick=Math.floor(dacSlot/SP_DAC_CHANNELS);
+      while(renderedHold<holdTick){
+        const sourceOffset=stepper.next();
+        const sourceIndex=first+sourceOffset;
+        heldValue=sourceIndex<last?pcmValue(data,sourceIndex):0;
+        renderedHold++;
+      }
+      output[i]=heldValue;
+    }
+    return output;
+  }
+
   // Vintage SP-1200 channels 3/4 use a fixed lower-cutoff output filter, while
   // 5/6 use a higher fixed cutoff and 7/8 are unfiltered. Public documentation
   // establishes that topology but not a complete calibrated transfer function.
   // V1 therefore models one deliberately conservative 3/4-style profile: a
-  // fourth-order low-pass around 9 kHz, after ZOH reconstruction, with no makeup
-  // gain. It is explicitly labelled derived and must not be marketed as an exact
-  // SSM2044 model (the dynamic SSM2044 path belongs to channels 1/2 instead).
+  // fourth-order low-pass around 9 kHz, after DAC/S&H reconstruction, with no
+  // makeup gain. It is explicitly labelled derived and must not be marketed as
+  // an exact SSM2044 model (the dynamic SSM2044 path belongs to channels 1/2).
   function applyOutputProfile(output,sampleRate,mode){
     const resolved=resolveOutputMode(mode);
     if(resolved==="raw" || !output.length)return output;
@@ -534,8 +564,9 @@
   }
 
   // PLAYBACK contract: only stored SP PCM plus a resolved discrete tune plan
-  // enter from here downward. The optional output profile happens after the
-  // ZOH reconstruction because the physical channel filters sit after DAC/S&H.
+  // enter from here downward. Reconstruction explicitly models the shared DAC's
+  // eight multiplex slots and each channel's sample/hold. The optional output
+  // profile then happens after that reconstruction, as on the physical machine.
   function renderPcm(encodedData,options={}){
     rejectLegacySemitones(options);
     const {
@@ -557,20 +588,7 @@
     const limit=Number.isFinite(maxDuration)?Math.max(0,Number(maxDuration)||0):naturalDuration;
     const duration=Math.min(naturalDuration,limit);
     const length=Math.max(1,Math.ceil(duration*rate));
-    const output=new Float32Array(length);
-    const stepper=addressStepper(plan);
-    let renderedTick=-1;
-    let sourceOffset=0;
-
-    for(let i=0;i<length;i++){
-      const spTick=Math.floor(i*SP_SAMPLE_RATE/rate);
-      while(renderedTick<spTick){
-        sourceOffset=stepper.next();
-        renderedTick++;
-      }
-      const sourceIndex=first+sourceOffset;
-      output[i]=sourceIndex<last?pcmValue(data,sourceIndex):0;
-    }
+    const output=reconstructSampleHold(data,{first,last,plan,rate,length});
     return applyOutputProfile(output,rate,resolvedOutputMode);
   }
 
@@ -638,6 +656,17 @@
       order:SP_INPUT_FILTER_ORDER,
       slopeDbPerOctave:SP_INPUT_FILTER_SLOPE_DB_PER_OCTAVE,
       exactCircuit:false
+    }),
+    reconstruction:Object.freeze({
+      model:SP_RECONSTRUCTION_MODEL,
+      sharedDac:true,
+      dacBits:SP_BITS,
+      multiplexChannels:SP_DAC_CHANNELS,
+      multiplexRate:SP_DAC_MULTIPLEX_RATE,
+      holdRate:SP_SAMPLE_RATE,
+      holdModel:SP_HOLD_MODEL,
+      droopMode:"not-modeled",
+      crosstalkMode:"not-modeled"
     }),
     maxCacheEntries:MAX_CACHE_ENTRIES,
     pcmStorage:"int16",
