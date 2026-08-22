@@ -80,11 +80,14 @@ function main(){
   assert(adapter.includes("Math.round(sampleVolumeGain()*denominator)"),"Chopper volume must quantize to the nearest code/256 transfer");
   assert(adapter.includes("levelCode:renderLevelCode"),"SP PLAY/SAVE must use the snapshotted 8-bit level code");
   assert(adapter.includes("levelCode:requestLevelCode"),"SP PAD audition must use the snapshotted 8-bit level code");
-  assert(adapter.includes("const conditionerGain=.72*(slices?1:sampleAutoMixGain(sourceBuffer));"),"SP sequence must not apply SAMPLE VOL twice after the level DAC");
-  assert(adapter.includes("makeSampleConditioner(ctx,previewOutput,1)"),"SP PAD must not apply continuous SAMPLE VOL again after the level DAC");
+  assert(!adapter.includes("makeSampleConditioner("),"SP output must never pass through the generic Chopper conditioner after DSP rendering");
+  assert(!adapter.includes("sampleAutoMixGain("),"SP RAW must not receive hidden Chopper auto-mix gain after the level DAC");
+  assert(adapter.includes("source.connect(master.input);"),"SP sliced PLAY/SAVE must connect rendered SP output directly to the mix master");
+  assert(adapter.includes("source.connect(edge).connect(master.input);"),"SP marker PLAY/SAVE may use only the chop-edge fade before the mix master");
+  assert(adapter.includes("source.connect(previewOutput);"),"SP PAD must connect rendered SP output directly to live output");
   assert(adapter.includes("chopAuditionGain=null"),"SP PAD must not expose the clean continuous volume gain after quantized rendering");
 
-  console.log("OK: SP1200 level — 8-bit AD7524 transfer, pre-S/H placement, Chopper SAMPLE VOL quantized once");
+  console.log("OK: SP1200 level — 8-bit AD7524 transfer, pre-S/H placement, RAW path unconditioned");
 }
 
 try{
