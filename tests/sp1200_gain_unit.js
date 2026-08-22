@@ -42,10 +42,12 @@ function sine(length,rate,frequency,amplitude,phase=0){
   return out;
 }
 
-function maxAbs(data){
-  let peak=0;
-  for(const value of data)peak=Math.max(peak,Math.abs(Number(value)||0));
-  return peak;
+function clippedCodes(encoded){
+  let count=0;
+  for(const code of encoded.data){
+    if(code<=-2048 || code>=2047)count++;
+  }
+  return count;
 }
 
 function main(){
@@ -53,8 +55,11 @@ function main(){
   vm.runInThisContext(runtime,{filename:runtimePath});
   const dsp=globalThis.SP1200DSP;
   assert(dsp,"SP1200DSP global missing");
-  assert(dsp.monoLevelPolicy==="bounded-energy-v1","SP stereo ingestion must expose bounded energy compensation");
-  assert(Math.abs(dsp.stereoDownmixMaxGainDb-3.01029995664)<1e-6,"stereo downmix compensation must cap at +3.01 dB");
+  assert(dsp.monoLevelPolicy==="fixed-equal-power-v1","SP stereo ingestion must use a fixed equal-power rule");
+  assert(Math.abs(dsp.stereoDownmixCoefficient-Math.SQRT1_2)<1e-12,"stereo channels must use fixed -3.01 dB coefficients");
+  for(const forbidden of ["energyGain","peakGain","stereoEnergy","sourcePeak","mixedPeak"]){
+    assert(!runtime.includes(forbidden),`SP input staging must not use adaptive ${forbidden}`);
+  }
 
   const rate=48000;
   const length=rate;
@@ -62,35 +67,42 @@ function main(){
   const amplitude=.4;
   const referenceRms=amplitude/Math.sqrt(2);
 
-  // True mono is the hardware-native case: no makeup gain at all.
+  // True mono is the hardware-native case: no automatic makeup or attenuation.
   const mono=sine(length,rate,frequency,amplitude);
   const monoEncoded=dsp.encodeBuffer(makeBuffer([mono],rate));
-  assert(monoEncoded.monoMode==="single" && monoEncoded.monoGain===1,"mono input must stay gain-neutral");
+  assert(monoEncoded.monoMode==="single","mono input must stay on one physical channel");
+  assert(monoEncoded.monoCoefficient===null,"mono input must not receive a stereo coefficient");
   assert(Math.abs(dbRatio(rmsEncoded(monoEncoded),referenceRms))<.08,"mono passband level must stay essentially unchanged");
 
-  // Dual-mono stereo already sums without loss and therefore receives no boost.
+  // Fixed equal-power summing is deterministic. A duplicated mono signal is
+  // therefore +3.01 dB at the virtual mono input; unlike the previous policy,
+  // the engine must not analyze correlation and silently normalize it back down.
   const dualMono=dsp.encodeBuffer(makeBuffer([mono,mono],rate));
-  assert(dualMono.monoMode==="average","dual-mono stereo should use the average path");
-  assert(Math.abs(dualMono.monoGain-1)<1e-6,"correlated stereo must not be boosted");
-  assert(Math.abs(dbRatio(rmsEncoded(dualMono),referenceRms))<.08,"dual-mono encoded level must match the source channel");
+  assert(dualMono.monoMode==="stereo-equal-power","stereo files must use the fixed equal-power ingestion path");
+  assert(Math.abs(dualMono.monoCoefficient-Math.SQRT1_2)<1e-12,"encoded metadata must record the fixed stereo coefficient");
+  const dualMonoDelta=dbRatio(rmsEncoded(dualMono),referenceRms);
+  assert(dualMonoDelta>2.90 && dualMonoDelta<3.12,`dual-mono fixed sum should be about +3.01 dB, got ${dualMonoDelta.toFixed(2)} dB`);
 
-  // A 90-degree stereo pair loses 3 dB under raw (L+R)/2. The bounded-energy
-  // policy restores that loss, but cannot exceed either +3.01 dB or source peak.
+  // A 90-degree pair is the equal-power reference case: the fixed coefficients
+  // preserve the RMS of either source channel without any content-dependent gain.
   const wideRight=sine(length,rate,frequency,amplitude,Math.PI/2);
   const wide=dsp.encodeBuffer(makeBuffer([mono,wideRight],rate));
-  assert(wide.monoMode==="average","wide stereo should remain a mono sum, not arbitrarily drop a channel");
-  assert(wide.monoGain>1.40 && wide.monoGain<=Math.SQRT2+1e-9,"wide stereo should recover about 3 dB and stay capped");
-  assert(Math.abs(dbRatio(rmsEncoded(wide),referenceRms))<.12,"wide stereo downmix must preserve per-channel RMS closely");
-  const rawMixed=new Float32Array(length);
-  for(let i=0;i<length;i++)rawMixed[i]=(mono[i]+wideRight[i])*.5;
-  assert(maxAbs(rawMixed)*wide.monoGain<=amplitude+1e-6,"downmix compensation must not exceed the original channel peak before filtering");
+  assert(wide.monoMode==="stereo-equal-power","wide stereo must use the same fixed ingestion rule");
+  assert(Math.abs(dbRatio(rmsEncoded(wide),referenceRms))<.12,"equal-power wide stereo should preserve per-channel RMS closely");
 
-  // Strong anti-phase material still follows the existing safe policy: choose
-  // the dominant physical channel instead of trying to makeup a cancelling sum.
+  // Strong anti-phase material keeps the explicit source-safety fallback rather
+  // than summing into cancellation. It still receives no automatic gain makeup.
   const antiRight=sine(length,rate,frequency,-.2);
   const anti=dsp.encodeBuffer(makeBuffer([mono,antiRight],rate));
   assert(anti.monoMode==="single" && anti.monoChannel===0,"anti-phase stereo must keep the dominant channel policy");
-  assert(anti.monoGain===1,"dominant-channel anti-phase handling must not add gain");
+  assert(anti.monoCoefficient===null,"dominant-channel anti-phase handling must not add stereo gain");
+
+  // Fixed staging means a hot correlated stereo source is allowed to overload the
+  // virtual 12-bit input instead of being peak-normalized. That behavior is what
+  // the later input-amp/headroom model will refine.
+  const hot=sine(length,rate,frequency,.9);
+  const hotStereo=dsp.encodeBuffer(makeBuffer([hot,hot],rate));
+  assert(clippedCodes(hotStereo)>0,"hot fixed stereo sum should be able to clip the 12-bit input");
 
   // Do not hide the anti-alias stage behind normalization. At 10.5 kHz the
   // six-pole filter plus finite-rate encode interpolation should remain clearly
@@ -101,7 +113,7 @@ function main(){
   const cutoffDelta=dbRatio(rmsEncoded(cutoffEncoded),cutoffAmplitude/Math.sqrt(2));
   assert(cutoffDelta>-5.2 && cutoffDelta<-3.5,`anti-alias encode attenuation should stay intact, got ${cutoffDelta.toFixed(2)} dB`);
 
-  console.log("OK: SP1200 gain — mono neutral, stereo downmix level preserved, filter attenuation untouched");
+  console.log("OK: SP1200 gain — fixed mono ingestion, no adaptive normalization, filter attenuation untouched");
 }
 
 try{
