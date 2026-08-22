@@ -143,7 +143,10 @@ $("sampleVolume").onchange=async()=>{
   }
 };
 
-$("sampleBpm").oninput=renderSampleTimeline;
+$("sampleBpm").oninput=()=>{
+  invalidatePreviewRender();
+  renderSampleTimeline();
+};
 $("sampleBpm").onchange=async()=>{
   if(!isLoopPlaying)return;
   const mode=lastPreviewMode;
@@ -183,11 +186,11 @@ $("gridDivision").onchange=drawWave;
 $("transientRadius").onchange=drawWave;
 
 $("snareReverbMix").oninput=()=>{
+  invalidatePreviewRender();
   $("snareReverbMixReadout").textContent=`${$("snareReverbMix").value}%`;
 };
 $("snareReverbMix").onchange=async()=>{
   const mix=Number($("snareReverbMix").value)||0;
-  renderedFlip=null;
   if(!isLoopPlaying){
     $("drumStatus").textContent=mix>0?`REVERB ${mix}% • READY`:"REVERB OFF • READY";
     return;
@@ -204,7 +207,7 @@ $("punchMode").oninput=refreshPunchUI;
 $("punchMode").onchange=async()=>{
   const mode=punchModeName();
   refreshPunchUI();
-  renderedFlip=null; // never keep a preview rendered with an older PUNCH preset
+  invalidatePreviewRender();
 
   if(!isLoopPlaying){
     $("chopStatus").textContent=`PUNCH ${mode.toUpperCase()} • READY`;
@@ -229,7 +232,7 @@ $("newDrums").onclick=generateNewDrums;
 $("playDrumsOnly").onclick=playDrumsPreview;
 async function playCurrentBeat(){
   stopChopAudition();
-  const generation=++previewRenderGeneration;
+  const generation=invalidatePreviewRender();
   try{
     const events=gridEventsForRender();
     await ensureDrumSelection();
