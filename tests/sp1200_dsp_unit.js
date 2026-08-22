@@ -46,34 +46,39 @@ async function main(){
   assert(typeof dsp.pitchRatio==="undefined","raw semitone ratio helper must not remain public");
   assert(typeof dsp.renderSegment==="undefined","playback must not accept a source AudioBuffer");
   assert(typeof dsp.renderSegmentAsync==="undefined","async mixed encode/playback helper must stay removed");
-  assert(dsp.tuneCodes.min===0 && dsp.tuneCodes.max===31 && dsp.tuneCodes.center===16,"SP tune code range mismatch");
+  assert(dsp.tuneModel==="carry7-derived-v1","SP tune model must use the 7-bit hardware grid");
+  assert(dsp.tuneCodes.min===0 && dsp.tuneCodes.max===15 && dsp.tuneCodes.center===8,"SP tune code range must expose 16 hardware positions");
+  assert(dsp.tuneRange.minSemitones===-8 && dsp.tuneRange.maxSemitones===7,"SP nominal tune range must be -8..+7");
   assert(dsp.quantize12(0)===0,"zero must quantize to zero");
   assert(dsp.quantize12(-1)===-1,"negative full scale must survive");
   assert(dsp.quantize12(1)===2047/2048,"positive full scale must clamp to 12-bit code 2047");
 
   const center=dsp.resolveTune(0);
-  const downTune=dsp.resolveTune(-12);
-  const upTune=dsp.resolveTune(12);
+  const downTune=dsp.resolveTune(-8);
+  const upTune=dsp.resolveTune(7);
   const oddTune=dsp.resolveTune(-5);
   assert(Object.isFrozen(center),"resolved tune plan must be immutable");
-  assert(center.code===16 && center.ratio===1 && center.model==="ideal-v1","center tune plan mismatch");
-  assert(downTune.code===4 && downTune.effectiveSemitones===-12,"-12 st tune code mismatch");
-  assert(upTune.code===28 && upTune.effectiveSemitones===12,"+12 st tune code mismatch");
-  assert(oddTune.code===11 && oddTune.requestedSemitones===-5,"-5 st tune code mismatch");
-  assert(Math.abs(oddTune.ratio-Math.pow(2,-5/12))<1e-12,"V1 tune ratio must remain sound-neutral");
-  assert(dsp.resolveTune(-99).code===0 && dsp.resolveTune(99).code===31,"tune codes must clamp to 0..31");
+  assert(center.code===8 && center.ratio===1 && center.model==="carry7-derived-v1","center tune plan mismatch");
+  assert(center.carry===0 && center.direction==="normal","center tune carry metadata mismatch");
+  assert(downTune.code===0 && downTune.nominalSemitones===-8 && downTune.carry===73 && downTune.direction==="repeat","-8 tune plan mismatch");
+  assert(upTune.code===15 && upTune.nominalSemitones===7 && upTune.carry===64 && upTune.direction==="skip","+7 tune plan mismatch");
+  assert(oddTune.code===3 && oddTune.requestedSemitones===-5 && oddTune.carry===42,"-5 tune code mismatch");
+  assert(Math.abs(downTune.ratio-127/200)<1e-12,"-8 hardware-grid ratio mismatch");
+  assert(Math.abs(oddTune.ratio-127/169)<1e-12,"-5 hardware-grid ratio mismatch");
+  assert(Math.abs(upTune.ratio-191/127)<1e-12,"+7 hardware-grid ratio mismatch");
+  assert(Math.abs(oddTune.ratio-Math.pow(2,-5/12))>1e-4,"hardware-grid tune must no longer collapse to ideal equal temperament");
+  assert(Math.abs(oddTune.actualSemitones-oddTune.nominalSemitones)<.1,"hardware-grid detune should remain close to the nominal semitone");
+  assert(dsp.resolveTune(-99).code===0 && dsp.resolveTune(99).code===15,"tune positions must clamp to -8..+7");
 
   const pattern=new Float32Array([0,.125,.25,.375,.5,.625,.75,.875]);
   const encodedPattern={data:pattern};
   const down=dsp.renderPcm(encodedPattern,{tune:downTune,outputRate:26040});
-  assert(down.length===16,"-12 st should double duration");
-  assert(down[0]===pattern[0] && down[1]===pattern[0],"pitch down must duplicate samples");
-  assert(down[2]===pattern[1] && down[3]===pattern[1],"pitch down duplication pattern incorrect");
+  assert(down.length===Math.ceil(pattern.length/downTune.ratio),"-8 tune duration must follow the hardware-grid ratio");
+  assert(down[0]===pattern[0] && down[1]===pattern[0],"pitch down must repeat source samples");
 
   const up=dsp.renderPcm(encodedPattern,{tune:upTune,outputRate:26040});
-  assert(up.length===4,"+12 st should halve duration");
-  assert(up[0]===pattern[0] && up[1]===pattern[2],"pitch up must skip source samples");
-  assert(up[2]===pattern[4] && up[3]===pattern[6],"pitch up skip pattern incorrect");
+  assert(up.length===Math.ceil(pattern.length/upTune.ratio),"+7 tune duration must follow the hardware-grid ratio");
+  assert(up[0]===pattern[0] && up[2]===pattern[3],"pitch up must skip source samples");
 
   const odd=dsp.renderPcm(encodedPattern,{tune:oddTune,outputRate:26040});
   for(const value of odd){
@@ -91,6 +96,17 @@ async function main(){
     legacyRejected=/discrete tune plan/.test(String(error?.message||error));
   }
   assert(legacyRejected,"playback must reject legacy semitone parameters");
+
+  let forgedTuneRejected=false;
+  try{
+    dsp.renderPcm(encodedPattern,{
+      tune:{...oddTune,ratio:Math.pow(2,-5/12)},
+      outputRate:26040
+    });
+  }catch(error){
+    forgedTuneRejected=/hardware tune plan/.test(String(error?.message||error));
+  }
+  assert(forgedTuneRejected,"playback must reject a ratio that bypasses the hardware tuning table");
 
   const rate=48000;
   const length=rate;
@@ -163,7 +179,7 @@ async function main(){
   });
   assert(rendered.numberOfChannels===1,"encoded playback must render mono");
   assert(rendered.sampleRate===48000,"encoded playback must target the audio context rate");
-  assert(.39<rendered.duration && rendered.duration<.41,"-12 st encoded segment duration mismatch");
+  assert(.31<rendered.duration && rendered.duration<.32,"-8 hardware-grid encoded segment duration mismatch");
 
   let rejected=false;
   try{
@@ -209,6 +225,9 @@ async function main(){
     assert(!runtimeSource.includes(forbidden),`pure SP DSP must not depend on ${forbidden}`);
   }
   assert(runtimeSource.includes("monoPlanFor(sourceBuffer)"),"SP encoder must reuse a source-scoped mono plan");
+  assert(runtimeSource.includes("SP_TUNE_CARRY_COUNTS"),"SP tuning must stay on the explicit 7-bit carry grid");
+  assert(runtimeSource.includes('SP_TUNE_MODEL="carry7-derived-v1"'),"SP hardware-grid tuning model marker missing");
+  assert(!runtimeSource.includes('SP_TUNE_MODEL="ideal-v1"'),"ideal equal-tempered tuning model must stay removed");
   assert(!runtimeSource.includes("ALL_ENCODE_PAGE_SECONDS"),"Chopper paging policy must not live in the DSP");
   assert(!runtimeSource.includes("MAX_PAD_PREVIEW_SECONDS"),"pad-preview policy must not live in the DSP");
 
@@ -224,7 +243,7 @@ async function main(){
   assert(integrationSource.includes("reconstructionRate:sessionOutputRate()"),"SP settings must expose the active reconstruction rate");
   assert(!integrationSource.includes("const rate=44100;"),"SP PLAY/SAVE must not force a separate 44.1 kHz ZOH grid");
 
-  console.log("OK: SP1200 DSP — shared session reconstruction rate, pure audio boundary and Chopper adapter ownership");
+  console.log("OK: SP1200 DSP — 16-position carry-grid tuning, shared reconstruction rate, pure audio boundary");
 }
 
 main().catch(error=>{
