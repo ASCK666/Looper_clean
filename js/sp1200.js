@@ -14,6 +14,10 @@
   const ENCODE_YIELD_INPUT_FRAMES=32768;
   const ALL_ENCODE_PAGE_SECONDS=30;
   const MAX_PAD_PREVIEW_SECONDS=30;
+  const SP_TUNE_MIN_CODE=0;
+  const SP_TUNE_MAX_CODE=31;
+  const SP_TUNE_CENTER_CODE=16;
+  const SP_TUNE_MODEL="ideal-v1";
   const BUTTERWORTH_6_Q=Object.freeze([.5176380902,.7071067812,1.9318516526]);
   const encodedCache=new WeakMap();
   const pendingEncodes=new WeakMap();
@@ -32,8 +36,38 @@
     return quantize12Code(value)/PCM_SCALE;
   }
 
-  function pitchRatio(semitones){
-    return Math.pow(2,(Number(semitones)||0)/12);
+  // V1 mapping only. The UI still speaks in semitones, but playback receives a
+  // discrete tune plan so measured SP-1200 code/pattern tables can replace the
+  // ideal ratio later without changing the Chopper or playback API.
+  function resolveTune(semitones=0){
+    const requestedSemitones=Math.round(Number(semitones)||0);
+    const code=Math.max(
+      SP_TUNE_MIN_CODE,
+      Math.min(SP_TUNE_MAX_CODE,SP_TUNE_CENTER_CODE+requestedSemitones)
+    );
+    const effectiveSemitones=code-SP_TUNE_CENTER_CODE;
+    return Object.freeze({
+      code,
+      requestedSemitones,
+      effectiveSemitones,
+      ratio:Math.pow(2,effectiveSemitones/12),
+      model:SP_TUNE_MODEL
+    });
+  }
+
+  function assertTunePlan(tune){
+    if(!tune || !Number.isInteger(tune.code) ||
+       tune.code<SP_TUNE_MIN_CODE || tune.code>SP_TUNE_MAX_CODE ||
+       !Number.isFinite(tune.ratio) || tune.ratio<=0){
+      throw new Error("SP1200: discrete tune plan missing");
+    }
+    return tune;
+  }
+
+  function rejectLegacySemitones(options){
+    if(options && Object.prototype.hasOwnProperty.call(options,"semitones")){
+      throw new Error("SP1200: playback requires a discrete tune plan");
+    }
   }
 
   function makeLowpass(sampleRate,cutoff,q){
@@ -266,19 +300,23 @@
     return data instanceof Int16Array ? data[index]/PCM_SCALE : data[index];
   }
 
-  // PLAYBACK contract: only stored SP PCM enters from here downward.
-  function renderPcm(encodedData,{
-    semitones=0,
-    outputRate=44100,
-    maxDuration=Infinity,
-    startFrame=0,
-    endFrame=null
-  }={}){
+  // PLAYBACK contract: only stored SP PCM plus a resolved discrete tune plan
+  // enter from here downward. UI semitone values stop at resolveTune().
+  function renderPcm(encodedData,options={}){
+    rejectLegacySemitones(options);
+    const {
+      tune=resolveTune(0),
+      outputRate=44100,
+      maxDuration=Infinity,
+      startFrame=0,
+      endFrame=null
+    }=options;
     const data=pcmData(encodedData);
     if(!data || !data.length)return new Float32Array(0);
+    const plan=assertTunePlan(tune);
     const first=Math.max(0,Math.min(data.length-1,Math.floor(Number(startFrame)||0)));
     const last=Math.max(first+1,Math.min(data.length,Math.ceil(Number(endFrame) || data.length)));
-    const ratio=pitchRatio(semitones);
+    const ratio=plan.ratio;
     const rate=Math.max(8000,Number(outputRate)||44100);
     const naturalDuration=(last-first)/SP_SAMPLE_RATE/ratio;
     const limit=Number.isFinite(maxDuration)?Math.max(0,Number(maxDuration)||0):naturalDuration;
@@ -307,21 +345,24 @@
     return encoded;
   }
 
-  function renderEncodedSegment(audioContext,encoded,{
-    startSec=encoded?.sourceStartSec||0,
-    endSec=encoded?.sourceEndSec||0,
-    semitones=0,
-    maxDuration=Infinity
-  }={}){
+  function renderEncodedSegment(audioContext,encoded,options={}){
+    rejectLegacySemitones(options);
+    const {
+      startSec=encoded?.sourceStartSec||0,
+      endSec=encoded?.sourceEndSec||0,
+      tune=resolveTune(0),
+      maxDuration=Infinity
+    }=options;
     if(!audioContext?.createBuffer)throw new Error("SP1200: AudioContext unavailable");
     assertEncodedPcm(encoded);
+    const plan=assertTunePlan(tune);
 
     const relativeStart=Math.max(0,(Number(startSec)||0)-encoded.sourceStartSec);
     const relativeEnd=Math.max(relativeStart,(Number(endSec)||0)-encoded.sourceStartSec);
     const first=Math.max(0,Math.min(encoded.data.length-1,Math.floor(relativeStart*SP_SAMPLE_RATE)));
     const last=Math.max(first+1,Math.min(encoded.data.length,Math.ceil(relativeEnd*SP_SAMPLE_RATE)));
     const output=renderPcm(encoded,{
-      semitones,
+      tune:plan,
       outputRate:audioContext.sampleRate,
       maxDuration,
       startFrame:first,
@@ -345,8 +386,13 @@
     inputLowpassHz:INPUT_LOWPASS_HZ,
     maxCacheEntries:MAX_CACHE_ENTRIES,
     pcmStorage:"int16",
+    tuneCodes:Object.freeze({
+      min:SP_TUNE_MIN_CODE,
+      max:SP_TUNE_MAX_CODE,
+      center:SP_TUNE_CENTER_CODE
+    }),
     quantize12,
-    pitchRatio,
+    resolveTune,
     encodeBuffer,
     encodeBufferAsync,
     renderPcm,
@@ -458,8 +504,8 @@
     }
     if(!placed.length)throw new Error("Place au moins un PAD sur la grille");
 
-    const semitones=Number(samplePitchSemitones)||0;
-    const ratio=DSP.pitchRatio(semitones);
+    const tune=DSP.resolveTune(samplePitchSemitones);
+    const ratio=tune.ratio;
     const localEncoded=new Map();
 
     async function encodedForEvent(start,end){
@@ -493,7 +539,7 @@
       const segment=DSP.renderEncodedSegment(offline,encoded,{
         startSec:range.start,
         endSec:sourceEnd,
-        semitones,
+        tune,
         maxDuration:audible
       });
       const source=offline.createBufferSource();
@@ -530,7 +576,8 @@
     stopChopAudition();
     setActivePad(index);
 
-    const ratio=DSP.pitchRatio(samplePitchSemitones);
+    const tune=DSP.resolveTune(samplePitchSemitones);
+    const ratio=tune.ratio;
     const naturalDuration=(range.end-range.start)/ratio;
     const previewDuration=Math.min(naturalDuration,MAX_PAD_PREVIEW_SECONDS);
     const sourceEnd=Math.min(
@@ -543,7 +590,7 @@
     let buffer=DSP.renderEncodedSegment(ctx,encoded,{
       startSec:range.start,
       endSec:sourceEnd,
-      semitones:samplePitchSemitones,
+      tune,
       maxDuration:previewDuration
     });
     buffer=await maybeVinyl(buffer);
@@ -665,12 +712,15 @@
     get enabled(){return enabled;},
     setEnabled,
     settings(){
+      const tune=DSP.resolveTune(samplePitchSemitones);
       return Object.freeze({
         enabled,
         sampleRate:SP_SAMPLE_RATE,
         bitDepth:SP_BITS,
         inputLowpassHz:INPUT_LOWPASS_HZ,
-        output:"raw"
+        output:"raw",
+        tuneCode:tune.code,
+        tuneModel:tune.model
       });
     }
   });
