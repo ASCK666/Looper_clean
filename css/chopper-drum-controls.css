@@ -906,3 +906,49 @@
     filter: none;
   }
 }
+
+/* asset-ui-chopper: the Looper transport crop only reads correctly at the
+   physical square-ish ratio used by the pads. Wide cells crop away the chrome
+   and leave a black rectangle. Keep the exact pad artwork; fix only geometry. */
+#chopper .padTransport {
+  grid-template-columns: repeat(3,88px) !important;
+  width: auto !important;
+  max-width: 100%;
+  justify-content: end;
+}
+
+#chopper .padTransport .btn {
+  width: 88px !important;
+  min-width: 88px !important;
+  height: 88px !important;
+  min-height: 88px !important;
+  aspect-ratio: 1 / 1;
+}
+
+@media (max-width:760px) {
+  #chopper .padTransport {
+    grid-template-columns: repeat(3,76px) !important;
+  }
+
+  #chopper .padTransport .btn {
+    width: 76px !important;
+    min-width: 76px !important;
+    height: 76px !important;
+    min-height: 76px !important;
+  }
+}
+
+@media (max-width:430px) {
+  #chopper .padTransport {
+    grid-template-columns: repeat(3,minmax(0,1fr)) !important;
+    width: 100% !important;
+  }
+
+  #chopper .padTransport .btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: 1 / 1;
+  }
+}
