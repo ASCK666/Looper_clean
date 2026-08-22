@@ -6,6 +6,10 @@ except Exception:
     print('SKIP: playwright is not installed');sys.exit(0)
 
 ROOT=Path(__file__).resolve().parents[1]
+ASSET_NAME='looper66-desktop-transport-square-3d62809d.webp'
+asset=ROOT/'assets/looper-ui'/ASSET_NAME
+assert asset.exists(),f'Missing Looper transport asset: {asset}'
+
 html=(ROOT/'index.html').read_text(encoding='utf-8')
 html=re.sub(r'<link rel="manifest"[^>]*>','',html)
 for rel in ['./css/base.css','./css/clean-ui.css','./css/chopper-drum-controls.css']:
@@ -16,6 +20,10 @@ for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.j
     js=(ROOT/rel[2:]).read_text(encoding='utf-8')
     html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
     html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
+
+asset_css=(ROOT/'css/chopper-drum-controls.css').read_text(encoding='utf-8')
+assert ASSET_NAME in asset_css,'Chopper pads must reuse the existing Looper transport artwork'
+assert '--chopper-looper-button-art' in asset_css
 
 with sync_playwright() as p:
     browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
@@ -39,10 +47,17 @@ with sync_playwright() as p:
           const editor=getComputedStyle(document.querySelector('.drumEditBox'));
           const gridWrap=getComputedStyle(wrap);
           const chopStatus=document.querySelector('#chopStatus');
+          const padsPanel=document.querySelector('.samplerPadsModule');
+          const padsPanelStyle=getComputedStyle(padsPanel);
           const firstPad=document.querySelector('#pads .pad');
-          const idlePadShadow=firstPad?getComputedStyle(firstPad).boxShadow:'';
+          const firstPadStyle=firstPad?getComputedStyle(firstPad):null;
+          const firstPadAfter=firstPad?getComputedStyle(firstPad,'::after'):null;
+          const firstTransport=document.querySelector('.padTransport .btn');
+          const firstTransportStyle=firstTransport?getComputedStyle(firstTransport):null;
+          const firstTransportAfter=firstTransport?getComputedStyle(firstTransport,'::after'):null;
+          const idlePadFilter=firstPadStyle?.filter||'';
           if(firstPad)firstPad.classList.add('active');
-          const activePadShadow=firstPad?getComputedStyle(firstPad).boxShadow:'';
+          const activePadFilter=firstPad?getComputedStyle(firstPad).filter:'';
           if(firstPad)firstPad.classList.remove('active');
           return {
             upperChildren:[...upper.children].map(x=>x.classList.contains('samplerScreenModule')?'screen':'other'),
@@ -77,8 +92,18 @@ with sync_playwright() as p:
             chopStatusText:chopStatus.textContent.trim(),
             chopStatusHidden:chopStatus.hidden,
             padCount:document.querySelectorAll('#pads .pad').length,
-            idlePadShadow,
-            activePadShadow,
+            padsPanelBorder:padsPanelStyle.borderTopWidth,
+            padsPanelShadow:padsPanelStyle.boxShadow,
+            padBackground:firstPadStyle?.backgroundImage||'',
+            padBorder:firstPadStyle?.borderTopWidth||'',
+            padShadow:firstPadStyle?.boxShadow||'',
+            padNumber:firstPadAfter?.content||'',
+            idlePadFilter,
+            activePadFilter,
+            transportBackground:firstTransportStyle?.backgroundImage||'',
+            transportBorder:firstTransportStyle?.borderTopWidth||'',
+            transportShadow:firstTransportStyle?.boxShadow||'',
+            transportLabel:firstTransportAfter?.content||'',
             timeline:box('#sampleTimelineCanvas'),
             matrix:box('#loopGrid'),
             preview:box('#drumPatternPreview'),
@@ -103,8 +128,17 @@ with sync_playwright() as p:
         assert data['editorBorder']=='0px' and data['gridWrapBorder']=='0px',data
         assert data['chopStatusText']=='' and data['chopStatusHidden'] is True,data
         assert data['padCount']==16,data
-        assert data['idlePadShadow']!='none' and data['activePadShadow']!='none',data
-        assert data['idlePadShadow']!=data['activePadShadow'],data
+
+        # Asset UI contract: no CSS-drawn pad/panel frame. Existing Looper artwork
+        # supplies the physical button chrome, while CSS only changes light/filter.
+        assert data['padsPanelBorder']=='0px' and data['padsPanelShadow']=='none',data
+        assert ASSET_NAME in data['padBackground'],data
+        assert data['padBorder']=='0px' and data['padShadow']=='none',data
+        assert '01' in data['padNumber'],data
+        assert data['idlePadFilter']!=data['activePadFilter'],data
+        assert ASSET_NAME in data['transportBackground'],data
+        assert data['transportBorder']=='0px' and data['transportShadow']=='none',data
+        assert 'PLAY' in data['transportLabel'],data
 
         # The transport stays attached to the pad panel and SAVE/CLEAR to sequence.
         assert data['padTransport']['top']>=data['padsPanel']['top']-1,data
@@ -153,4 +187,4 @@ with sync_playwright() as p:
 
     browser.close()
 
-print('OK: Chopper sampler layout — workflow actions beside waveform/pads/sequence and responsive layout')
+print('OK: Chopper sampler layout — Looper asset-backed pads/transport, no CSS frame lines, responsive workflow layout')
