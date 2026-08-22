@@ -47,11 +47,21 @@ with sync_playwright() as p:
           return {
             upperChildren:[...upper.children].map(x=>x.classList.contains('samplerScreenModule')?'screen':'other'),
             controlCount:document.querySelectorAll('.samplerControlModule').length,
-            actionOrder:ids('#chopper .chopperActionStrip > .btn'),
-            actions:boxes('#chopper .chopperActionStrip > .btn'),
-            actionStrip:box('.chopperActionStrip'),
+            oldActionStripCount:document.querySelectorAll('.chopperActionStrip').length,
+            waveActionOrder:ids('#chopper .waveHeaderActions > .btn'),
+            padTransportOrder:ids('#chopper .padTransport > .btn'),
+            sequenceActionOrder:ids('#chopper .sequenceActions > .btn'),
+            waveActions:boxes('#chopper .waveHeaderActions > .btn'),
+            padActions:boxes('#chopper .padTransport > .btn'),
+            sequenceActions:boxes('#chopper .sequenceActions > .btn'),
+            waveActionGroup:box('.waveHeaderActions'),
+            padTransport:box('.padTransport'),
+            sequenceActionGroup:box('.sequenceActions'),
+            padsPanel:box('.samplerPadsModule'),
+            sequencePanel:box('.samplerSequenceModule'),
             fine:box('.advancedBox'),
             title:box('.samplerScreenModule > .stableTitle'),
+            titleText:document.querySelector('.samplerScreenModule > .stableTitle').textContent,
             pitch:box('.samplePitchKnob'),
             tempo:box('.sampleTempoControl'),
             volume:box('.sampleVolumeKnob'),
@@ -82,9 +92,12 @@ with sync_playwright() as p:
         }''')
 
         assert data['upperChildren']==['screen'],data
-        assert data['controlCount']==0,data
-        assert data['actionOrder']==['loadSampleBtn','autoMarkers','playDrumsOnly','previewFlip','stopFlip','addFlipLibrary'],data
-        assert data['fine']['top']>=data['actionStrip']['bottom']-2,data
+        assert data['controlCount']==0 and data['oldActionStripCount']==0,data
+        assert data['waveActionOrder']==['loadSampleBtn','autoMarkers'],data
+        assert data['padTransportOrder']==['previewFlip','playDrumsOnly','stopFlip'],data
+        assert data['sequenceActionOrder']==['addFlipLibrary','clearGrid'],data
+        assert 'SAMPLE DISPLAY' not in data['titleText'],data
+        assert data['fine']['bottom']<=data['title']['top']+2,data
         assert data['descriptions']==0,data
         assert data['currentDisplay']=='none',data
         assert data['editorBorder']=='0px' and data['gridWrapBorder']=='0px',data
@@ -93,14 +106,18 @@ with sync_playwright() as p:
         assert data['idlePadShadow']!='none' and data['activePadShadow']!='none',data
         assert data['idlePadShadow']!=data['activePadShadow'],data
 
-        if width>=820:
-            first=data['actions'][0]
-            last=data['actions'][-1]
-            assert all(a['top']<first['bottom'] and a['bottom']>first['top'] for a in data['actions']),data
-            assert first['id']=='loadSampleBtn' and first['left']<=min(a['left'] for a in data['actions'])+1,data
-            assert last['id']=='addFlipLibrary' and last['right']>=max(a['right'] for a in data['actions'])-1,data
+        # The transport stays attached to the pad panel and SAVE/CLEAR to sequence.
+        assert data['padTransport']['top']>=data['padsPanel']['top']-1,data
+        assert data['padTransport']['bottom']<=data['padsPanel']['bottom']+1,data
+        assert data['sequenceActionGroup']['top']>=data['sequencePanel']['top']-1,data
+        assert data['sequenceActionGroup']['bottom']<=data['sequencePanel']['bottom']+1,data
 
-        # Header row: title | pitch | tempo | sample volume | punch.
+        if width>=820:
+            for actions in [data['waveActions'],data['padActions'],data['sequenceActions']]:
+                first=actions[0]
+                assert all(a['top']<first['bottom'] and a['bottom']>first['top'] for a in actions),data
+
+        # Header row: waveform actions | pitch | tempo | sample volume | punch.
         assert data['title']['right']<=data['pitch']['left']+2,data
         assert data['pitch']['right']<=data['tempo']['left']+2,data
         assert data['tempo']['right']<=data['volume']['left']+2,data
@@ -136,4 +153,4 @@ with sync_playwright() as p:
 
     browser.close()
 
-print('OK: Chopper sampler layout — no idle READY, amber pad backlight, clean chrome and responsive layout')
+print('OK: Chopper sampler layout — workflow actions beside waveform/pads/sequence and responsive layout')
