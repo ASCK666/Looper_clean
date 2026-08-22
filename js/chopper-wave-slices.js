@@ -1,8 +1,8 @@
 "use strict";
 
 // looper-next feature loader. The maintained bootstrap still loads this path;
-// the slice editor and long-sample banks live in focused Chopper feature files,
-// followed by the folder reconnect fix and the optional SP playback engine.
+// focused Chopper features are loaded in dependency order. SP is split into a
+// pure DSP engine followed by the Chopper-owned product adapter.
 (() => {
   const DEFAULT_SAMPLE_URL="./assets/Le%20altre%2010.mp3";
   const DEFAULT_SAMPLE_NAME="Le altre 10.mp3";
@@ -83,7 +83,10 @@
       await loadScript("./js/chopper-folder-reconnect.js","chopperFolderReconnect","CHOPPER FOLDER RECONNECT");
     }
     if(!globalThis.SP1200DSP){
-      await loadScript("./js/sp1200.js","sp1200","SP1200");
+      await loadScript("./js/sp1200.js","sp1200","SP1200 DSP");
+    }
+    if(!globalThis.ChopperSP1200){
+      await loadScript("./js/chopper-sp1200.js","chopperSp1200","CHOPPER SP1200");
     }
 
     loadDefaultSampleOnChopperOpen();
