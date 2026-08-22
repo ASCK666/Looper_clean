@@ -168,15 +168,24 @@ function updateSampleVolume(value){
   }
 }
 
+let sampleLoadGeneration=0;
+
 async function loadChopperSample(file){
-  stopChopAudition();
   if(!file)return false;
-  invalidatePreviewRender();
+  const generation=++sampleLoadGeneration;
+  if(typeof stopCurrentBeat==="function" && isLoopPlaying)stopCurrentBeat();
+  else{
+    stopChopAudition();
+    invalidatePreviewRender();
+  }
 
   try{
     $("chopStatus").textContent="LOADING SAMPLE…";
     assertLocalFileSize(file,MAX_SAMPLE_FILE_BYTES,"sample");
-    sampleBuffer=await decodeFile(file);
+    const decoded=await decodeFile(file);
+    if(generation!==sampleLoadGeneration)return false;
+
+    sampleBuffer=decoded;
     sampleName=file.name;
     sampleConditionProfile=analyzeSampleCondition(sampleBuffer);
     samplePitchSemitones=0;
@@ -192,6 +201,7 @@ async function loadChopperSample(file){
     $("chopStatus").textContent=`SAMPLE READY • ${file.name} • ${sampleConditionProfile.label}`;
     return true;
   }catch(error){
+    if(generation!==sampleLoadGeneration)return false;
     console.error("Sample load:",error);
     $("chopStatus").textContent=`SAMPLE ERROR • ${safeErrorMessage(error)}`;
     return false;
