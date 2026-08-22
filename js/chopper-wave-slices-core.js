@@ -10,6 +10,8 @@
   const root=document.getElementById("chopper");
   const waveCanvas=document.getElementById("waveCanvas");
   const overlayCanvas=document.getElementById("playheadCanvas");
+  const waveScroll=document.getElementById("waveScroll");
+  const waveZoom=document.getElementById("waveZoom");
   const displayTitle=root?.querySelector(".samplerScreenModule > .stableTitle");
   if(!root || !waveCanvas || !overlayCanvas || !displayTitle || root.dataset.waveSliceEditorInstalled==="1")return;
   if(typeof drawWave!=="function" || typeof renderPads!=="function" || typeof previewSlice!=="function")return;
@@ -23,6 +25,7 @@
   const FLASH_MS=190;
   const DRAG_THRESHOLD_PX=4;
   const EDGE_GRAB_PX=14;
+  const MIN_SCROLL_THUMB_PX=34;
 
   let editMode=MODE_MARKERS;
   let independentSlices=[];
@@ -36,6 +39,8 @@
   let dragPointerId=null;
   let dragStartClientX=0;
   let dragMoved=false;
+  let viewportPinned=false;
+  let viewportBuffer=null;
 
   const modeButton=document.createElement("button");
   modeButton.id="sliceEditModeBtn";
@@ -92,8 +97,103 @@
         inset 0 -10px 20px rgba(226,173,95,.10),
         0 0 12px rgba(226,173,95,.20),
         0 5px 9px rgba(0,0,0,.32) !important;
+    }
+    #chopper .waveScrollbar {
+      height:14px !important;
+      bottom:5px !important;
+      align-items:center !important;
+    }
+    #chopper .waveScrollbar input[type="range"] {
+      --wave-scroll-thumb:34px;
+      height:14px !important;
+      margin:0 !important;
+      cursor:ew-resize !important;
+    }
+    #chopper .waveScrollbar input[type="range"]::-webkit-slider-runnable-track {
+      height:6px !important;
+      border:1px solid #584128 !important;
+      border-radius:3px !important;
+      background:#120d08 !important;
+      box-shadow:inset 0 1px 2px rgba(0,0,0,.72) !important;
+    }
+    #chopper .waveScrollbar input[type="range"]::-webkit-slider-thumb {
+      width:var(--wave-scroll-thumb) !important;
+      height:12px !important;
+      margin-top:-4px !important;
+      border:1px solid #a67b43 !important;
+      border-radius:3px !important;
+      background:linear-gradient(180deg,#80603d,#4b3522) !important;
+      box-shadow:inset 0 1px rgba(255,255,255,.08),0 1px 3px rgba(0,0,0,.55) !important;
+    }
+    #chopper .waveScrollbar input[type="range"]::-moz-range-track {
+      height:6px !important;
+      border:1px solid #584128 !important;
+      border-radius:3px !important;
+      background:#120d08 !important;
+      box-shadow:inset 0 1px 2px rgba(0,0,0,.72) !important;
+    }
+    #chopper .waveScrollbar input[type="range"]::-moz-range-thumb {
+      width:var(--wave-scroll-thumb) !important;
+      height:12px !important;
+      border:1px solid #a67b43 !important;
+      border-radius:3px !important;
+      background:linear-gradient(180deg,#80603d,#4b3522) !important;
+      box-shadow:inset 0 1px rgba(255,255,255,.08),0 1px 3px rgba(0,0,0,.55) !important;
+    }
+    #chopper[data-wave-viewport-pinned="1"] .waveScrollbar input[type="range"]::-webkit-slider-thumb {
+      border-color:#e2ad5f !important;
+      box-shadow:inset 0 1px rgba(255,255,255,.09),0 0 7px rgba(226,173,95,.28) !important;
+    }
+    #chopper[data-wave-viewport-pinned="1"] .waveScrollbar input[type="range"]::-moz-range-thumb {
+      border-color:#e2ad5f !important;
+      box-shadow:inset 0 1px rgba(255,255,255,.09),0 0 7px rgba(226,173,95,.28) !important;
+    }
+    #chopper .waveScrollbar input[type="range"]:disabled {
+      cursor:default !important;
+      opacity:.52;
     }`;
   document.head.appendChild(style);
+
+  function setViewportPinned(value){
+    viewportPinned=Boolean(value);
+    root.dataset.waveViewportPinned=viewportPinned?"1":"0";
+    return viewportPinned;
+  }
+
+  function syncWaveScrollbar(){
+    if(!waveScroll || !waveZoom)return;
+
+    if(sampleBuffer!==viewportBuffer){
+      viewportBuffer=sampleBuffer||null;
+      setViewportPinned(false);
+    }
+
+    const zoom=Math.max(1,Number(waveZoom.value)||1);
+    const canScroll=Boolean(sampleBuffer) && zoom>1;
+    if(!canScroll && viewportPinned)setViewportPinned(false);
+
+    const trackWidth=Math.max(0,waveScroll.clientWidth||waveScroll.getBoundingClientRect().width||0);
+    const visibleRatio=1/zoom;
+    const thumbPx=trackWidth>0
+      ? clamp(trackWidth*visibleRatio,Math.min(MIN_SCROLL_THUMB_PX,trackWidth),trackWidth)
+      : MIN_SCROLL_THUMB_PX;
+    waveScroll.style.setProperty("--wave-scroll-thumb",`${Math.round(thumbPx)}px`);
+    waveScroll.disabled=!canScroll;
+
+    const position=Math.round(clamp((Number(waveScroll.value)||0)/10,0,100));
+    const visiblePercent=Math.round(clamp(visibleRatio*100,0,100));
+    waveScroll.setAttribute(
+      "aria-valuetext",
+      canScroll
+        ? `Position ${position}% • fenêtre ${visiblePercent}% du sample`
+        : "Waveform entier visible"
+    );
+  }
+
+  function pinEditedViewport(){
+    if(!sampleBuffer || !waveZoom || Number(waveZoom.value)<=1)return false;
+    return setViewportPinned(true);
+  }
 
   function markerSliceCount(){
     return Math.min(MAX_SLICES,Math.max(0,markers.length-1));
@@ -525,19 +625,23 @@
 
   const drawWaveBase=drawWave;
   drawWave=function(...args){
-    if(editMode!==MODE_SLICES || !sampleBuffer)return drawWaveBase(...args);
-    const savedMarkers=markers;
-    const savedSelectedMarker=selectedMarker;
     let result;
-    try{
-      markers=[];
-      selectedMarker=-1;
+    if(editMode!==MODE_SLICES || !sampleBuffer){
       result=drawWaveBase(...args);
-    }finally{
-      markers=savedMarkers;
-      selectedMarker=savedSelectedMarker;
+    }else{
+      const savedMarkers=markers;
+      const savedSelectedMarker=selectedMarker;
+      try{
+        markers=[];
+        selectedMarker=-1;
+        result=drawWaveBase(...args);
+      }finally{
+        markers=savedMarkers;
+        selectedMarker=savedSelectedMarker;
+      }
+      paintIndependentSlices();
     }
-    paintIndependentSlices();
+    syncWaveScrollbar();
     return result;
   };
 
@@ -721,13 +825,68 @@
     return rendered;
   };
 
+  function drawPinnedPlayheadFrame(){
+    clearPlayhead();
+
+    const loopTime=currentLoopTime();
+    drawSampleTimelinePlayhead(loopTime);
+    const info=currentPlayheadInfo(loopTime);
+    if(!info){
+      chopPlayheadRAF=0;
+      setActivePad(-1);
+      return false;
+    }
+
+    setActivePad(info.pad);
+    const t=info.time;
+    if(t!==null){
+      const vw=viewWindow();
+      const w=overlayCanvas.width,h=overlayCanvas.height;
+      if(t>=vw.start && t<=vw.end){
+        const x=(t-vw.start)/Math.max(.000001,vw.dur)*w;
+        ph2d.save();
+        ph2d.strokeStyle="#e2ad5f";
+        ph2d.lineWidth=2;
+        ph2d.shadowColor="rgba(226,173,95,.62)";
+        ph2d.shadowBlur=8;
+        ph2d.beginPath();
+        ph2d.moveTo(x,0);
+        ph2d.lineTo(x,h);
+        ph2d.stroke();
+        ph2d.fillStyle="#d48643";
+        ph2d.beginPath();
+        ph2d.moveTo(x-5,0);
+        ph2d.lineTo(x+5,0);
+        ph2d.lineTo(x,7);
+        ph2d.closePath();
+        ph2d.fill();
+        ph2d.restore();
+      }
+    }
+
+    chopPlayheadRAF=requestAnimationFrame(drawPlayhead);
+    return true;
+  }
+
   const drawPlayheadBase=drawPlayhead;
   drawPlayhead=function(...args){
-    const result=drawPlayheadBase(...args);
+    const result=viewportPinned
+      ? drawPinnedPlayheadFrame()
+      : drawPlayheadBase(...args);
     paintActiveRegion();
     paintReadablePlayhead();
     return result;
   };
+
+  // A user interaction with the zoomed waveform owns the viewport. Playback
+  // may move its playhead off-screen, but it must not drag the edited area away.
+  waveCanvas.addEventListener("pointerdown",()=>{pinEditedViewport();},true);
+  waveCanvas.addEventListener("wheel",()=>{pinEditedViewport();},{capture:true,passive:true});
+  waveScroll?.addEventListener("input",()=>{
+    pinEditedViewport();
+    syncWaveScrollbar();
+  });
+  window.addEventListener("resize",syncWaveScrollbar,{passive:true});
 
   waveCanvas.addEventListener("pointerdown",ev=>{
     if(editMode!==MODE_SLICES || !sampleBuffer)return;
@@ -830,6 +989,7 @@
     get mode(){return editMode;},
     get selectedSlice(){return selectedSlice;},
     get activeSlice(){return activeSlice;},
+    get viewportPinned(){return viewportPinned;},
     get slices(){return independentSlices.map(range=>({...range}));},
     setEditMode,
     selectSlice,
@@ -837,6 +997,10 @@
     addSliceAt,
     sliceIndexAtSourceSec,
     sliceCanvasBounds,
+    resumePlayheadFollow(){
+      setViewportPinned(false);
+      return viewportPinned;
+    },
     resetSlices(){
       seedInitialSlices();
       renderPads();
