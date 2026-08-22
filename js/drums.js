@@ -492,7 +492,7 @@ function markDrumSelectionEdited(){
 }
 
 async function rerenderPreviewMode(mode=lastPreviewMode){
-  const generation=++previewRenderGeneration;
+  const generation=invalidatePreviewRender();
 
   if(mode==="drums"){
     const buffer=await renderDrumsOnly();
@@ -1206,7 +1206,7 @@ async function playRendered(buffer,expectedGeneration=null){
 
 async function playDrumsPreview(){
   stopChopAudition();
-  const generation=++previewRenderGeneration;
+  const generation=invalidatePreviewRender();
   try{
     const selection=await ensureDrumSelection();
     const buffer=await renderDrumsOnly();
@@ -1224,7 +1224,7 @@ async function playDrumsPreview(){
 }
 
 function stopCurrentBeat(){
-  previewRenderGeneration++;
+  invalidatePreviewRender();
   if(flipSource){
     try{flipSource.stop()}catch{}
     flipSource=null;
