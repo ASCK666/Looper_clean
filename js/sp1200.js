@@ -2,8 +2,9 @@
 
 // SP-1200 inspired DSP engine.
 // Scope is deliberately narrow: mono input, 26.04 kHz sampling, 12-bit linear
-// quantization, 7-bit carry address stepping and zero-order-hold output.
-// This is a behavioral approximation, not a bit-perfect hardware clone.
+// quantization, 7-bit carry address stepping, zero-order-hold reconstruction and
+// an optional derived fixed-output filter. This is a behavioral approximation,
+// not a bit-perfect hardware clone.
 (() => {
   const SP_SAMPLE_RATE=26040;
   const SP_BITS=12;
@@ -24,6 +25,10 @@
   const SP_ADDRESSING_MODEL="carry7-pattern-v1";
   const SP_MONO_LEVEL_MODEL="fixed-equal-power-v1";
   const SP_STEREO_DOWNMIX_COEFFICIENT=Math.SQRT1_2;
+  const SP_OUTPUT_FILTER_MODEL="fixed34-derived-v1";
+  const SP_OUTPUT_FILTER_CUTOFF_HZ=9000;
+  const SP_OUTPUT_FILTER_ORDER=4;
+  const SP_OUTPUT_MODES=Object.freeze(["raw","filter"]);
 
   // SP-1200 exposes 32 total tune/decay positions (0..31), with INIT DK/TUNE
   // 16 as original pitch and only a 16-position window accessible at once.
@@ -73,6 +78,7 @@
   }));
 
   const BUTTERWORTH_6_Q=Object.freeze([.5176380902,.7071067812,1.9318516526]);
+  const BUTTERWORTH_4_Q=Object.freeze([.5411961001,1.3065629649]);
   const encodedCache=new WeakMap();
   const pendingEncodes=new WeakMap();
   const monoPlans=new WeakMap();
@@ -194,6 +200,14 @@
     }
   }
 
+  function resolveOutputMode(mode="raw"){
+    const value=String(mode||"raw").toLowerCase();
+    if(!SP_OUTPUT_MODES.includes(value)){
+      throw new Error("SP1200: output mode must be raw or filter");
+    }
+    return value;
+  }
+
   function makeLowpass(sampleRate,cutoff,q){
     const rate=Math.max(1,Number(sampleRate)||44100);
     const fc=Math.max(10,Math.min(Number(cutoff)||INPUT_LOWPASS_HZ,rate*.45));
@@ -218,6 +232,29 @@
     section.z1=section.b1*x-section.a1*y+section.z2;
     section.z2=section.b2*x-section.a2*y;
     return y;
+  }
+
+  // Vintage SP-1200 channels 3/4 use a fixed lower-cutoff output filter, while
+  // 5/6 use a higher fixed cutoff and 7/8 are unfiltered. Public documentation
+  // establishes that topology but not a complete calibrated transfer function.
+  // V1 therefore models one deliberately conservative 3/4-style profile: a
+  // fourth-order low-pass around 9 kHz, after ZOH reconstruction, with no makeup
+  // gain. It is explicitly labelled derived and must not be marketed as an exact
+  // SSM2044 model (the dynamic SSM2044 path belongs to channels 1/2 instead).
+  function applyOutputProfile(output,sampleRate,mode){
+    const resolved=resolveOutputMode(mode);
+    if(resolved==="raw" || !output.length)return output;
+    const sections=BUTTERWORTH_4_Q.map(q=>makeLowpass(
+      sampleRate,
+      SP_OUTPUT_FILTER_CUTOFF_HZ,
+      q
+    ));
+    for(let i=0;i<output.length;i++){
+      let value=output[i];
+      for(const section of sections)value=filterSample(section,value);
+      output[i]=value;
+    }
+    return output;
   }
 
   // Mono is a property of the loaded source, not of an arbitrary bank/page.
@@ -455,12 +492,14 @@
   }
 
   // PLAYBACK contract: only stored SP PCM plus a resolved discrete tune plan
-  // enter from here downward.
+  // enter from here downward. The optional output profile happens after the
+  // ZOH reconstruction because the physical channel filters sit after DAC/S&H.
   function renderPcm(encodedData,options={}){
     rejectLegacySemitones(options);
     const {
       tune=resolveTune(0),
       outputRate=44100,
+      outputMode="raw",
       maxDuration=Infinity,
       startFrame=0,
       endFrame=null
@@ -468,6 +507,7 @@
     const data=pcmData(encodedData);
     if(!data || !data.length)return new Float32Array(0);
     const plan=assertTunePlan(tune);
+    const resolvedOutputMode=resolveOutputMode(outputMode);
     const first=Math.max(0,Math.min(data.length-1,Math.floor(Number(startFrame)||0)));
     const last=Math.max(first+1,Math.min(data.length,Math.ceil(Number(endFrame) || data.length)));
     const rate=Math.max(8000,Number(outputRate)||44100);
@@ -489,7 +529,7 @@
       const sourceIndex=first+sourceOffset;
       output[i]=sourceIndex<last?pcmValue(data,sourceIndex):0;
     }
-    return output;
+    return applyOutputProfile(output,rate,resolvedOutputMode);
   }
 
   function assertEncodedPcm(encoded){
@@ -511,11 +551,13 @@
       startSec=encoded?.sourceStartSec||0,
       endSec=encoded?.sourceEndSec||0,
       tune=resolveTune(0),
+      outputMode="raw",
       maxDuration=Infinity
     }=options;
     if(!audioContext?.createBuffer)throw new Error("SP1200: AudioContext unavailable");
     assertEncodedPcm(encoded);
     const plan=assertTunePlan(tune);
+    const resolvedOutputMode=resolveOutputMode(outputMode);
 
     const relativeStart=Math.max(0,(Number(startSec)||0)-encoded.sourceStartSec);
     const relativeEnd=Math.max(relativeStart,(Number(endSec)||0)-encoded.sourceStartSec);
@@ -524,6 +566,7 @@
     const output=renderPcm(encoded,{
       tune:plan,
       outputRate:audioContext.sampleRate,
+      outputMode:resolvedOutputMode,
       maxDuration,
       startFrame:first,
       endFrame:last
@@ -553,6 +596,14 @@
     stereoDownmixCoefficient:SP_STEREO_DOWNMIX_COEFFICIENT,
     tuneModel:SP_TUNE_MODEL,
     addressingModel:SP_ADDRESSING_MODEL,
+    outputModes:SP_OUTPUT_MODES,
+    outputFilter:Object.freeze({
+      model:SP_OUTPUT_FILTER_MODEL,
+      hardwarePair:"3-4",
+      cutoffHz:SP_OUTPUT_FILTER_CUTOFF_HZ,
+      order:SP_OUTPUT_FILTER_ORDER,
+      makeupGainDb:0
+    }),
     tuneCodes:Object.freeze({
       min:SP_TUNE_MIN_CODE,
       max:SP_TUNE_MAX_CODE,
