@@ -640,6 +640,9 @@
 }
 
 #chopper .padTransport .btn {
+  --chopper-light-core: rgba(255,238,170,.04);
+  --chopper-light-yellow: rgba(255,205,64,.014);
+  --chopper-light-edge: rgba(244,169,20,.006);
   position: relative;
   isolation: isolate;
   min-height: 50px !important;
@@ -661,7 +664,9 @@
   position: absolute;
   z-index: 0;
   inset: 17% 12% 18%;
-  background: var(--deck-texture) center/256px 256px repeat;
+  background:
+    radial-gradient(ellipse 24% 36% at 50% 44%,var(--chopper-light-core),var(--chopper-light-yellow) 48%,var(--chopper-light-edge) 70%,transparent 100%),
+    var(--deck-texture) center/256px 256px repeat;
   opacity: .96;
   pointer-events: none;
 }
@@ -684,8 +689,18 @@
 #chopper #stopFlip::after { content: "STOP"; }
 
 #chopper .padTransport .btn:is(:hover,:focus-visible) {
+  --chopper-light-core: rgba(255,238,170,.13);
+  --chopper-light-yellow: rgba(255,205,64,.045);
+  --chopper-light-edge: rgba(244,169,20,.018);
   outline: 0 !important;
   filter: sepia(.12) saturate(.82) brightness(.98) !important;
+}
+
+#chopper .padTransport .btn:is(.active,[aria-pressed="true"]),
+#chopper .padTransport .btn:active {
+  --chopper-light-core: rgba(255,238,170,.52);
+  --chopper-light-yellow: rgba(255,205,64,.18);
+  --chopper-light-edge: rgba(244,169,20,.07);
 }
 
 #chopper .padTransport .btn:active {
@@ -703,6 +718,9 @@
 #chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active):hover,
 #chopper.screen .pad.slice-selected:not(.hit):not(.active),
 #chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad.unavailable:not(.hit):not(.active) {
+  --chopper-light-core: rgba(255,238,170,.04);
+  --chopper-light-yellow: rgba(255,205,64,.014);
+  --chopper-light-edge: rgba(244,169,20,.006);
   counter-increment: chopper-pad;
   position: relative;
   isolation: isolate;
@@ -726,7 +744,9 @@
   position: absolute;
   z-index: 0;
   inset: 16% 12% 17%;
-  background: var(--deck-texture) center/256px 256px repeat !important;
+  background:
+    radial-gradient(ellipse 24% 36% at 50% 44%,var(--chopper-light-core),var(--chopper-light-yellow) 48%,var(--chopper-light-edge) 70%,transparent 100%),
+    var(--deck-texture) center/256px 256px repeat !important;
   opacity: .96;
   pointer-events: none;
 }
@@ -749,6 +769,9 @@
 #chopper .pad:hover,
 #chopper .pad:focus-visible,
 #chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active):hover {
+  --chopper-light-core: rgba(255,238,170,.13);
+  --chopper-light-yellow: rgba(255,205,64,.045);
+  --chopper-light-edge: rgba(244,169,20,.018);
   outline: 0 !important;
   filter: sepia(.10) saturate(.76) brightness(.94) !important;
 }
@@ -760,12 +783,18 @@
 
 #chopper .pad.selected,
 #chopper .pad.slice-selected {
+  --chopper-light-core: rgba(255,238,170,.23);
+  --chopper-light-yellow: rgba(255,205,64,.081);
+  --chopper-light-edge: rgba(244,169,20,.032);
   outline: 0 !important;
   filter: sepia(.16) saturate(.88) brightness(1.02) !important;
 }
 
 #chopper .pad.hit,
 #chopper .pad.active {
+  --chopper-light-core: rgba(255,238,170,.52);
+  --chopper-light-yellow: rgba(255,205,64,.18);
+  --chopper-light-edge: rgba(244,169,20,.07);
   transform: translateY(1px);
   border: 0 !important;
   background: var(--chopper-looper-button-art) center/227.273% 100% no-repeat !important;
@@ -781,6 +810,9 @@
 
 #chopper .pad.unavailable,
 #chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad.unavailable:not(.hit):not(.active) {
+  --chopper-light-core: rgba(255,238,170,0);
+  --chopper-light-yellow: rgba(255,205,64,0);
+  --chopper-light-edge: rgba(244,169,20,0);
   opacity: .34 !important;
   filter: grayscale(.45) brightness(.58) !important;
 }
