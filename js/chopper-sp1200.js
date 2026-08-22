@@ -14,6 +14,7 @@
   const ALL_ENCODE_PAGE_SECONDS=30;
   const MAX_PAD_PREVIEW_SECONDS=30;
   let enabled=false;
+  let outputMode="raw";
   let previewGeneration=0;
 
   function currentMode(){
@@ -22,6 +23,10 @@
 
   function currentBank(){
     return globalThis.ChopperBanks?.active||null;
+  }
+
+  function outputLabel(){
+    return outputMode==="filter"?"FILTER":"RAW";
   }
 
   function invalidatePendingPreview(){
@@ -122,6 +127,7 @@
     const bars=2;
     const targetDur=8*60/bpm;
     const rate=sessionOutputRate();
+    const renderOutputMode=outputMode;
     const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
     const master=makePunchMaster(offline);
     const slices=currentMode()==="slices";
@@ -174,6 +180,7 @@
         startSec:range.start,
         endSec:sourceEnd,
         tune,
+        outputMode:renderOutputMode,
         maxDuration:audible
       });
       const source=offline.createBufferSource();
@@ -204,6 +211,7 @@
     if(!sampleBuffer || index<0)return;
     const generation=++previewGeneration;
     const sourceBuffer=sampleBuffer;
+    const requestOutputMode=outputMode;
     const range=rangeForPad(index,sourceBuffer,markers);
     if(!range || range.end<=range.start)return;
 
@@ -229,6 +237,7 @@
       startSec:range.start,
       endSec:sourceEnd,
       tune,
+      outputMode:requestOutputMode,
       maxDuration:previewDuration
     });
     buffer=await maybeVinyl(buffer);
@@ -281,8 +290,18 @@
     button.dataset.active=enabled?"1":"0";
     button.setAttribute("aria-pressed",enabled?"true":"false");
     button.title=enabled
-      ? "SP ON • 26.04 kHz • 12-bit • pitch sans interpolation"
+      ? `SP ON • 26.04 kHz • 12-bit • ${outputLabel()}`
       : "SP OFF • lecture clean";
+  }
+
+  function syncFilterButton(button){
+    if(!button)return;
+    button.hidden=!enabled;
+    button.dataset.active=outputMode==="filter"?"1":"0";
+    button.setAttribute("aria-pressed",outputMode==="filter"?"true":"false");
+    button.title=outputMode==="filter"
+      ? "SP FILTER • sortie fixe dérivée des canaux 3-4"
+      : "SP RAW • sortie non filtrée";
   }
 
   async function setEnabled(value){
@@ -295,12 +314,14 @@
     enabled=next;
     renderedFlip=null;
     const button=document.getElementById("sp1200Toggle");
+    const filterButton=document.getElementById("sp1200FilterToggle");
     syncButton(button);
+    syncFilterButton(filterButton);
 
     const status=$("chopStatus");
     if(status){
       status.textContent=enabled
-        ? "SP ON • 26.04 kHz • 12-BIT • RAW"
+        ? `SP ON • 26.04 kHz • 12-BIT • ${outputLabel()}`
         : "SP OFF • CLEAN";
     }
 
@@ -308,13 +329,38 @@
       try{
         await rerenderPreviewMode("full");
         if(status)status.textContent=enabled
-          ? "SP ON • 26.04 kHz • 12-BIT • RAW ✓"
+          ? `SP ON • 26.04 kHz • 12-BIT • ${outputLabel()} ✓`
           : "SP OFF • CLEAN ✓";
       }catch(error){
         if(status)status.textContent=`SP ERROR • ${typeof safeErrorMessage==="function"?safeErrorMessage(error):error.message}`;
       }
     }
     return enabled;
+  }
+
+  async function setOutputMode(value){
+    const next=String(value||"raw").toLowerCase();
+    if(!DSP.outputModes?.includes(next))throw new Error("SP output mode invalide");
+    if(next===outputMode)return outputMode;
+    stopChopAudition();
+    if(typeof previewRenderGeneration==="number")previewRenderGeneration++;
+    outputMode=next;
+    renderedFlip=null;
+    syncButton(document.getElementById("sp1200Toggle"));
+    syncFilterButton(document.getElementById("sp1200FilterToggle"));
+
+    const status=$("chopStatus");
+    if(status && enabled)status.textContent=`SP ON • 26.04 kHz • 12-BIT • ${outputLabel()}`;
+
+    if(enabled && isLoopPlaying && lastPreviewMode==="full" && typeof rerenderPreviewMode==="function"){
+      try{
+        await rerenderPreviewMode("full");
+        if(status)status.textContent=`SP ON • 26.04 kHz • 12-BIT • ${outputLabel()} ✓`;
+      }catch(error){
+        if(status)status.textContent=`SP ERROR • ${typeof safeErrorMessage==="function"?safeErrorMessage(error):error.message}`;
+      }
+    }
+    return outputMode;
   }
 
   function installToggle(){
@@ -332,15 +378,32 @@
     syncButton(button);
     host.appendChild(button);
 
+    const filterButton=document.createElement("button");
+    filterButton.id="sp1200FilterToggle";
+    filterButton.type="button";
+    filterButton.className="btn sp1200FilterToggle";
+    filterButton.textContent="FLT";
+    filterButton.setAttribute("aria-label","Basculer entre sortie SP RAW et FILTER");
+    filterButton.addEventListener("click",()=>{
+      void setOutputMode(outputMode==="filter"?"raw":"filter");
+    });
+    syncFilterButton(filterButton);
+    host.appendChild(filterButton);
+
     const style=document.createElement("style");
     style.dataset.sp1200="1";
     style.textContent=`
-      #chopper .sp1200Toggle {
+      #chopper .sp1200Toggle,
+      #chopper .sp1200FilterToggle {
         min-width:34px !important;
         width:auto !important;
         padding-inline:8px !important;
       }
-      #chopper .sp1200Toggle[data-active="1"] {
+      #chopper .sp1200FilterToggle[hidden] {
+        display:none !important;
+      }
+      #chopper .sp1200Toggle[data-active="1"],
+      #chopper .sp1200FilterToggle[data-active="1"] {
         color:#ffe2a4 !important;
         border-color:#a87535 !important;
         background:linear-gradient(180deg,#5a371d,#24150d) !important;
@@ -415,7 +478,9 @@
 
   globalThis.ChopperSP1200=Object.freeze({
     get enabled(){return enabled;},
+    get outputMode(){return outputMode;},
     setEnabled,
+    setOutputMode,
     settings(){
       const tune=DSP.resolveTune(samplePitchSemitones);
       return Object.freeze({
@@ -423,7 +488,8 @@
         sampleRate:DSP.sampleRate,
         bitDepth:DSP.bitDepth,
         inputLowpassHz:DSP.inputLowpassHz,
-        output:"raw",
+        output:outputMode,
+        outputFilter:outputMode==="filter"?DSP.outputFilter:null,
         reconstructionRate:sessionOutputRate(),
         tuneCode:tune.code,
         tuneModel:tune.model
