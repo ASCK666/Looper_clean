@@ -349,6 +349,70 @@
     document.head.appendChild(style);
   }
 
+  function installCompactLayout(){
+    // Keep PLAY / DRUMS / STOP with the performance surface, but below the pads
+    // so the pad grid reads first and transport reads second.
+    const pads=document.getElementById("pads");
+    const transport=root.querySelector(".padTransport");
+    if(pads && transport) pads.insertAdjacentElement("afterend",transport);
+
+    // Long-sample bank tabs belong in the waveform action row next to SP, not in
+    // a dedicated row below the waveform.
+    const waveActions=root.querySelector(".waveHeaderActions");
+    const bankTabs=document.getElementById("chopperBankTabs");
+    const spButton=document.getElementById("sp1200Toggle");
+    if(waveActions && bankTabs) waveActions.insertBefore(bankTabs,spButton||null);
+
+    // Status nodes are still kept in the DOM because existing handlers write to
+    // them, but the Chopper surface no longer prints transient prose below WAVE.
+    const statusStrip=root.querySelector(".chopperStatusStrip");
+    for(const id of ["chopStatus","beatSaveStatus"]){
+      const node=document.getElementById(id);
+      if(!node)continue;
+      node.classList.add("compatHidden");
+      node.removeAttribute("aria-live");
+      root.appendChild(node);
+    }
+    statusStrip?.remove();
+
+    const style=document.createElement("style");
+    style.dataset.chopperCompactLayout="1";
+    style.textContent=`
+      #chopper .samplerScreenModule {
+        grid-template-areas:
+          "fine fine fine fine fine fine"
+          "title pitch tempo volume punch vinyl"
+          "wave wave wave wave wave wave" !important;
+      }
+      #chopper .chopperStatusStrip,
+      #chopper .samplerSampleInfo {
+        display:none !important;
+      }
+      #chopper .samplerPadsModule > .padTransport {
+        margin:10px 0 0 auto !important;
+      }
+      #chopper .waveHeaderActions {
+        flex-wrap:wrap;
+      }
+      #chopper .waveHeaderActions > .chopperBankTabs {
+        grid-area:auto !important;
+        flex:0 1 auto;
+        max-width:100%;
+        margin:0 !important;
+        padding:0 !important;
+        gap:4px;
+      }
+      #chopper .waveHeaderActions > .chopperBankTabs[hidden] {
+        display:none !important;
+      }
+      @media (max-width:760px) {
+        #chopper .samplerPadsModule > .padTransport {
+          margin-top:8px !important;
+        }
+      }`;
+    document.head.appendChild(style);
+  }
+
   globalThis.ChopperSP1200=Object.freeze({
     get enabled(){return enabled;},
     setEnabled,
@@ -368,4 +432,5 @@
   });
 
   installToggle();
+  installCompactLayout();
 })();
