@@ -40,6 +40,10 @@ for(const value of odd){
   assert(pattern.includes(value),"SP pitch stage must not invent interpolated values");
 }
 
+const subrange=dsp.renderPcm(encodedPattern,{semitones:0,outputRate:26040,startFrame:2,endFrame:6});
+assert(subrange.length===4,"a chop must read a subrange of one stored SP PCM");
+assert(subrange[0]===pattern[2] && subrange[3]===pattern[5],"stored SP PCM subrange boundaries incorrect");
+
 const rate=48000;
 const length=rate;
 const sourceData=new Float32Array(length);
@@ -55,6 +59,7 @@ const mockBuffer={
   }
 };
 const encoded=dsp.encodeBuffer(mockBuffer);
+assert(dsp.encodeBuffer(mockBuffer)===encoded,"same working range must reuse the stored SP PCM cache");
 assert(Math.abs(encoded.data.length-26040)<=2,"one second must encode to about 26040 SP frames");
 assert(encoded.sampleRate===26040 && encoded.bitDepth===12,"encoded metadata mismatch");
 for(let i=0;i<encoded.data.length;i+=Math.max(1,Math.floor(encoded.data.length/257))){
