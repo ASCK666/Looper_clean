@@ -229,15 +229,24 @@ $("newDrums").onclick=generateNewDrums;
 $("playDrumsOnly").onclick=playDrumsPreview;
 async function playCurrentBeat(){
   stopChopAudition();
+  const generation=++previewRenderGeneration;
   try{
     const events=gridEventsForRender();
     await ensureDrumSelection();
-    renderedFlip=await renderSequence(events,sampleBuffer,markers,samplePitchRate());
+    if(generation!==previewRenderGeneration)return false;
+
+    const buffer=await renderSequence(events,sampleBuffer,markers,samplePitchRate());
+    if(generation!==previewRenderGeneration)return false;
+
+    renderedFlip=buffer;
     lastPreviewMode="full";
     $("chopStatus").textContent=`READY • ${events.filter(Boolean).length} chop triggers • ${samplePitchSemitones>0?"+":""}${samplePitchSemitones} st`;
-    await playRendered(renderedFlip);
+    return await playRendered(buffer,generation);
   }catch(e){
-    $("chopStatus").textContent="ERROR: "+e.message;
+    if(generation===previewRenderGeneration){
+      $("chopStatus").textContent="ERROR: "+e.message;
+    }
+    return false;
   }
 }
 
