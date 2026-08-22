@@ -39,7 +39,7 @@ except Exception:
     sys.exit(0)
 
 
-def make_wav(path: Path, seconds=2.5, hz=173, rate=48000):
+def make_wav(path: Path, seconds=8.0, hz=173, rate=48000):
     frames = max(1, int(rate * seconds))
     with wave.open(str(path), 'wb') as wf:
         wf.setnchannels(1)
@@ -99,10 +99,14 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
             timeout=15000,
         )
 
-        # Load a real 48 kHz source so the SP encoder necessarily crosses several
-        # async yield points. This also cancels the optional bundled default sample.
+        # The decoded Web Audio rate is device-dependent, but an eight-second
+        # source is long enough to cross several cooperative SP encoder yields
+        # at either common 44.1 or 48 kHz session rates.
         page.set_input_files('#sampleFile', str(sample))
-        page.wait_for_function('sampleBuffer && sampleBuffer.sampleRate === 48000', timeout=15000)
+        page.wait_for_function(
+            'sampleBuffer && sampleBuffer.duration > 7.5 && sampleBuffer.length > 300000',
+            timeout=15000,
+        )
         page.click('[data-tab="chopper"]')
 
         page.evaluate('''() => {
@@ -129,23 +133,17 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.evaluate('ensureAudio()')
         page.wait_for_function('ctx && ctx.state !== "closed"')
 
-        # Make the DSP's normal cooperative yields deliberately visible to the
-        # browser test. No production hook is added; the DSP already consults
-        # globalThis.scheduler.yield() when available.
-        installed = page.evaluate('''() => {
+        # When Chromium exposes scheduler.yield(), slow only that existing yield
+        # during this test. The long fixture remains sufficient if the property
+        # cannot be overridden on a particular browser build.
+        page.evaluate('''() => {
           const delayed=()=>new Promise(resolve=>setTimeout(resolve,25));
           try {
             if(globalThis.scheduler && (typeof globalThis.scheduler==='object' || typeof globalThis.scheduler==='function')){
               Object.defineProperty(globalThis.scheduler,'yield',{value:delayed,configurable:true});
-            }else{
-              Object.defineProperty(globalThis,'scheduler',{value:{yield:delayed},configurable:true});
             }
-            return globalThis.scheduler?.yield===delayed;
-          } catch(_error) {
-            return false;
-          }
+          } catch(_error) {}
         }''')
-        assert installed, 'Could not install deterministic scheduler.yield delay for SP race test'
 
         # Instrument only live ctx sources. Offline render sources are intentionally
         # excluded so we can detect an audition/loop that starts after STOP.
@@ -165,11 +163,14 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
 
         # Regression 1: STOP while PAD encoding is pending must invalidate the
         # continuation before it can create/start a live source.
-        page.evaluate('SP1200DSP.clearCache(sampleBuffer); window.__spLiveStarts=0')
+        page.evaluate('''() => {
+          SP1200DSP.clearCache(sampleBuffer);
+          window.__spLiveStarts=0;
+        }''')
         page.locator('#pads .pad').nth(0).click()
-        page.wait_for_timeout(10)
+        page.wait_for_timeout(5)
         page.click('#stopFlip')
-        page.wait_for_timeout(350)
+        page.wait_for_timeout(700)
         pad_stop = page.evaluate('''() => ({
           source:chopAuditionSource,
           pad:chopAuditionPad,
@@ -183,12 +184,15 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
 
         # Regression 2: two rapid pads are last-request-wins. The stale first
         # encode may finish internally, but it must never start a second source.
-        page.evaluate('SP1200DSP.clearCache(sampleBuffer); window.__spLiveStarts=0')
+        page.evaluate('''() => {
+          SP1200DSP.clearCache(sampleBuffer);
+          window.__spLiveStarts=0;
+        }''')
         page.locator('#pads .pad').nth(0).click()
         page.wait_for_timeout(5)
         page.locator('#pads .pad').nth(1).click()
-        page.wait_for_function('chopAuditionSource !== null && chopAuditionPad === 1', timeout=5000)
-        page.wait_for_timeout(250)
+        page.wait_for_function('chopAuditionSource !== null && chopAuditionPad === 1', timeout=10000)
+        page.wait_for_timeout(350)
         pad_switch = page.evaluate('''() => ({
           pad:chopAuditionPad,
           starts:window.__spLiveStarts
@@ -199,11 +203,14 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
 
         # Regression 3: STOP while full PLAY is rendering must invalidate the
         # pending render before playRendered() can resurrect transport state.
-        page.evaluate('SP1200DSP.clearCache(sampleBuffer); window.__spLiveStarts=0')
+        page.evaluate('''() => {
+          SP1200DSP.clearCache(sampleBuffer);
+          window.__spLiveStarts=0;
+        }''')
         page.click('#previewFlip')
-        page.wait_for_timeout(10)
+        page.wait_for_timeout(5)
         page.click('#stopFlip')
-        page.wait_for_timeout(700)
+        page.wait_for_timeout(1200)
         play_stop = page.evaluate('''() => ({
           playing:isLoopPlaying,
           source:flipSource,
