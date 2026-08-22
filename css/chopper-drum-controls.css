@@ -640,9 +640,9 @@
 }
 
 #chopper .padTransport .btn {
-  --chopper-light-core: rgba(255,238,170,.04);
-  --chopper-light-yellow: rgba(255,205,64,.014);
-  --chopper-light-edge: rgba(244,169,20,.006);
+  --chopper-light-core: rgba(255,238,170,.18);
+  --chopper-light-yellow: rgba(255,205,64,.06);
+  --chopper-light-edge: rgba(244,169,20,.024);
   position: relative;
   isolation: isolate;
   min-height: 50px !important;
@@ -654,7 +654,7 @@
   color: transparent !important;
   background: var(--chopper-looper-button-art) center/227.273% 100% no-repeat !important;
   box-shadow: none !important;
-  filter: brightness(.78) saturate(.58) !important;
+  filter: sepia(.08) saturate(.72) brightness(.88) !important;
   font-size: 0 !important;
   text-shadow: none !important;
 }
@@ -665,9 +665,9 @@
   z-index: 0;
   inset: 17% 12% 18%;
   background:
-    radial-gradient(ellipse 24% 36% at 50% 44%,var(--chopper-light-core),var(--chopper-light-yellow) 48%,var(--chopper-light-edge) 70%,transparent 100%),
+    radial-gradient(ellipse 30% 42% at 50% 44%,var(--chopper-light-core),var(--chopper-light-yellow) 48%,var(--chopper-light-edge) 72%,transparent 100%),
     var(--deck-texture) center/256px 256px repeat;
-  opacity: .96;
+  opacity: 1;
   pointer-events: none;
 }
 
@@ -678,7 +678,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #cdbd9f;
+  color: #e2cfaa;
   font: 800 9px/1 var(--font-mono);
   letter-spacing: .7px;
   pointer-events: none;
@@ -688,12 +688,19 @@
 #chopper #playDrumsOnly::after { content: "DRUMS"; }
 #chopper #stopFlip::after { content: "STOP"; }
 
+#chopper #previewFlip,
+#chopper #playDrumsOnly {
+  --chopper-light-core: rgba(255,238,170,.24);
+  --chopper-light-yellow: rgba(255,205,64,.085);
+  --chopper-light-edge: rgba(244,169,20,.034);
+}
+
 #chopper .padTransport .btn:is(:hover,:focus-visible) {
-  --chopper-light-core: rgba(255,238,170,.13);
-  --chopper-light-yellow: rgba(255,205,64,.045);
-  --chopper-light-edge: rgba(244,169,20,.018);
+  --chopper-light-core: rgba(255,238,170,.34);
+  --chopper-light-yellow: rgba(255,205,64,.12);
+  --chopper-light-edge: rgba(244,169,20,.048);
   outline: 0 !important;
-  filter: sepia(.12) saturate(.82) brightness(.98) !important;
+  filter: sepia(.15) saturate(.94) brightness(1.02) !important;
 }
 
 #chopper .padTransport .btn:is(.active,[aria-pressed="true"]),
@@ -708,6 +715,23 @@
   filter: sepia(.28) saturate(1.2) brightness(1.16) !important;
 }
 
+/* DRUMS deliberately pulses while idle: it is the alternate performance mode
+   for testing pads over the drum loop, so the control should advertise itself. */
+#chopper #playDrumsOnly::before {
+  animation: chopperDrumsReadyPulse 1.25s ease-in-out infinite;
+}
+
+#chopper #playDrumsOnly:is(:hover,:focus-visible,:active)::before {
+  animation: none;
+  opacity: 1;
+  filter: none;
+}
+
+@keyframes chopperDrumsReadyPulse {
+  0%,100% { opacity: .72; filter: brightness(.92); }
+  50% { opacity: 1; filter: brightness(1.42); }
+}
+
 #chopper .pads {
   counter-reset: chopper-pad;
   gap: 8px !important;
@@ -718,9 +742,9 @@
 #chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active):hover,
 #chopper.screen .pad.slice-selected:not(.hit):not(.active),
 #chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad.unavailable:not(.hit):not(.active) {
-  --chopper-light-core: rgba(255,238,170,.04);
-  --chopper-light-yellow: rgba(255,205,64,.014);
-  --chopper-light-edge: rgba(244,169,20,.006);
+  --chopper-light-core: rgba(255,238,170,.12);
+  --chopper-light-yellow: rgba(255,205,64,.04);
+  --chopper-light-edge: rgba(244,169,20,.016);
   counter-increment: chopper-pad;
   position: relative;
   isolation: isolate;
@@ -733,7 +757,7 @@
   color: transparent !important;
   background: var(--chopper-looper-button-art) center/227.273% 100% no-repeat !important;
   box-shadow: none !important;
-  filter: brightness(.74) saturate(.52) !important;
+  filter: sepia(.05) saturate(.64) brightness(.82) !important;
   font-size: 0 !important;
   text-shadow: none !important;
 }
@@ -745,9 +769,9 @@
   z-index: 0;
   inset: 16% 12% 17%;
   background:
-    radial-gradient(ellipse 24% 36% at 50% 44%,var(--chopper-light-core),var(--chopper-light-yellow) 48%,var(--chopper-light-edge) 70%,transparent 100%),
+    radial-gradient(ellipse 28% 40% at 50% 44%,var(--chopper-light-core),var(--chopper-light-yellow) 48%,var(--chopper-light-edge) 72%,transparent 100%),
     var(--deck-texture) center/256px 256px repeat !important;
-  opacity: .96;
+  opacity: 1;
   pointer-events: none;
 }
 
@@ -760,7 +784,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #bbaa8f;
+  color: #c8b697;
   font: 800 13px/1 var(--font-mono);
   letter-spacing: .7px;
   pointer-events: none;
@@ -769,25 +793,25 @@
 #chopper .pad:hover,
 #chopper .pad:focus-visible,
 #chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active):hover {
-  --chopper-light-core: rgba(255,238,170,.13);
-  --chopper-light-yellow: rgba(255,205,64,.045);
-  --chopper-light-edge: rgba(244,169,20,.018);
+  --chopper-light-core: rgba(255,238,170,.27);
+  --chopper-light-yellow: rgba(255,205,64,.095);
+  --chopper-light-edge: rgba(244,169,20,.038);
   outline: 0 !important;
-  filter: sepia(.10) saturate(.76) brightness(.94) !important;
+  filter: sepia(.12) saturate(.84) brightness(.98) !important;
 }
 
 #chopper .pad:hover::after,
 #chopper .pad:focus-visible::after {
-  color: #ded0b6;
+  color: #e6d5b9;
 }
 
 #chopper .pad.selected,
 #chopper .pad.slice-selected {
-  --chopper-light-core: rgba(255,238,170,.23);
-  --chopper-light-yellow: rgba(255,205,64,.081);
-  --chopper-light-edge: rgba(244,169,20,.032);
+  --chopper-light-core: rgba(255,238,170,.34);
+  --chopper-light-yellow: rgba(255,205,64,.12);
+  --chopper-light-edge: rgba(244,169,20,.048);
   outline: 0 !important;
-  filter: sepia(.16) saturate(.88) brightness(1.02) !important;
+  filter: sepia(.18) saturate(.94) brightness(1.04) !important;
 }
 
 #chopper .pad.hit,
@@ -846,23 +870,23 @@
 }
 
 /* STOP stays physically identical to the Looper-derived transport keys, but
-   uses a muted red lamp so destructive transport intent is unmistakable. */
+   uses a red lamp so destructive transport intent is unmistakable. */
 #chopper #stopFlip {
-  --chopper-light-core: rgba(255,170,154,.10);
-  --chopper-light-yellow: rgba(255,92,76,.035);
-  --chopper-light-edge: rgba(197,48,36,.014);
-  filter: sepia(.10) saturate(.78) hue-rotate(316deg) brightness(.80) !important;
+  --chopper-light-core: rgba(255,170,154,.24);
+  --chopper-light-yellow: rgba(255,92,76,.085);
+  --chopper-light-edge: rgba(197,48,36,.034);
+  filter: sepia(.14) saturate(.90) hue-rotate(316deg) brightness(.88) !important;
 }
 
 #chopper #stopFlip::after {
-  color: #d6a096;
+  color: #e0aaa0;
 }
 
 #chopper #stopFlip:is(:hover,:focus-visible) {
-  --chopper-light-core: rgba(255,176,158,.28);
-  --chopper-light-yellow: rgba(255,86,70,.10);
-  --chopper-light-edge: rgba(204,48,35,.04);
-  filter: sepia(.24) saturate(1.05) hue-rotate(316deg) brightness(.99) !important;
+  --chopper-light-core: rgba(255,176,158,.40);
+  --chopper-light-yellow: rgba(255,86,70,.14);
+  --chopper-light-edge: rgba(204,48,35,.056);
+  filter: sepia(.26) saturate(1.10) hue-rotate(316deg) brightness(1.02) !important;
 }
 
 #chopper #stopFlip:active {
@@ -870,4 +894,12 @@
   --chopper-light-yellow: rgba(255,82,65,.25);
   --chopper-light-edge: rgba(210,44,30,.10);
   filter: sepia(.38) saturate(1.35) hue-rotate(316deg) brightness(1.13) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #chopper #playDrumsOnly::before {
+    animation: none;
+    opacity: 1;
+    filter: none;
+  }
 }
