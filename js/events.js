@@ -242,7 +242,11 @@ async function playCurrentBeat(){
 }
 
 $("previewFlip").onclick=playCurrentBeat;
-$("stopFlip").onclick=stopCurrentBeat;
+$("stopFlip").onclick=()=>{
+  stopChopAudition();
+  stopCurrentBeat();
+  $("chopStatus").textContent="STOP";
+};
 document.addEventListener("keydown",async ev=>{
   if(ev.code!=="Space" || ev.repeat)return;
 
