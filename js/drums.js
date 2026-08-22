@@ -83,6 +83,15 @@ const CHOP_EDGE_FADE_SECONDS=.0025;
 const mixAnalysisCache=new WeakMap();
 let previewRenderGeneration=0;
 
+// Renderer-owned invalidation for state changes that make a not-yet-started
+// preview obsolete. Keep transport separate: callers that also need to stop an
+// active source must use stopCurrentBeat().
+function invalidatePreviewRender(){
+  previewRenderGeneration++;
+  renderedFlip=null;
+  return previewRenderGeneration;
+}
+
 function analyzeMixBuffer(buffer){
   if(!buffer || !buffer.length || !buffer.numberOfChannels){
     return {peak:0,peakDb:-120,rms:0,rmsDb:-120};
@@ -1118,7 +1127,7 @@ async function renderDrumsOnly(){
 
 async function renderSequence(events,sourceBuffer,cueMarkers,pitchRate){
   if(!sourceBuffer)throw new Error("Charge un sample");
-  const bpm=Math.max(40,Number($("sampleBpm").value)||90);
+  const bpm=Math.max(40,Number($("sampleBpm")?.value)||90);
   const stepDur=(60/bpm)/2; // eighth note
   const bars=2;
   const targetDur=8*60/bpm; // 2 bars x 4 beats
