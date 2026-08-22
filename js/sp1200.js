@@ -22,6 +22,8 @@
   const SP_TUNE_CARRY_MAX=127;
   const SP_TUNE_MODEL="carry7-octave-derived-v1";
   const SP_ADDRESSING_MODEL="carry7-pattern-v1";
+  const SP_MONO_LEVEL_MODEL="bounded-energy-v1";
+  const SP_STEREO_DOWNMIX_MAX_GAIN=Math.SQRT2;
 
   // SP-1200 exposes 32 total tune/decay positions (0..31), with INIT DK/TUNE
   // 16 as original pitch and only a 16-position window accessible at once.
@@ -221,28 +223,53 @@
   // Mono is a property of the loaded source, not of an arbitrary bank/page.
   // Analyze the whole source once (bounded to ~100k probe points), freeze that
   // decision, and reuse it for every subsequent encode window of this buffer.
+  // Stereo files need an app-side ingestion rule because the physical SP input
+  // is mono. Average L/R, but restore only the energy that averaging removed:
+  // never more than +3.01 dB and never above the original sampled channel peak.
+  // This is not post-encode normalization and mono sources always stay at gain 1.
   function analyzeMonoPlan(sourceBuffer){
     const channels=Math.max(1,Number(sourceBuffer?.numberOfChannels)||1);
-    if(channels===1)return Object.freeze({mode:"single",channel:0});
-    if(channels!==2)return Object.freeze({mode:"average",channels});
+    if(channels===1)return Object.freeze({mode:"single",channel:0,gain:1});
+    if(channels!==2)return Object.freeze({mode:"average",channels,gain:1});
 
     const left=sourceBuffer.getChannelData(0);
     const right=sourceBuffer.getChannelData(1);
     const span=Math.max(1,sourceBuffer.length);
     const stride=Math.max(1,Math.floor(span/100000));
-    let ll=0,rr=0,lr=0;
+    let ll=0,rr=0,lr=0,sourcePeak=0,mixedPeak=0;
     for(let i=0;i<sourceBuffer.length;i+=stride){
       const l=Number.isFinite(left[i])?left[i]:0;
       const r=Number.isFinite(right[i])?right[i]:0;
       ll+=l*l;
       rr+=r*r;
       lr+=l*r;
+      sourcePeak=Math.max(sourcePeak,Math.abs(l),Math.abs(r));
+      mixedPeak=Math.max(mixedPeak,Math.abs((l+r)*.5));
     }
     const corr=lr/Math.max(1e-12,Math.sqrt(ll*rr));
     if(corr<-.35){
-      return Object.freeze({mode:"single",channel:rr>ll?1:0});
+      return Object.freeze({mode:"single",channel:rr>ll?1:0,gain:1,correlation:corr});
     }
-    return Object.freeze({mode:"average",channels:2});
+
+    const stereoEnergy=(ll+rr)*.5;
+    const mixedEnergy=(ll+rr+2*lr)*.25;
+    const energyGain=mixedEnergy>1e-12
+      ? Math.sqrt(stereoEnergy/mixedEnergy)
+      : 1;
+    const peakGain=mixedPeak>1e-12
+      ? sourcePeak/mixedPeak
+      : 1;
+    const gain=Math.max(1,Math.min(
+      SP_STEREO_DOWNMIX_MAX_GAIN,
+      Number.isFinite(energyGain)?energyGain:1,
+      Number.isFinite(peakGain)?peakGain:1
+    ));
+    return Object.freeze({
+      mode:"average",
+      channels:2,
+      gain,
+      correlation:corr
+    });
   }
 
   function monoPlanFor(sourceBuffer){
@@ -257,14 +284,14 @@
   function monoSample(sourceBuffer,frame,plan){
     if(plan.mode==="single"){
       const value=sourceBuffer.getChannelData(plan.channel)[frame];
-      return Number.isFinite(value)?value:0;
+      return (Number.isFinite(value)?value:0)*(plan.gain||1);
     }
     let sum=0;
     for(let channel=0;channel<plan.channels;channel++){
       const value=sourceBuffer.getChannelData(channel)[frame];
       sum+=Number.isFinite(value)?value:0;
     }
-    return sum/plan.channels;
+    return (sum/plan.channels)*(plan.gain||1);
   }
 
   function cacheFor(sourceBuffer){
@@ -370,6 +397,7 @@
       sourceEndSec:endFrame/inputRate,
       monoMode:plan.mode,
       monoChannel:plan.mode==="single"?plan.channel:null,
+      monoGain:plan.gain||1,
       monoScope:"source"
     });
   }
@@ -530,6 +558,8 @@
     maxCacheEntries:MAX_CACHE_ENTRIES,
     pcmStorage:"int16",
     monoPolicy:"per-source",
+    monoLevelPolicy:SP_MONO_LEVEL_MODEL,
+    stereoDownmixMaxGainDb:20*Math.log10(SP_STEREO_DOWNMIX_MAX_GAIN),
     tuneModel:SP_TUNE_MODEL,
     addressingModel:SP_ADDRESSING_MODEL,
     tuneCodes:Object.freeze({
