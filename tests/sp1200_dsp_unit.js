@@ -40,32 +40,55 @@ async function main(){
   assert(dsp.maxCacheEntries<=8,"SP PCM cache must stay small on mobile");
   assert(typeof dsp.encodeBuffer==="function" && typeof dsp.encodeBufferAsync==="function","encode contract missing");
   assert(typeof dsp.renderEncodedSegment==="function","encoded playback contract missing");
+  assert(typeof dsp.resolveTune==="function","discrete tune resolver missing");
+  assert(typeof dsp.pitchRatio==="undefined","raw semitone ratio helper must not remain public");
   assert(typeof dsp.renderSegment==="undefined","playback must not accept a source AudioBuffer");
   assert(typeof dsp.renderSegmentAsync==="undefined","async mixed encode/playback helper must stay removed");
+  assert(dsp.tuneCodes.min===0 && dsp.tuneCodes.max===31 && dsp.tuneCodes.center===16,"SP tune code range mismatch");
   assert(dsp.quantize12(0)===0,"zero must quantize to zero");
   assert(dsp.quantize12(-1)===-1,"negative full scale must survive");
   assert(dsp.quantize12(1)===2047/2048,"positive full scale must clamp to 12-bit code 2047");
 
+  const center=dsp.resolveTune(0);
+  const downTune=dsp.resolveTune(-12);
+  const upTune=dsp.resolveTune(12);
+  const oddTune=dsp.resolveTune(-5);
+  assert(Object.isFrozen(center),"resolved tune plan must be immutable");
+  assert(center.code===16 && center.ratio===1 && center.model==="ideal-v1","center tune plan mismatch");
+  assert(downTune.code===4 && downTune.effectiveSemitones===-12,"-12 st tune code mismatch");
+  assert(upTune.code===28 && upTune.effectiveSemitones===12,"+12 st tune code mismatch");
+  assert(oddTune.code===11 && oddTune.requestedSemitones===-5,"-5 st tune code mismatch");
+  assert(Math.abs(oddTune.ratio-Math.pow(2,-5/12))<1e-12,"V1 tune ratio must remain sound-neutral");
+  assert(dsp.resolveTune(-99).code===0 && dsp.resolveTune(99).code===31,"tune codes must clamp to 0..31");
+
   const pattern=new Float32Array([0,.125,.25,.375,.5,.625,.75,.875]);
   const encodedPattern={data:pattern};
-  const down=dsp.renderPcm(encodedPattern,{semitones:-12,outputRate:26040});
+  const down=dsp.renderPcm(encodedPattern,{tune:downTune,outputRate:26040});
   assert(down.length===16,"-12 st should double duration");
   assert(down[0]===pattern[0] && down[1]===pattern[0],"pitch down must duplicate samples");
   assert(down[2]===pattern[1] && down[3]===pattern[1],"pitch down duplication pattern incorrect");
 
-  const up=dsp.renderPcm(encodedPattern,{semitones:12,outputRate:26040});
+  const up=dsp.renderPcm(encodedPattern,{tune:upTune,outputRate:26040});
   assert(up.length===4,"+12 st should halve duration");
   assert(up[0]===pattern[0] && up[1]===pattern[2],"pitch up must skip source samples");
   assert(up[2]===pattern[4] && up[3]===pattern[6],"pitch up skip pattern incorrect");
 
-  const odd=dsp.renderPcm(encodedPattern,{semitones:-5,outputRate:26040});
+  const odd=dsp.renderPcm(encodedPattern,{tune:oddTune,outputRate:26040});
   for(const value of odd){
     assert(pattern.includes(value),"SP pitch stage must not invent interpolated values");
   }
 
-  const subrange=dsp.renderPcm(encodedPattern,{semitones:0,outputRate:26040,startFrame:2,endFrame:6});
+  const subrange=dsp.renderPcm(encodedPattern,{tune:center,outputRate:26040,startFrame:2,endFrame:6});
   assert(subrange.length===4,"a chop must read a subrange of one stored SP PCM");
   assert(subrange[0]===pattern[2] && subrange[3]===pattern[5],"stored SP PCM subrange boundaries incorrect");
+
+  let legacyRejected=false;
+  try{
+    dsp.renderPcm(encodedPattern,{semitones:-5,outputRate:26040});
+  }catch(error){
+    legacyRejected=/discrete tune plan/.test(String(error?.message||error));
+  }
+  assert(legacyRejected,"playback must reject legacy semitone parameters");
 
   const rate=48000;
   const length=rate;
@@ -96,7 +119,7 @@ async function main(){
   const rendered=dsp.renderEncodedSegment(mockAudioContext(),encoded,{
     startSec:.2,
     endSec:.4,
-    semitones:-12
+    tune:downTune
   });
   assert(rendered.numberOfChannels===1,"encoded playback must render mono");
   assert(rendered.sampleRate===48000,"encoded playback must target the audio context rate");
@@ -104,7 +127,7 @@ async function main(){
 
   let rejected=false;
   try{
-    dsp.renderEncodedSegment(mockAudioContext(),mockBuffer,{startSec:0,endSec:.1});
+    dsp.renderEncodedSegment(mockAudioContext(),mockBuffer,{startSec:0,endSec:.1,tune:center});
   }catch(error){
     rejected=/encoded PCM/.test(String(error?.message||error));
   }
@@ -135,8 +158,10 @@ async function main(){
   assert(!runtimeSource.includes("DSP.renderSegmentAsync"),"browser integration must not use mixed encode/playback helpers");
   assert(runtimeSource.includes("DSP.encodeBufferAsync"),"browser integration must explicitly encode source audio");
   assert(runtimeSource.includes("DSP.renderEncodedSegment"),"browser integration must explicitly render encoded PCM");
+  assert(runtimeSource.includes("DSP.resolveTune(samplePitchSemitones)"),"Chopper must resolve UI semitones before SP playback");
+  assert(!runtimeSource.includes("DSP.pitchRatio"),"browser integration must not derive pitch ratios directly");
 
-  console.log("OK: SP1200 DSP — strict encode/playback boundary, compact PCM, bounded cache and skip/repeat pitch");
+  console.log("OK: SP1200 DSP — discrete tune plans, strict encode/playback boundary, compact PCM and skip/repeat pitch");
 }
 
 main().catch(error=>{
