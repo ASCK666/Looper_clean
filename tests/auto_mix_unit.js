@@ -7,7 +7,7 @@ const DRUMS=fs.readFileSync(path.join(ROOT,'js','drums.js'),'utf8');
 
 global.clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 global.dbToGain=db=>Math.pow(10,db/20);
-global.sampleConditionProfile={rmsDb:-20,trimDb:0};
+global.analyzeSampleCondition=()=>({rmsDb:-20,trimDb:0});
 vm.runInThisContext(DRUMS,{filename:'js/drums.js'});
 
 function fakeBuffer(channels,sampleRate=44100){
@@ -44,7 +44,7 @@ const loudKickGain=drumAutoGain('kick',loud);
 const quietKickGain=drumAutoGain('kick',quiet);
 if(!(quietKickGain>loudKickGain))throw new Error('Quiet drum must receive more compensation than loud drum');
 if(quietKickGain>dbToGain(6)+1e-9)throw new Error('Drum auto gain exceeded +6 dB safety cap');
-if(sampleAutoMixGain()>dbToGain(4)+1e-9)throw new Error('Sample auto gain exceeded +4 dB safety cap');
+if(sampleAutoMixGain(loud)>dbToGain(4)+1e-9)throw new Error('Sample auto gain exceeded +4 dB safety cap');
 
 const hot=fakeBuffer([[0,1.4,-1.2,.4],[0,-1.3,1.1,-.5]]);
 applyFinalPeakGuard(hot);
