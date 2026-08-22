@@ -32,6 +32,10 @@
   const SP_INPUT_GAIN_STEPS_DB=Object.freeze([0,20,40]);
   const SP_INPUT_GAIN_DEFAULT_DB=0;
   const SP_INPUT_OVERLOAD_THRESHOLD=1;
+  const SP_LEVEL_DAC_MODEL="ad7524-ideal-transfer-v1";
+  const SP_LEVEL_DAC_BITS=8;
+  const SP_LEVEL_DAC_MAX_CODE=255;
+  const SP_LEVEL_DAC_DENOMINATOR=256;
   const SP_RECONSTRUCTION_MODEL="mux8-sh-zoh-v1";
   const SP_DAC_CHANNELS=8;
   const SP_DAC_MULTIPLEX_RATE=SP_SAMPLE_RATE*SP_DAC_CHANNELS;
@@ -236,6 +240,27 @@
     return Object.freeze({db,linear:Math.pow(10,db/20)});
   }
 
+  // Playback-level control on the original machine is a standard 8-bit
+  // multiplying DAC after the 12-bit audio DAC. The AD7524 ideal unipolar
+  // transfer is code/256, so full code 255 is intentionally 255/256 rather than
+  // mathematical unity. Omitted levelCode means bypass so low-level DSP tests and
+  // non-Chopper callers can isolate pitch/reconstruction; the Chopper adapter
+  // always supplies a hardware level code while SP mode is active.
+  function resolveLevelCode(levelCode=null){
+    if(levelCode===null || typeof levelCode==="undefined"){
+      return Object.freeze({code:null,gain:1,bypass:true});
+    }
+    const code=Number(levelCode);
+    if(!Number.isInteger(code) || code<0 || code>SP_LEVEL_DAC_MAX_CODE){
+      throw new Error("SP1200: level code must be an integer from 0 to 255");
+    }
+    return Object.freeze({
+      code,
+      gain:code/SP_LEVEL_DAC_DENOMINATOR,
+      bypass:false
+    });
+  }
+
   function safeFilterCutoff(sampleRate,cutoff){
     const rate=Math.max(1,Number(sampleRate)||44100);
     return Math.max(10,Math.min(Number(cutoff)||SP_INPUT_FILTER_CUTOFF_HZ,rate*.45));
@@ -287,12 +312,12 @@
   }
 
   // The original hardware uses one 12-bit DAC shared across eight audio channels.
-  // The DAC/level path is multiplexed at eight times the per-channel sample rate;
-  // a 4051 then routes each channel into its own sample/hold. For one isolated
-  // voice, the observable result is an exact held value until that channel's next
-  // 26.04 kHz refresh. V1 models that topology explicitly without inventing
-  // unmeasured capacitor droop, DAC settling error or inter-channel bleed.
-  function reconstructSampleHold(data,{first,last,plan,rate,length}){
+  // Its analog output passes through an 8-bit multiplying level DAC before the
+  // 4051 routes each voice into its sample/hold. For one isolated voice, the held
+  // value is therefore the selected 12-bit sample multiplied by one fixed 8-bit
+  // level code until that channel's next 26.04 kHz refresh. V1 models this ideal
+  // transfer without inventing MDAC non-linearity, capacitor droop or crosstalk.
+  function reconstructSampleHold(data,{first,last,plan,rate,length,level}){
     const output=new Float32Array(length);
     const stepper=addressStepper(plan);
     let renderedHold=-1;
@@ -304,7 +329,8 @@
       while(renderedHold<holdTick){
         const sourceOffset=stepper.next();
         const sourceIndex=first+sourceOffset;
-        heldValue=sourceIndex<last?pcmValue(data,sourceIndex):0;
+        const dacValue=sourceIndex<last?pcmValue(data,sourceIndex):0;
+        heldValue=dacValue*level.gain;
         renderedHold++;
       }
       output[i]=heldValue;
@@ -316,9 +342,9 @@
   // 5/6 use a higher fixed cutoff and 7/8 are unfiltered. Public documentation
   // establishes that topology but not a complete calibrated transfer function.
   // V1 therefore models one deliberately conservative 3/4-style profile: a
-  // fourth-order low-pass around 9 kHz, after DAC/S&H reconstruction, with no
-  // makeup gain. It is explicitly labelled derived and must not be marketed as
-  // an exact SSM2044 model (the dynamic SSM2044 path belongs to channels 1/2).
+  // fourth-order low-pass around 9 kHz, after DAC/level-DAC/S&H reconstruction,
+  // with no makeup gain. It is explicitly labelled derived and must not be
+  // marketed as an exact SSM2044 model (the dynamic SSM2044 path is channels 1/2).
   function applyOutputProfile(output,sampleRate,mode){
     const resolved=resolveOutputMode(mode);
     if(resolved==="raw" || !output.length)return output;
@@ -600,13 +626,14 @@
   }
 
   // PLAYBACK contract: only stored SP PCM plus a resolved discrete tune plan
-  // enter from here downward. Reconstruction explicitly models the shared DAC's
-  // eight multiplex slots and each channel's sample/hold. The optional output
-  // profile then happens after that reconstruction, as on the physical machine.
+  // enter from here downward. Reconstruction explicitly models the shared 12-bit
+  // DAC, the 8-bit multiplying level DAC, eight multiplex slots and each channel's
+  // sample/hold. The optional output profile then happens after reconstruction.
   function renderPcm(encodedData,options={}){
     rejectLegacySemitones(options);
     const {
       tune=resolveTune(0),
+      levelCode=null,
       outputRate=44100,
       outputMode="raw",
       maxDuration=Infinity,
@@ -616,6 +643,7 @@
     const data=pcmData(encodedData);
     if(!data || !data.length)return new Float32Array(0);
     const plan=assertTunePlan(tune);
+    const level=resolveLevelCode(levelCode);
     const resolvedOutputMode=resolveOutputMode(outputMode);
     const first=Math.max(0,Math.min(data.length-1,Math.floor(Number(startFrame)||0)));
     const last=Math.max(first+1,Math.min(data.length,Math.ceil(Number(endFrame) || data.length)));
@@ -624,7 +652,7 @@
     const limit=Number.isFinite(maxDuration)?Math.max(0,Number(maxDuration)||0):naturalDuration;
     const duration=Math.min(naturalDuration,limit);
     const length=Math.max(1,Math.ceil(duration*rate));
-    const output=reconstructSampleHold(data,{first,last,plan,rate,length});
+    const output=reconstructSampleHold(data,{first,last,plan,rate,length,level});
     return applyOutputProfile(output,rate,resolvedOutputMode);
   }
 
@@ -647,12 +675,14 @@
       startSec=encoded?.sourceStartSec||0,
       endSec=encoded?.sourceEndSec||0,
       tune=resolveTune(0),
+      levelCode=null,
       outputMode="raw",
       maxDuration=Infinity
     }=options;
     if(!audioContext?.createBuffer)throw new Error("SP1200: AudioContext unavailable");
     assertEncodedPcm(encoded);
     const plan=assertTunePlan(tune);
+    resolveLevelCode(levelCode);
     const resolvedOutputMode=resolveOutputMode(outputMode);
 
     const relativeStart=Math.max(0,(Number(startSec)||0)-encoded.sourceStartSec);
@@ -661,6 +691,7 @@
     const last=Math.max(first+1,Math.min(encoded.data.length,Math.ceil(relativeEnd*SP_SAMPLE_RATE)));
     const output=renderPcm(encoded,{
       tune:plan,
+      levelCode,
       outputRate:audioContext.sampleRate,
       outputMode:resolvedOutputMode,
       maxDuration,
@@ -701,6 +732,16 @@
       slopeDbPerOctave:SP_INPUT_FILTER_SLOPE_DB_PER_OCTAVE,
       exactCircuit:false
     }),
+    levelDac:Object.freeze({
+      model:SP_LEVEL_DAC_MODEL,
+      bits:SP_LEVEL_DAC_BITS,
+      maxCode:SP_LEVEL_DAC_MAX_CODE,
+      denominator:SP_LEVEL_DAC_DENOMINATOR,
+      fullScaleGain:SP_LEVEL_DAC_MAX_CODE/SP_LEVEL_DAC_DENOMINATOR,
+      transfer:"unipolar-code-over-256",
+      placement:"post-12bit-dac-pre-demux",
+      analogNonlinearity:"not-modeled"
+    }),
     reconstruction:Object.freeze({
       model:SP_RECONSTRUCTION_MODEL,
       sharedDac:true,
@@ -740,6 +781,7 @@
     }),
     quantize12,
     resolveTune,
+    resolveLevelCode,
     encodeBuffer,
     encodeBufferAsync,
     renderPcm,
