@@ -13,32 +13,60 @@
   const MAX_CACHE_ENTRIES=6;
   const ENCODE_YIELD_INPUT_FRAMES=32768;
   const SP_TUNE_MIN_CODE=0;
-  const SP_TUNE_MAX_CODE=15;
-  const SP_TUNE_CENTER_CODE=8;
-  const SP_TUNE_MIN_SEMITONES=-8;
-  const SP_TUNE_MAX_SEMITONES=7;
+  const SP_TUNE_MAX_CODE=31;
+  const SP_TUNE_CENTER_CODE=16;
+  const SP_TUNE_MIN_SEMITONES=-16;
+  const SP_TUNE_MAX_SEMITONES=15;
+  const SP_TUNE_DEFAULT_MIN_SEMITONES=-8;
+  const SP_TUNE_DEFAULT_MAX_SEMITONES=7;
   const SP_TUNE_CARRY_MAX=127;
-  const SP_TUNE_MODEL="carry7-derived-v1";
+  const SP_TUNE_MODEL="carry7-octave-derived-v1";
 
-  // The original SP family exposes 16 discrete tuning positions (-8..+7), not
-  // 32 user pitches. The counts below are the nearest 7-bit carry populations
-  // to publicly measured SP-12 negative tuning ratios, mirrored for the positive
-  // skip side. They put V1 on the documented hardware grid without pretending
-  // that the exact PROM/address pattern has already been recovered.
-  const SP_TUNE_CARRY_COUNTS=Object.freeze([
+  // SP-1200 exposes 32 total tune/decay positions (0..31), with INIT DK/TUNE
+  // 16 as original pitch and only a 16-position window accessible at once.
+  // The central -8..+7 window below uses the nearest 7-bit carry populations
+  // to publicly measured SP-12 negative tuning ratios, mirrored for the skip
+  // side. Outer SP-1200 codes are the same carry grid folded by one octave.
+  // This is hardware-derived, but not claimed as a dumped bit-perfect PROM table.
+  const SP_BASE_TUNE_CARRY_COUNTS=Object.freeze([
     73,64,51,42,32,23,15,7,
     0,
     7,15,23,32,42,51,64
   ]);
-  const SP_TUNE_TABLE=Object.freeze(SP_TUNE_CARRY_COUNTS.map((carry,code)=>{
-    const nominalSemitones=code-SP_TUNE_CENTER_CODE;
-    const direction=nominalSemitones<0?"repeat":nominalSemitones>0?"skip":"normal";
-    const ratio=direction==="repeat"
+
+  function baseTune(nominalSemitones){
+    const index=nominalSemitones-SP_TUNE_DEFAULT_MIN_SEMITONES;
+    const carry=SP_BASE_TUNE_CARRY_COUNTS[index];
+    const carryDirection=nominalSemitones<0?"repeat":nominalSemitones>0?"skip":"normal";
+    const ratio=carryDirection==="repeat"
       ? 1/(1+carry/SP_TUNE_CARRY_MAX)
-      : direction==="skip"
+      : carryDirection==="skip"
         ? 1+carry/SP_TUNE_CARRY_MAX
         : 1;
-    return Object.freeze({code,nominalSemitones,carry,direction,ratio});
+    return {carry,carryDirection,ratio};
+  }
+
+  const SP_TUNE_TABLE=Object.freeze(Array.from({length:32},(_,code)=>{
+    const nominalSemitones=code-SP_TUNE_CENTER_CODE;
+    let foldedSemitones=nominalSemitones;
+    let octaveShift=0;
+    if(foldedSemitones<SP_TUNE_DEFAULT_MIN_SEMITONES){
+      foldedSemitones+=12;
+      octaveShift=-1;
+    }else if(foldedSemitones>SP_TUNE_DEFAULT_MAX_SEMITONES){
+      foldedSemitones-=12;
+      octaveShift=1;
+    }
+    const base=baseTune(foldedSemitones);
+    return Object.freeze({
+      code,
+      nominalSemitones,
+      foldedSemitones,
+      octaveShift,
+      carry:base.carry,
+      carryDirection:base.carryDirection,
+      ratio:base.ratio*Math.pow(2,octaveShift)
+    });
   }));
 
   const BUTTERWORTH_6_Q=Object.freeze([.5176380902,.7071067812,1.9318516526]);
@@ -61,9 +89,9 @@
   }
 
   // Callers may still speak in nominal semitones, but playback receives one of
-  // the 16 immutable hardware-grid plans. `actualSemitones` exposes the slight
+  // the 32 immutable hardware-grid plans. `actualSemitones` exposes the small
   // detune caused by the finite carry grid; `effectiveSemitones` remains the
-  // nominal front-panel position for compatibility with existing callers.
+  // nominal tune-code position for compatibility with existing callers.
   function resolveTune(semitones=0){
     const requestedSemitones=Math.round(Number(semitones)||0);
     const nominalSemitones=Math.max(
@@ -89,7 +117,9 @@
     const expected=SP_TUNE_TABLE[tune.code];
     if(!expected || tune.model!==SP_TUNE_MODEL ||
        tune.nominalSemitones!==expected.nominalSemitones ||
-       tune.carry!==expected.carry || tune.direction!==expected.direction ||
+       tune.foldedSemitones!==expected.foldedSemitones ||
+       tune.octaveShift!==expected.octaveShift ||
+       tune.carry!==expected.carry || tune.carryDirection!==expected.carryDirection ||
        Math.abs(tune.ratio-expected.ratio)>1e-12){
       throw new Error("SP1200: invalid hardware tune plan");
     }
@@ -442,7 +472,9 @@
     }),
     tuneRange:Object.freeze({
       minSemitones:SP_TUNE_MIN_SEMITONES,
-      maxSemitones:SP_TUNE_MAX_SEMITONES
+      maxSemitones:SP_TUNE_MAX_SEMITONES,
+      defaultMinSemitones:SP_TUNE_DEFAULT_MIN_SEMITONES,
+      defaultMaxSemitones:SP_TUNE_DEFAULT_MAX_SEMITONES
     }),
     quantize12,
     resolveTune,
