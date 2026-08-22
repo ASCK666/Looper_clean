@@ -142,11 +142,11 @@
     const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
     const master=makePunchMaster(offline);
     const slices=currentMode()==="slices";
-    // SAMPLE VOL is already quantized in the SP level DAC. Keep only product-side
-    // conditioner/auto-mix gain here so volume is never applied twice.
-    const conditionerGain=.72*(slices?1:sampleAutoMixGain(sourceBuffer));
-    const sampleConditioner=makeSampleConditioner(offline,master.input,conditionerGain);
 
+    // renderEncodedSegment() is the end of the SP sample-output chain. Do not run
+    // Chopper's generic conditioner/auto-mix after it: RAW must remain RAW and
+    // FILTER must remain only the DSP-owned SP output filter. The master below is
+    // mix infrastructure; explicit VINYL is applied separately after rendering.
     const placed=[];
     for(let step=0;step<16;step++){
       const chop=Number(events?.[step])||0;
@@ -201,7 +201,7 @@
       source.buffer=segment;
 
       if(slices){
-        source.connect(sampleConditioner.input);
+        source.connect(master.input);
       }else{
         const edge=offline.createGain();
         const fade=Math.min(typeof CHOP_EDGE_FADE_SECONDS==="number"?CHOP_EDGE_FADE_SECONDS:.0025,audible*.5);
@@ -209,7 +209,7 @@
         edge.gain.linearRampToValueAtTime(1,startTime+fade);
         edge.gain.setValueAtTime(1,Math.max(startTime+fade,startTime+audible-fade));
         edge.gain.linearRampToValueAtTime(0,startTime+audible);
-        source.connect(edge).connect(sampleConditioner.input);
+        source.connect(edge).connect(master.input);
       }
       source.start(startTime);
       source.stop(startTime+audible);
@@ -263,9 +263,9 @@
     source.buffer=buffer;
     const previewOutput=ctx.createGain();
     connectLive(previewOutput);
-    // SP SAMPLE VOL has already been rendered through the 8-bit level DAC.
-    const conditioner=makeSampleConditioner(ctx,previewOutput,1);
-    source.connect(conditioner.input);
+    // SP SAMPLE VOL has already been rendered through the 8-bit level DAC, and
+    // the DSP output profile is final. Connect it directly so RAW stays RAW.
+    source.connect(previewOutput);
 
     chopAuditionSource=source;
     // Do not expose the clean-path continuous volume GainNode while SP is active;
