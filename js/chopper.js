@@ -146,6 +146,7 @@ function refreshSamplePitchUI(){
 }
 
 function updateSamplePitch(value){
+  invalidatePreviewRender();
   samplePitchSemitones=Number(value)||0;
   stopChopAudition();
   refreshMarkerEditor();
@@ -159,6 +160,7 @@ function sampleVolumeGain(){
 }
 
 function updateSampleVolume(value){
+  invalidatePreviewRender();
   sampleVolumePercent=Number(value)||0;
   $("sampleVolumeReadout").textContent=`${sampleVolumePercent}%`;
   if(chopAuditionGain){
@@ -169,6 +171,7 @@ function updateSampleVolume(value){
 async function loadChopperSample(file){
   stopChopAudition();
   if(!file)return false;
+  invalidatePreviewRender();
 
   try{
     $("chopStatus").textContent="LOADING SAMPLE…";
@@ -212,6 +215,7 @@ function refreshMarkerEditor(){
 
 function setMarkers(count){
   if(!sampleBuffer)return;
+  invalidatePreviewRender();
   count=clamp(Math.round(Number(count)||8),1,16);
   const dur=sampleBuffer.duration;
   markers=Array.from({length:count+1},(_,i)=>dur*i/count);
@@ -267,6 +271,7 @@ function autoPlaceMarkers(){
   }
 
   chosen.push(dur);
+  invalidatePreviewRender();
   markers=chosen;
   selectedMarker=0;
   refreshMarkerEditor();
@@ -378,7 +383,10 @@ function markerBounds(i){
 function moveMarker(i,sec,snap=true){
   if(!sampleBuffer||i<0||i>=markers.length)return;
   if(snap)sec=applySnap(sec);
-  const [lo,hi]=markerBounds(i);markers[i]=clamp(sec,lo,hi);selectedMarker=i;refreshMarkerEditor();drawWave();renderPads();
+  const [lo,hi]=markerBounds(i);
+  const next=clamp(sec,lo,hi);
+  if(next!==markers[i])invalidatePreviewRender();
+  markers[i]=next;selectedMarker=i;refreshMarkerEditor();drawWave();renderPads();
 }
 
 function markerFromEvent(ev){
@@ -898,6 +906,7 @@ function renderLoopGrid(){
           // Monophonic column. Clicking an already active cell does nothing,
           // so a browser double-click cannot erase it.
           if(loopGridEvents[step]!==pad){
+            invalidatePreviewRender();
             loopGridEvents[step]=pad;
             renderLoopGrid();
           }
@@ -909,6 +918,7 @@ function renderLoopGrid(){
         cell.oncontextmenu=(ev)=>{
           ev.preventDefault();
           if(loopGridEvents[step]===pad){
+            invalidatePreviewRender();
             loopGridEvents[step]=0;
             renderLoopGrid();
           }
@@ -923,6 +933,7 @@ function renderLoopGrid(){
 }
 
 function clearLoopGrid(){
+  if(loopGridEvents.some(Boolean))invalidatePreviewRender();
   loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
   renderLoopGrid();
 }
