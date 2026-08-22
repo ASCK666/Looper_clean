@@ -51,8 +51,12 @@ assert drums_source.count('previewRenderGeneration++') == 1, 'invalidatePreviewR
 assert 'function invalidatePreviewRender(){\n  previewRenderGeneration++;' in drums_source, 'renderer owner must advance the combined-preview generation'
 assert '++previewRenderGeneration' not in drums_source, 'renderer internals must not bypass invalidatePreviewRender()'
 assert 'previewRenderGeneration+=' not in drums_source, 'renderer internals must not mutate the generation with +='
-assert 'previewRenderGeneration++' not in adapter_source, 'SP adapter must route combined-preview invalidation through the renderer owner'
-assert '++previewRenderGeneration' not in adapter_source, 'SP adapter must not mutate the combined-preview generation directly'
+for js_path in sorted((ROOT / 'js').glob('*.js')):
+    if js_path.name == 'drums.js':
+        continue
+    source = js_path.read_text(encoding='utf-8')
+    for direct_write in ('previewRenderGeneration++', '++previewRenderGeneration', 'previewRenderGeneration+='):
+        assert direct_write not in source, f'{js_path.name} must route combined-preview invalidation through invalidatePreviewRender()'
 
 play_start = events_source.index('async function playCurrentBeat')
 play_end = events_source.index('$("previewFlip").onclick=playCurrentBeat', play_start)
