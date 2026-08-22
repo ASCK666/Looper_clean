@@ -128,29 +128,23 @@
       filtered[offset]=value;
     }
 
-    const processSeconds=filteredLength/inputRate;
-    const resampledLength=Math.max(1,Math.ceil(processSeconds*SP_SAMPLE_RATE));
-    const resampled=new Float32Array(resampledLength);
+    // The filter gets a short pre-roll for stable state, but the SP sample grid
+    // itself is anchored to the requested working portion. Moving a chop START
+    // therefore never changes the 26.04 kHz PCM stored for the same bank.
+    const requestedSeconds=(endFrame-startFrame)/inputRate;
+    const length=Math.max(1,Math.ceil(requestedSeconds*SP_SAMPLE_RATE));
+    const data=new Float32Array(length);
     const sourcePerTarget=inputRate/SP_SAMPLE_RATE;
+    const requestedOffset=startFrame-processStartFrame;
 
-    for(let i=0;i<resampledLength;i++){
-      const position=Math.min(filteredLength-1,i*sourcePerTarget);
+    for(let i=0;i<length;i++){
+      const position=Math.min(filteredLength-1,requestedOffset+i*sourcePerTarget);
       const left=Math.floor(position);
       const right=Math.min(filteredLength-1,left+1);
       const frac=position-left;
       const value=filtered[left]+(filtered[right]-filtered[left])*frac;
-      resampled[i]=quantize12(value);
+      data[i]=quantize12(value);
     }
-
-    const requestedOffsetFrames=Math.max(
-      0,
-      Math.round((startFrame-processStartFrame)/inputRate*SP_SAMPLE_RATE)
-    );
-    const requestedFrames=Math.max(1,Math.ceil((endFrame-startFrame)/inputRate*SP_SAMPLE_RATE));
-    const available=Math.max(1,resampled.length-requestedOffsetFrames);
-    const length=Math.min(requestedFrames,available);
-    const data=new Float32Array(length);
-    data.set(resampled.subarray(requestedOffsetFrames,requestedOffsetFrames+length));
 
     const encoded=Object.freeze({
       data,
@@ -169,14 +163,22 @@
     return encoded;
   }
 
-  function renderPcm(encodedData,{semitones=0,outputRate=44100,maxDuration=Infinity}={}){
+  function renderPcm(encodedData,{
+    semitones=0,
+    outputRate=44100,
+    maxDuration=Infinity,
+    startFrame=0,
+    endFrame=null
+  }={}){
     const data=encodedData?.data instanceof Float32Array ? encodedData.data : encodedData;
     if(!(data instanceof Float32Array) || !data.length){
       return new Float32Array(0);
     }
+    const first=Math.max(0,Math.min(data.length-1,Math.floor(Number(startFrame)||0)));
+    const last=Math.max(first+1,Math.min(data.length,Math.ceil(Number(endFrame) || data.length)));
     const ratio=pitchRatio(semitones);
     const rate=Math.max(8000,Number(outputRate)||44100);
-    const naturalDuration=data.length/SP_SAMPLE_RATE/ratio;
+    const naturalDuration=(last-first)/SP_SAMPLE_RATE/ratio;
     const limit=Number.isFinite(maxDuration)?Math.max(0,Number(maxDuration)||0):naturalDuration;
     const duration=Math.min(naturalDuration,limit);
     const length=Math.max(1,Math.ceil(duration*rate));
@@ -184,8 +186,8 @@
 
     for(let i=0;i<length;i++){
       const spTick=Math.floor(i*SP_SAMPLE_RATE/rate);
-      const sourceIndex=Math.floor(spTick*ratio);
-      output[i]=sourceIndex<data.length?data[sourceIndex]:0;
+      const sourceIndex=first+Math.floor(spTick*ratio);
+      output[i]=sourceIndex<last?data[sourceIndex]:0;
     }
     return output;
   }
@@ -194,14 +196,22 @@
     startSec=0,
     endSec=sourceBuffer?.duration||0,
     semitones=0,
-    maxDuration=Infinity
+    maxDuration=Infinity,
+    encodeStartSec=startSec,
+    encodeEndSec=endSec
   }={}){
     if(!audioContext?.createBuffer)throw new Error("SP1200: AudioContext unavailable");
-    const encoded=encodeBuffer(sourceBuffer,{startSec,endSec});
+    const encoded=encodeBuffer(sourceBuffer,{startSec:encodeStartSec,endSec:encodeEndSec});
+    const relativeStart=Math.max(0,(Number(startSec)||0)-encoded.sourceStartSec);
+    const relativeEnd=Math.max(relativeStart,(Number(endSec)||0)-encoded.sourceStartSec);
+    const first=Math.max(0,Math.min(encoded.data.length-1,Math.floor(relativeStart*SP_SAMPLE_RATE)));
+    const last=Math.max(first+1,Math.min(encoded.data.length,Math.ceil(relativeEnd*SP_SAMPLE_RATE)));
     const output=renderPcm(encoded,{
       semitones,
       outputRate:audioContext.sampleRate,
-      maxDuration
+      maxDuration,
+      startFrame:first,
+      endFrame:last
     });
     const buffer=audioContext.createBuffer(1,Math.max(1,output.length),audioContext.sampleRate);
     buffer.getChannelData(0).set(output);
@@ -241,6 +251,17 @@
 
   function currentBank(){
     return globalThis.ChopperBanks?.active||null;
+  }
+
+  function workingEncodeRange(sourceBuffer){
+    const bank=currentBank();
+    if(bank && bank.id!=="all"){
+      return {
+        start:Math.max(0,Math.min(sourceBuffer.duration,Number(bank.start)||0)),
+        end:Math.max(0,Math.min(sourceBuffer.duration,Number(bank.end)||sourceBuffer.duration))
+      };
+    }
+    return {start:0,end:sourceBuffer.duration};
   }
 
   function markerRange(index,sourceBuffer,cueMarkers){
@@ -298,6 +319,8 @@
 
     const semitones=Number(samplePitchSemitones)||0;
     const ratio=DSP.pitchRatio(semitones);
+    const encodeRange=workingEncodeRange(sourceBuffer);
+    DSP.encodeBuffer(sourceBuffer,{startSec:encodeRange.start,endSec:encodeRange.end});
 
     for(let e=0;e<placed.length;e++){
       const event=placed[e];
@@ -314,7 +337,9 @@
         startSec:range.start,
         endSec:range.end,
         semitones,
-        maxDuration:audible
+        maxDuration:audible,
+        encodeStartSec:encodeRange.start,
+        encodeEndSec:encodeRange.end
       });
       const source=offline.createBufferSource();
       source.buffer=segment;
@@ -348,10 +373,13 @@
     await ensureAudio();
     stopChopAudition();
 
+    const encodeRange=workingEncodeRange(sampleBuffer);
     let buffer=DSP.renderSegment(ctx,sampleBuffer,{
       startSec:range.start,
       endSec:range.end,
-      semitones:samplePitchSemitones
+      semitones:samplePitchSemitones,
+      encodeStartSec:encodeRange.start,
+      encodeEndSec:encodeRange.end
     });
     buffer=await maybeVinyl(buffer);
 
