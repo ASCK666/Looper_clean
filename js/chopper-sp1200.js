@@ -86,13 +86,22 @@
     return buffer;
   }
 
+  // SP reconstruction must use one output grid per live session. PAD audition
+  // already renders against ctx; offline PLAY/SAVE must use that same rate so
+  // zero-order hold does not change character between audition and export.
+  function sessionOutputRate(){
+    const rate=Number(ctx?.sampleRate);
+    return Number.isFinite(rate) && rate>=8000 ? rate : 44100;
+  }
+
   async function renderSpSequence(events,sourceBuffer,cueMarkers){
     if(!sourceBuffer)throw new Error("Charge un sample");
+    await ensureAudio();
     const bpm=Math.max(40,Number($("sampleBpm")?.value)||90);
     const stepDur=(60/bpm)/2;
     const bars=2;
     const targetDur=8*60/bpm;
-    const rate=44100;
+    const rate=sessionOutputRate();
     const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
     const master=makePunchMaster(offline);
     const slices=currentMode()==="slices";
@@ -324,6 +333,7 @@
         bitDepth:DSP.bitDepth,
         inputLowpassHz:DSP.inputLowpassHz,
         output:"raw",
+        reconstructionRate:sessionOutputRate(),
         tuneCode:tune.code,
         tuneModel:tune.model
       });
