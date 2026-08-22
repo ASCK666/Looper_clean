@@ -14,6 +14,7 @@ steps=[
   ['tests/sp1200_dsp_unit.js'],
   ['tests/sp1200_gain_unit.js'],
   ['tests/sp1200_output_filter_unit.js'],
+  ['tests/sp1200_level_dac_unit.js'],
   ['tests/sp1200_browser.py'],
   ['tests/sp1200_races.py'],
   ['tests/regression_v63.py'],
