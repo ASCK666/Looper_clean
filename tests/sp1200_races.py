@@ -21,6 +21,24 @@ render_end = adapter_source.index('async function previewSpSlice', render_start)
 render_block = adapter_source[render_start:render_end]
 assert 'tuneForPitchRate(pitchRate)' in render_block, 'SP full render must consume the explicit renderer pitch input'
 assert 'samplePitchSemitones' not in render_block, 'SP full render must not reach back into Chopper pitch state'
+first_render_await = render_block.index('await ensureAudio()')
+snapshot_block = render_block[:first_render_await]
+post_snapshot_block = render_block[first_render_await:]
+for token in (
+    'const renderMode=currentMode()',
+    'const activeBank=currentBank()',
+    'const renderEvents=Object.freeze',
+    'const renderCueMarkers=Object.freeze',
+    'const renderSlices=Object.freeze',
+    'const renderOutputMode=outputMode',
+    'const renderLevelCode=levelCodeForSampleVolume()'
+):
+    assert token in snapshot_block, f'SP full render must snapshot {token} before its first await'
+assert 'currentMode()' not in post_snapshot_block, 'SP full render must not reread edit mode after async work starts'
+assert 'currentBank()' not in post_snapshot_block, 'SP full render must not reread bank after async work starts'
+assert 'globalThis.ChopperWaveSlices?.slices' not in post_snapshot_block, 'SP full render must not reread slice ranges after async work starts'
+assert 'events?.[' not in post_snapshot_block, 'SP full render must use its event snapshot after async work starts'
+assert 'cueMarkers?.[' not in post_snapshot_block, 'SP full render must use its marker snapshot after async work starts'
 assert 'let previewGeneration=0' in adapter_source, 'SP pad audition needs an async generation token'
 assert 'const stopChopAuditionBase=stopChopAudition' in adapter_source, 'normal Chopper stop must invalidate pending SP auditions'
 assert 'generation!==previewGeneration' in adapter_source, 'stale SP pad continuations must be rejected'
@@ -224,9 +242,41 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert play_stop['starts'] == 0, play_stop
         assert play_stop['status'] == 'STOP', play_stop
 
+        # Regression 4: a marker edit during a cooperative encode belongs to the
+        # next render. The in-flight render must keep the marker value captured at
+        # PLAY time instead of turning into a hybrid old/new Chopper state.
+        page.evaluate('''() => {
+          SP1200DSP.clearCache(sampleBuffer);
+          renderedFlip=null;
+          markers[0]=6.5;
+          loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+          loopGridEvents[0]=1;
+          renderLoopGrid();
+        }''')
+        page.click('#previewFlip')
+        page.wait_for_timeout(5)
+        page.evaluate('markers[0]=0')
+        page.wait_for_function(
+            "renderedFlip !== null && isLoopPlaying === true && lastPreviewMode === 'full'",
+            timeout=10000,
+        )
+        snapshot_render = page.evaluate('''() => {
+          const data=renderedFlip.getChannelData(0);
+          const rate=renderedFlip.sampleRate;
+          const first=Math.floor(2.2*rate);
+          const last=Math.min(data.length,Math.ceil(3.5*rate));
+          let peak=0;
+          for(let i=first;i<last;i++)peak=Math.max(peak,Math.abs(data[i]));
+          return {peak,markerNow:markers[0],duration:renderedFlip.duration};
+        }''')
+        assert snapshot_render['markerNow'] == 0, snapshot_render
+        assert snapshot_render['duration'] > 3.9, snapshot_render
+        assert snapshot_render['peak'] < 1e-5, snapshot_render
+        page.click('#stopFlip')
+
         assert page.evaluate('window.__SP.errors.length') == 0
         assert not page_errors, page_errors
         context.close()
         browser.close()
 
-print('OK: SP1200 async races — stale PAD/PLAY work cannot restart after STOP; explicit pitch boundary preserved')
+print('OK: SP1200 async races — STOP-safe PAD/PLAY plus immutable full-render Chopper snapshots')
