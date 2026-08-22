@@ -6,9 +6,12 @@ except Exception:
     print('SKIP: playwright is not installed');sys.exit(0)
 
 ROOT=Path(__file__).resolve().parents[1]
-ASSET_NAME='looper66-desktop-transport-square-3d62809d.webp'
-asset=ROOT/'assets/looper-ui'/ASSET_NAME
-assert asset.exists(),f'Missing Looper transport asset: {asset}'
+SOURCE_ASSET_NAME='looper66-desktop-transport-square-3d62809d.webp'
+BUTTON_ASSET_NAME='chopper-looper-button-off-1c6ae2d1.webp'
+source_asset=ROOT/'assets/looper-ui'/SOURCE_ASSET_NAME
+button_asset=ROOT/'assets/looper-ui'/BUTTON_ASSET_NAME
+assert source_asset.exists(),f'Missing Looper source transport asset: {source_asset}'
+assert button_asset.exists(),f'Missing isolated Chopper button asset: {button_asset}'
 
 html=(ROOT/'index.html').read_text(encoding='utf-8')
 html=re.sub(r'<link rel="manifest"[^>]*>','',html)
@@ -22,8 +25,10 @@ for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.j
     html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
 
 asset_css=(ROOT/'css/chopper-drum-controls.css').read_text(encoding='utf-8')
-assert ASSET_NAME in asset_css,'Chopper pads must reuse the existing Looper transport artwork'
+assert BUTTON_ASSET_NAME in asset_css,'Chopper pads/transport must use the isolated Looper-derived button artwork'
+assert SOURCE_ASSET_NAME not in asset_css,'Chopper must not use the complete Looper transport sprite as a button texture'
 assert '--chopper-looper-button-art' in asset_css
+assert 'center/227.273% 100%' not in asset_css,'Legacy Looper light-crop sizing must not be used as Chopper button artwork'
 
 with sync_playwright() as p:
     browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
@@ -129,14 +134,14 @@ with sync_playwright() as p:
         assert data['chopStatusText']=='' and data['chopStatusHidden'] is True,data
         assert data['padCount']==16,data
 
-        # Asset UI contract: no CSS-drawn pad/panel frame. Existing Looper artwork
-        # supplies the physical button chrome, while CSS only changes light/filter.
+        # Asset UI contract: no CSS-drawn pad/panel frame. The isolated neutral
+        # Looper-derived artwork supplies physical chrome; CSS changes light/filter.
         assert data['padsPanelBorder']=='0px' and data['padsPanelShadow']=='none',data
-        assert ASSET_NAME in data['padBackground'],data
+        assert BUTTON_ASSET_NAME in data['padBackground'],data
         assert data['padBorder']=='0px' and data['padShadow']=='none',data
         assert '01' in data['padNumber'],data
         assert data['idlePadFilter']!=data['activePadFilter'],data
-        assert ASSET_NAME in data['transportBackground'],data
+        assert BUTTON_ASSET_NAME in data['transportBackground'],data
         assert data['transportBorder']=='0px' and data['transportShadow']=='none',data
         assert 'PLAY' in data['transportLabel'],data
 
@@ -187,4 +192,4 @@ with sync_playwright() as p:
 
     browser.close()
 
-print('OK: Chopper sampler layout — Looper asset-backed pads/transport, no CSS frame lines, responsive workflow layout')
+print('OK: Chopper sampler layout — isolated Looper-derived button asset, no CSS frame lines, responsive workflow layout')
