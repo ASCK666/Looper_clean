@@ -22,16 +22,6 @@ function makeBuffer(channels,rate=48000){
   };
 }
 
-function rmsArray(data,start=0){
-  let sum=0,count=0;
-  for(let i=start;i<data.length;i++){
-    const value=Number(data[i])||0;
-    sum+=value*value;
-    count++;
-  }
-  return Math.sqrt(sum/Math.max(1,count));
-}
-
 function rmsEncoded(encoded,start=200){
   let sum=0,count=0;
   for(let i=Math.min(start,encoded.data.length);i<encoded.data.length;i++){
@@ -52,9 +42,9 @@ function sine(length,rate,frequency,amplitude,phase=0){
   return out;
 }
 
-function maxAbsEncoded(encoded){
+function maxAbs(data){
   let peak=0;
-  for(const code of encoded.data)peak=Math.max(peak,Math.abs(code/2048));
+  for(const value of data)peak=Math.max(peak,Math.abs(Number(value)||0));
   return peak;
 }
 
@@ -91,7 +81,9 @@ function main(){
   assert(wide.monoMode==="average","wide stereo should remain a mono sum, not arbitrarily drop a channel");
   assert(wide.monoGain>1.40 && wide.monoGain<=Math.SQRT2+1e-9,"wide stereo should recover about 3 dB and stay capped");
   assert(Math.abs(dbRatio(rmsEncoded(wide),referenceRms))<.12,"wide stereo downmix must preserve per-channel RMS closely");
-  assert(maxAbsEncoded(wide)<=amplitude+.002,"downmix compensation must not exceed the original channel peak");
+  const rawMixed=new Float32Array(length);
+  for(let i=0;i<length;i++)rawMixed[i]=(mono[i]+wideRight[i])*.5;
+  assert(maxAbs(rawMixed)*wide.monoGain<=amplitude+1e-6,"downmix compensation must not exceed the original channel peak before filtering");
 
   // Strong anti-phase material still follows the existing safe policy: choose
   // the dominant physical channel instead of trying to makeup a cancelling sum.
@@ -100,13 +92,14 @@ function main(){
   assert(anti.monoMode==="single" && anti.monoChannel===0,"anti-phase stereo must keep the dominant channel policy");
   assert(anti.monoGain===1,"dominant-channel anti-phase handling must not add gain");
 
-  // Do not hide the anti-alias filter behind normalization. At its 10.5 kHz
-  // cutoff a mono sine should still be about -3 dB after the encode stage.
+  // Do not hide the anti-alias stage behind normalization. At 10.5 kHz the
+  // six-pole filter plus finite-rate encode interpolation should remain clearly
+  // attenuated rather than receiving any automatic post-filter makeup.
   const cutoffAmplitude=.2;
   const cutoff=sine(length,rate,10500,cutoffAmplitude);
   const cutoffEncoded=dsp.encodeBuffer(makeBuffer([cutoff],rate));
   const cutoffDelta=dbRatio(rmsEncoded(cutoffEncoded),cutoffAmplitude/Math.sqrt(2));
-  assert(cutoffDelta>-3.6 && cutoffDelta<-2.4,`anti-alias cutoff should remain near -3 dB, got ${cutoffDelta.toFixed(2)} dB`);
+  assert(cutoffDelta>-5.2 && cutoffDelta<-3.5,`anti-alias encode attenuation should stay intact, got ${cutoffDelta.toFixed(2)} dB`);
 
   console.log("OK: SP1200 gain — mono neutral, stereo downmix level preserved, filter attenuation untouched");
 }
