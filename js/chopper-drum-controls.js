@@ -1,23 +1,50 @@
 "use strict";
 
 // Branch-only Chopper composition: keep the existing control IDs/handlers, but
-// present them as one compact hardware strip instead of two framed panels.
+// place each action next to the surface it actually controls.
 (() => {
   const root=document.getElementById("chopper");
   const screen=root?.querySelector(".samplerScreenModule");
   const controls=root?.querySelector(".samplerControlModule");
-  if(!root || !screen || !controls)return;
+  const waveTitle=screen?.querySelector(":scope > .stableTitle");
+  const padsTitle=root?.querySelector(".samplerPadsModule .samplerSectionTitle");
+  const sequenceHead=root?.querySelector(".samplerSequenceHead");
+  if(!root || !screen || !controls || !waveTitle || !padsTitle || !sequenceHead)return;
 
-  const actionStrip=document.createElement("div");
-  actionStrip.className="chopperActionStrip";
-  actionStrip.setAttribute("role","group");
-  actionStrip.setAttribute("aria-label","Actions du Chopper");
-
-  // Left -> right exactly as requested.
-  for(const id of ["loadSampleBtn","autoMarkers","playDrumsOnly","previewFlip","stopFlip","addFlipLibrary"]){
+  // Waveform actions: loading and automatic chopping belong where the sample is edited.
+  const waveActions=document.createElement("span");
+  waveActions.className="waveHeaderActions";
+  waveActions.setAttribute("role","group");
+  waveActions.setAttribute("aria-label","Sample waveform actions");
+  for(const id of ["loadSampleBtn","autoMarkers"]){
     const button=document.getElementById(id);
-    if(button)actionStrip.appendChild(button);
+    if(button)waveActions.appendChild(button);
   }
+  waveTitle.querySelector("span:not(.titleMeta)")?.remove();
+  waveTitle.insertBefore(waveActions,waveTitle.firstChild);
+
+  // Performance transport: PLAY = sequence + drums, DRUMS = drums only for pad
+  // audition, STOP = global stop. Keep all three directly above the pads.
+  const padTransport=document.createElement("span");
+  padTransport.className="padTransport";
+  padTransport.setAttribute("role","group");
+  padTransport.setAttribute("aria-label","Pad performance transport");
+  for(const id of ["previewFlip","playDrumsOnly","stopFlip"]){
+    const button=document.getElementById(id);
+    if(button)padTransport.appendChild(button);
+  }
+  padsTitle.appendChild(padTransport);
+
+  // SAVE belongs to the sequence it renders; CLEAR already lived here.
+  const sequenceActions=document.createElement("div");
+  sequenceActions.className="sequenceActions";
+  sequenceActions.setAttribute("role","group");
+  sequenceActions.setAttribute("aria-label","Sequence actions");
+  for(const id of ["addFlipLibrary","clearGrid"]){
+    const button=document.getElementById(id);
+    if(button)sequenceActions.appendChild(button);
+  }
+  sequenceHead.appendChild(sequenceActions);
 
   const fineSettings=controls.querySelector(".advancedBox");
   const chopStatus=document.getElementById("chopStatus");
@@ -42,8 +69,7 @@
   if(saveStatus?.textContent.includes("SAVE rend"))saveStatus.textContent="";
   wireStatus(saveStatus);
 
-  screen.insertBefore(actionStrip,screen.firstChild);
-  if(fineSettings)screen.insertBefore(fineSettings,actionStrip.nextSibling);
+  if(fineSettings)screen.insertBefore(fineSettings,waveTitle);
   screen.appendChild(statusStrip);
 
   // One hardware row owns resolution, snare reverb, regeneration and clear.
@@ -100,7 +126,6 @@
     #chopper .samplerScreenModule {
       grid-template-columns:minmax(0,1fr) 52px 68px 52px 52px 52px !important;
       grid-template-areas:
-        "actions actions actions actions actions actions"
         "fine fine fine fine fine fine"
         "title pitch tempo volume punch vinyl"
         "wave wave wave wave wave wave"
