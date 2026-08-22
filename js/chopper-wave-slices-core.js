@@ -358,6 +358,8 @@
     const previousEnd=i>0?independentSlices[i-1].end:0;
     const nextStart=i<independentSlices.length-1?independentSlices[i+1].start:sampleBuffer.duration;
     const value=Number(sec)||0;
+    const previousStart=range.start;
+    const previousRangeEnd=range.end;
 
     if(edge==="start"){
       range.start=clamp(value,previousEnd,Math.max(previousEnd,range.end-MIN_SLICE_SEC));
@@ -367,9 +369,9 @@
       return false;
     }
 
+    if(range.start!==previousStart || range.end!==previousRangeEnd)invalidatePreviewRender();
     independentDirty=true;
     selectedSlice=i;
-    renderedFlip=null;
     syncPadSelection();
     if(redraw)drawWave();
     return true;
@@ -432,9 +434,9 @@
       independentSlices.splice(insertAt,0,{start,end});
     }
 
+    invalidatePreviewRender();
     independentDirty=true;
     selectedSlice=insertAt;
-    renderedFlip=null;
     shiftGridForInsertion(insertAt);
     stopChopAudition();
     renderPads();
@@ -531,7 +533,7 @@
     const left=clamp(Math.min(bounds.left,bounds.right),0,w);
     const right=clamp(Math.max(bounds.left,bounds.right),0,w);
     if(right<=left)return;
-    const hot=activeSlice===flashSlice && performance.now()<flashUntil;
+    const hot=activeSlice===flashSlice && performance.now()<FLASH_MS;
     ph2d.save();
     ph2d.globalCompositeOperation="destination-over";
     ph2d.fillStyle=hot?"rgba(240,180,95,.30)":"rgba(226,173,95,.12)";
@@ -602,7 +604,7 @@
     }
     stopChopAudition();
     if(typeof stopCurrentBeat==="function" && isLoopPlaying)stopCurrentBeat();
-    renderedFlip=null;
+    else invalidatePreviewRender();
     clearDrag();
     if(typeof draggingMarker!=="undefined")draggingMarker=-1;
 
@@ -943,7 +945,6 @@
     if(moved && range){
       independentDirty=true;
       stopChopAudition();
-      renderedFlip=null;
       renderSampleTimeline();
       const startMs=Math.round(range.start*1000);
       const endMs=Math.round(range.end*1000);
@@ -1002,6 +1003,7 @@
       return viewportPinned;
     },
     resetSlices(){
+      invalidatePreviewRender();
       seedInitialSlices();
       renderPads();
       drawWave();
