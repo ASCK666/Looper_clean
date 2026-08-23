@@ -203,11 +203,13 @@ $("snareReverbMix").onchange=async()=>{
   }
 };
 
-$("punchMode").oninput=refreshPunchUI;
+$("punchMode").oninput=()=>{
+  invalidatePreviewRender();
+  refreshPunchUI();
+};
 $("punchMode").onchange=async()=>{
   const mode=punchModeName();
   refreshPunchUI();
-  invalidatePreviewRender();
 
   if(!isLoopPlaying){
     $("chopStatus").textContent=`PUNCH ${mode.toUpperCase()} • READY`;

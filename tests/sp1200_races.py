@@ -3,6 +3,7 @@ import contextlib
 import http.server
 import math
 import os
+import re
 import socketserver
 import struct
 import sys
@@ -14,6 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # Cheap source-contract checks still run when Playwright is unavailable.
 adapter_source = (ROOT / 'js' / 'chopper-sp1200.js').read_text(encoding='utf-8')
+chopper_source = (ROOT / 'js' / 'chopper.js').read_text(encoding='utf-8')
+drums_source = (ROOT / 'js' / 'drums.js').read_text(encoding='utf-8')
 events_source = (ROOT / 'js' / 'events.js').read_text(encoding='utf-8')
 
 render_start = adapter_source.index('async function renderSpSequence')
@@ -43,10 +46,39 @@ assert 'let previewGeneration=0' in adapter_source, 'SP pad audition needs an as
 assert 'const stopChopAuditionBase=stopChopAudition' in adapter_source, 'normal Chopper stop must invalidate pending SP auditions'
 assert 'generation!==previewGeneration' in adapter_source, 'stale SP pad continuations must be rejected'
 
+# Sample replacement owns a separate last-request-wins token. It must stop an
+# already-audible combined preview, invalidate a pending one, and reject stale
+# decode continuations before they can publish source state or an obsolete error.
+load_start = chopper_source.index('async function loadChopperSample')
+load_end = chopper_source.index('\nfunction viewWindow', load_start)
+load_block = chopper_source[load_start:load_end]
+assert 'let sampleLoadGeneration=0' in chopper_source, 'sample loading needs its own request generation token'
+assert 'const generation=++sampleLoadGeneration' in load_block, 'each sample load must allocate a new generation'
+assert 'if(typeof stopCurrentBeat==="function" && isLoopPlaying)stopCurrentBeat();' in load_block, 'sample replacement must stop an active combined preview'
+assert 'invalidatePreviewRender();' in load_block, 'sample replacement must invalidate a pending combined preview'
+assert load_block.count('if(generation!==sampleLoadGeneration)return false;') >= 2, 'stale sample decodes and errors must both be rejected'
+assert load_block.index('if(generation!==sampleLoadGeneration)return false;') < load_block.index('sampleBuffer=decoded;'), 'stale sample decode must be rejected before publishing sampleBuffer'
+
+# The combined PLAY/DRUMS preview generation has one runtime writer. The SP
+# pad-audition token above is intentionally separate because it owns a different
+# async lifecycle and must not be folded into the combined-preview generation.
+assert drums_source.count('previewRenderGeneration++') == 1, 'invalidatePreviewRender() must be the only combined-preview generation writer'
+assert 'function invalidatePreviewRender(){\n  previewRenderGeneration++;' in drums_source, 'renderer owner must advance the combined-preview generation'
+assert '++previewRenderGeneration' not in drums_source, 'renderer internals must not bypass invalidatePreviewRender()'
+assert 'previewRenderGeneration+=' not in drums_source, 'renderer internals must not mutate the generation with +='
+for js_path in sorted((ROOT / 'js').glob('*.js')):
+    source = js_path.read_text(encoding='utf-8')
+    if js_path.name != 'drums.js':
+        for direct_write in ('previewRenderGeneration++', '++previewRenderGeneration', 'previewRenderGeneration+='):
+            assert direct_write not in source, f'{js_path.name} must route combined-preview invalidation through invalidatePreviewRender()'
+    if js_path.name not in ('core.js', 'drums.js'):
+        assert not re.search(r'\brenderedFlip\s*=\s*null\b', source), f'{js_path.name} must not bypass renderer-owned preview invalidation'
+
 play_start = events_source.index('async function playCurrentBeat')
 play_end = events_source.index('$("previewFlip").onclick=playCurrentBeat', play_start)
 play_block = events_source[play_start:play_end]
-assert 'const generation=++previewRenderGeneration' in play_block, 'full PLAY must allocate a renderer generation'
+assert 'const generation=invalidatePreviewRender()' in play_block, 'full PLAY must allocate its generation through the renderer owner'
+assert '++previewRenderGeneration' not in play_block, 'full PLAY must not bypass renderer-owned invalidation'
 assert play_block.count('generation!==previewRenderGeneration') >= 2, 'full PLAY must recheck generation across async boundaries'
 assert 'playRendered(buffer,generation)' in play_block, 'full PLAY must pass its generation into playback'
 
@@ -80,7 +112,9 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
 with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
     td = Path(td)
     sample = td / 'sp-race-48k.wav'
+    replacement = td / 'sp-replacement-48k.wav'
     make_wav(sample)
+    make_wav(replacement, hz=241)
 
     handler = lambda *a, **kw: QuietHandler(*a, directory=str(ROOT), **kw)
     server = socketserver.TCPServer(('127.0.0.1', 0), handler)
@@ -242,9 +276,9 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert play_stop['starts'] == 0, play_stop
         assert play_stop['status'] == 'STOP', play_stop
 
-        # Regression 4: a marker edit during a cooperative encode belongs to the
-        # next render. The in-flight render must keep the marker value captured at
-        # PLAY time instead of turning into a hybrid old/new Chopper state.
+        # Regression 4: a direct internal marker mutation during cooperative
+        # encode cannot turn an already-started snapshot into hybrid audio. Real
+        # UI marker mutations use the renderer invalidation contract instead.
         page.evaluate('''() => {
           SP1200DSP.clearCache(sampleBuffer);
           renderedFlip=null;
@@ -274,9 +308,183 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert snapshot_render['peak'] < 1e-5, snapshot_render
         page.click('#stopFlip')
 
+        # Regression 5: changing MARKERS/SLICES while PLAY is still rendering
+        # invalidates the old combined preview before it can start a live source.
+        page.evaluate('''() => {
+          ChopperWaveSlices.setEditMode('markers');
+          SP1200DSP.clearCache(sampleBuffer);
+          window.__spLiveStarts=0;
+          loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+          loopGridEvents[0]=1;
+          renderLoopGrid();
+        }''')
+        page.click('#previewFlip')
+        page.wait_for_timeout(5)
+        page.evaluate("ChopperWaveSlices.setEditMode('slices')")
+        page.wait_for_timeout(1200)
+        slice_invalidation = page.evaluate('''() => ({
+          playing:isLoopPlaying,
+          source:flipSource,
+          starts:window.__spLiveStarts,
+          mode:ChopperWaveSlices.mode
+        })''')
+        assert slice_invalidation['playing'] is False, slice_invalidation
+        assert slice_invalidation['source'] is None, slice_invalidation
+        assert slice_invalidation['starts'] == 0, slice_invalidation
+        assert slice_invalidation['mode'] == 'slices', slice_invalidation
+        page.evaluate("ChopperWaveSlices.setEditMode('markers')")
+
+        # Regression 6: VINYL changes invalidate on input, not only on release,
+        # so a pending render using an older effect amount cannot start later.
+        page.evaluate('''() => {
+          const vinyl=document.getElementById('vinylAmount');
+          vinyl.value='0';
+          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
+          SP1200DSP.clearCache(sampleBuffer);
+          window.__spLiveStarts=0;
+        }''')
+        page.click('#previewFlip')
+        page.wait_for_timeout(5)
+        page.evaluate('''() => {
+          const vinyl=document.getElementById('vinylAmount');
+          vinyl.value='35';
+          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
+        }''')
+        page.wait_for_timeout(1200)
+        vinyl_invalidation = page.evaluate('''() => ({
+          playing:isLoopPlaying,
+          source:flipSource,
+          starts:window.__spLiveStarts,
+          amount:document.getElementById('vinylAmount').value
+        })''')
+        assert vinyl_invalidation['playing'] is False, vinyl_invalidation
+        assert vinyl_invalidation['source'] is None, vinyl_invalidation
+        assert vinyl_invalidation['starts'] == 0, vinyl_invalidation
+        assert vinyl_invalidation['amount'] == '35', vinyl_invalidation
+        page.evaluate('''() => {
+          const vinyl=document.getElementById('vinylAmount');
+          vinyl.value='0';
+          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
+        }''')
+
+        # Regression 7: replacing the sample while a combined preview is already
+        # audible must stop that source before the new sample context is published.
+        page.evaluate('''() => {
+          SP1200DSP.clearCache(sampleBuffer);
+          window.__spLiveStarts=0;
+          loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+          loopGridEvents[0]=1;
+          renderLoopGrid();
+        }''')
+        page.click('#previewFlip')
+        page.wait_for_function(
+            "isLoopPlaying === true && flipSource !== null && lastPreviewMode === 'full'",
+            timeout=10000,
+        )
+        active_starts = page.evaluate('window.__spLiveStarts')
+        page.set_input_files('#sampleFile', str(replacement))
+        page.wait_for_function(
+            "sampleName === 'sp-replacement-48k.wav' && sampleBuffer && sampleBuffer.duration > 7.5",
+            timeout=15000,
+        )
+        active_load = page.evaluate('''() => ({
+          playing:isLoopPlaying,
+          source:flipSource,
+          mode:lastPreviewMode,
+          starts:window.__spLiveStarts,
+          name:sampleName
+        })''')
+        assert active_load['playing'] is False, active_load
+        assert active_load['source'] is None, active_load
+        assert active_load['mode'] is None, active_load
+        assert active_load['starts'] == active_starts, active_load
+        assert active_load['name'] == 'sp-replacement-48k.wav', active_load
+
+        # Regression 8: replacing the sample while PLAY is still rendering must
+        # invalidate the old generation so it cannot become audible afterward.
+        page.set_input_files('#sampleFile', str(sample))
+        page.wait_for_function(
+            "sampleName === 'sp-race-48k.wav' && sampleBuffer && sampleBuffer.duration > 7.5",
+            timeout=15000,
+        )
+        page.evaluate('''() => {
+          document.getElementById('sampleBpm').value='120';
+          currentDrumSelection={
+            mode:'off',patternId:'OFF',patternName:'OFF',
+            kicks:[],snares:[],ghosts:[],hats:[],hatSteps:[],
+            kickVelocity:{},snareVelocity:{},hatVelocity:{},
+            kick:null,snare:null,hat:null
+          };
+          ChopperBanks.selectBank(0);
+          ChopperWaveSlices.setEditMode('markers');
+          loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+          loopGridEvents[0]=1;
+          renderLoopGrid();
+          SP1200DSP.clearCache(sampleBuffer);
+          window.__spLiveStarts=0;
+        }''')
+        page.click('#previewFlip')
+        page.wait_for_timeout(5)
+        page.set_input_files('#sampleFile', str(replacement))
+        page.wait_for_function(
+            "sampleName === 'sp-replacement-48k.wav' && sampleBuffer && sampleBuffer.duration > 7.5",
+            timeout=15000,
+        )
+        page.wait_for_timeout(1200)
+        pending_load = page.evaluate('''() => ({
+          playing:isLoopPlaying,
+          source:flipSource,
+          starts:window.__spLiveStarts,
+          name:sampleName
+        })''')
+        assert pending_load['playing'] is False, pending_load
+        assert pending_load['source'] is None, pending_load
+        assert pending_load['starts'] == 0, pending_load
+        assert pending_load['name'] == 'sp-replacement-48k.wav', pending_load
+
+        # Regression 9: overlapping decodes are last-request-wins. The stale
+        # first decode may finish later, but it cannot overwrite sample state.
+        overlapping_loads = page.evaluate('''async () => {
+          const decodeBase=decodeFile;
+          const rate=ctx.sampleRate;
+          const slowBuffer=ctx.createBuffer(1,Math.max(1,Math.floor(rate*.25)),rate);
+          const fastBuffer=ctx.createBuffer(1,Math.max(1,Math.floor(rate*.5)),rate);
+          decodeFile=async file=>{
+            if(file.name==='slow-a.wav'){
+              await new Promise(resolve=>setTimeout(resolve,120));
+              return slowBuffer;
+            }
+            if(file.name==='fast-b.wav'){
+              await new Promise(resolve=>setTimeout(resolve,10));
+              return fastBuffer;
+            }
+            return await decodeBase(file);
+          };
+          try{
+            const slow=loadChopperSample({name:'slow-a.wav',size:1,type:'audio/wav'});
+            await new Promise(resolve=>setTimeout(resolve,5));
+            const fast=loadChopperSample({name:'fast-b.wav',size:1,type:'audio/wav'});
+            const [slowResult,fastResult]=await Promise.all([slow,fast]);
+            return {
+              slowResult,
+              fastResult,
+              name:sampleName,
+              duration:sampleBuffer?.duration||0,
+              status:document.getElementById('chopStatus').textContent
+            };
+          }finally{
+            decodeFile=decodeBase;
+          }
+        }''')
+        assert overlapping_loads['slowResult'] is False, overlapping_loads
+        assert overlapping_loads['fastResult'] is True, overlapping_loads
+        assert overlapping_loads['name'] == 'fast-b.wav', overlapping_loads
+        assert abs(overlapping_loads['duration'] - .5) < .01, overlapping_loads
+        assert 'fast-b.wav' in overlapping_loads['status'], overlapping_loads
+
         assert page.evaluate('window.__SP.errors.length') == 0
         assert not page_errors, page_errors
         context.close()
         browser.close()
 
-print('OK: SP1200 async races — STOP-safe PAD/PLAY plus immutable full-render Chopper snapshots')
+print('OK: SP1200 async races — single-owner preview invalidation plus STOP-safe PAD/PLAY/sample-load lifecycle')

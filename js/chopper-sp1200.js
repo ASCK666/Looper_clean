@@ -26,7 +26,9 @@
   }
 
   function outputLabel(){
-    return outputMode==="filter"?"FILTER":"RAW";
+    if(outputMode==="filter")return "FILTER 3/4";
+    if(outputMode==="filter56")return "FILTER 5/6";
+    return "RAW";
   }
 
   function invalidatePendingPreview(){
@@ -355,12 +357,16 @@
 
   function syncFilterButton(button){
     if(!button)return;
+    const filtered=outputMode!=="raw";
     button.hidden=!enabled;
-    button.dataset.active=outputMode==="filter"?"1":"0";
-    button.setAttribute("aria-pressed",outputMode==="filter"?"true":"false");
+    button.dataset.active=filtered?"1":"0";
+    button.setAttribute("aria-pressed",filtered?"true":"false");
+    button.textContent=outputMode==="filter"?"3/4":outputMode==="filter56"?"5/6":"FLT";
     button.title=outputMode==="filter"
-      ? "SP FILTER • sortie fixe dérivée des canaux 3-4"
-      : "SP RAW • sortie non filtrée";
+      ? "SP FILTER 3/4 • sortie fixe dérivée plus sombre"
+      : outputMode==="filter56"
+        ? "SP FILTER 5/6 • sortie fixe dérivée plus ouverte"
+        : "SP RAW • sortie non filtrée";
   }
 
   async function setEnabled(value){
@@ -368,10 +374,9 @@
     if(next===enabled)return enabled;
     stopChopAudition();
     // A pending full render belongs to the old SP/CLEAN mode even if playback
-    // has not started yet. Invalidate it using the renderer's existing token.
-    if(typeof previewRenderGeneration==="number")previewRenderGeneration++;
+    // has not started yet. Route it through the renderer-owned invalidation.
+    invalidatePreviewRender();
     enabled=next;
-    renderedFlip=null;
     const button=document.getElementById("sp1200Toggle");
     const filterButton=document.getElementById("sp1200FilterToggle");
     syncButton(button);
@@ -402,9 +407,8 @@
     if(!DSP.outputModes?.includes(next))throw new Error("SP output mode invalide");
     if(next===outputMode)return outputMode;
     stopChopAudition();
-    if(typeof previewRenderGeneration==="number")previewRenderGeneration++;
+    invalidatePreviewRender();
     outputMode=next;
-    renderedFlip=null;
     syncButton(document.getElementById("sp1200Toggle"));
     syncFilterButton(document.getElementById("sp1200FilterToggle"));
 
@@ -441,10 +445,10 @@
     filterButton.id="sp1200FilterToggle";
     filterButton.type="button";
     filterButton.className="btn sp1200FilterToggle";
-    filterButton.textContent="FLT";
-    filterButton.setAttribute("aria-label","Basculer entre sortie SP RAW et FILTER");
+    filterButton.setAttribute("aria-label","Cycler les sorties SP RAW, filtre 3-4 et filtre 5-6");
     filterButton.addEventListener("click",()=>{
-      void setOutputMode(outputMode==="filter"?"raw":"filter");
+      const index=DSP.outputModes.indexOf(outputMode);
+      void setOutputMode(DSP.outputModes[(index+1)%DSP.outputModes.length]);
     });
     syncFilterButton(filterButton);
     host.appendChild(filterButton);
@@ -553,7 +557,7 @@
         levelGain:level.gain,
         levelDac:DSP.levelDac,
         output:outputMode,
-        outputFilter:outputMode==="filter"?DSP.outputFilter:null,
+        outputFilter:outputMode==="filter56"?DSP.outputFilter56:outputMode==="filter"?DSP.outputFilter:null,
         reconstructionRate:sessionOutputRate(),
         tuneCode:tune.code,
         tuneModel:tune.model

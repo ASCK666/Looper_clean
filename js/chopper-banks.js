@@ -313,7 +313,6 @@
     restoreSliceRanges(state.slices,state.selectedSlice,state.mode);
     loopGridEvents=normalizeGrid(state.grid);
 
-    renderedFlip=null;
     renderPads();
     drawWave();
     renderSampleTimeline();
@@ -356,7 +355,7 @@
     saveActiveBank();
     stopChopAudition();
     if(typeof stopCurrentBeat==="function" && isLoopPlaying)stopCurrentBeat();
-    renderedFlip=null;
+    else invalidatePreviewRender();
     if(typeof draggingMarker!=="undefined")draggingMarker=-1;
 
     activeBankIndex=next;
@@ -443,6 +442,7 @@
   };
 
   function installMarkers(next,label){
+    invalidatePreviewRender();
     markers=next.slice();
     selectedMarker=0;
     refreshMarkerEditor();
@@ -451,7 +451,6 @@
     const grid=normalizeGrid(loopGridEvents);
     restoreSliceRanges(defaultSliceRanges(bank),0,mode);
     loopGridEvents=grid;
-    renderedFlip=null;
     renderPads();
     drawWave();
     renderSampleTimeline();
