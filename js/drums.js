@@ -479,7 +479,6 @@ function renderDrumPatternPreview(){
 
 function markDrumSelectionEdited(){
   if(!currentDrumSelection || currentDrumSelection.mode==="off")return;
-  invalidatePreviewRender();
   if(currentDrumSelection.patternId!=="EDIT"){
     currentDrumSelection.patternName=`${currentDrumSelection.patternName} / CUSTOM`;
   }
@@ -491,9 +490,7 @@ function markDrumSelectionEdited(){
   $("drumSelectionStatus").textContent="Groove modifié manuellement • NEW DRUMS pour repartir d'un nouveau pattern.";
 }
 
-async function rerenderPreviewMode(mode=lastPreviewMode){
-  const generation=invalidatePreviewRender();
-
+async function rerenderPreviewMode(mode=lastPreviewMode,generation=invalidatePreviewRender()){
   if(mode==="drums"){
     const buffer=await renderDrumsOnly();
     if(generation!==previewRenderGeneration)return false;
@@ -516,15 +513,18 @@ async function rerenderPreviewMode(mode=lastPreviewMode){
   return false;
 }
 
-async function rerenderAfterDrumEdit(){
+async function rerenderAfterDrumEdit(generation){
   if(!isLoopPlaying)return false;
-  return await rerenderPreviewMode();
+  return await rerenderPreviewMode(lastPreviewMode,generation);
 }
 
 async function clearDrumEdits(){
-  invalidatePreviewRender();
+  let generation=invalidatePreviewRender();
   try{
-    await ensureDrumSelection();
+    if(!currentDrumSelection){
+      await ensureDrumSelection();
+      generation=invalidatePreviewRender();
+    }
     currentDrumSelection.kicks=[];
     currentDrumSelection.snares=[];
     currentDrumSelection.ghosts=[];
@@ -534,7 +534,7 @@ async function clearDrumEdits(){
     currentDrumSelection.hatVelocity={};
     markDrumSelectionEdited();
     renderDrumEditor();
-    await rerenderAfterDrumEdit();
+    await rerenderAfterDrumEdit(generation);
     $("drumStatus").textContent="DRUMS CLEARED ✓";
   }catch(e){
     $("drumStatus").textContent="DRUM EDIT ERROR: "+e.message;
@@ -632,10 +632,11 @@ function renderDrumEditor(){
       }
 
       cell.onclick=async()=>{
-        invalidatePreviewRender();
+        let generation=invalidatePreviewRender();
         if(!currentDrumSelection || currentDrumSelection.mode==="off"){
           try{
             await generateDrumSelection(false);
+            generation=invalidatePreviewRender();
           }catch(e){
             $("drumStatus").textContent="DRUM ERROR: "+e.message;
             return;
@@ -658,7 +659,7 @@ function renderDrumEditor(){
         renderDrumEditor();
 
         try{
-          await rerenderAfterDrumEdit();
+          await rerenderAfterDrumEdit(generation);
           $("drumStatus").textContent=`EDIT ${labelText} ✓`;
         }catch(e){
           $("drumStatus").textContent="DRUM EDIT ERROR: "+e.message;
@@ -681,12 +682,13 @@ function renderDrumEditor(){
 
         if(next===current)return;
 
+        const generation=invalidatePreviewRender();
         setDrumStepVelocity(lane,step,next);
         markDrumSelectionEdited();
         renderDrumEditor();
 
         try{
-          await rerenderAfterDrumEdit();
+          await rerenderAfterDrumEdit(generation);
           $("drumStatus").textContent=`${labelText} ${Math.round(next*100)}%`;
         }catch(e){
           $("drumStatus").textContent="DRUM VELOCITY ERROR: "+e.message;
