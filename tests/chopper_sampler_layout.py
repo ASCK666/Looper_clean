@@ -100,9 +100,9 @@ with sync_playwright() as p:
           const firstTransportStyle=firstTransport?getComputedStyle(firstTransport):null;
           const firstTransportAfter=firstTransport?getComputedStyle(firstTransport,'::after'):null;
           const idlePadFilter=firstPadStyle?.filter||'';
-          if(firstPad)firstPad.classList.add('active');
+          if(firstPad && typeof setActivePad==='function')setActivePad(0);
           const activePadFilter=firstPad?getComputedStyle(firstPad).filter:'';
-          if(firstPad)firstPad.classList.remove('active');
+          if(typeof setActivePad==='function')setActivePad(-1);
           return {
             upperChildren:[...upper.children].map(x=>x.classList.contains('samplerScreenModule')?'screen':'other'),
             controlCount:document.querySelectorAll('.samplerControlModule').length,
