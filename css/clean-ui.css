@@ -29,13 +29,17 @@
   }
 }
 
-/* Keep the vertical desktop pitch control's transparent pointer target at least
-   44px wide without changing the independently rendered fader cap. */
+/* Keep transparent desktop Looper controls at a 44px pointer target without
+   changing the independently rendered pitch cap or the artwork beneath AUTO. */
 @media (min-width: 681px) {
   .looper66Shell #deckPitch {
     left: 50%;
     width: max(50%, 44px);
     transform: translateX(-50%);
+  }
+
+  .looper66Shell .deckAutoKey {
+    height: max(18%, 44px);
   }
 }
 
