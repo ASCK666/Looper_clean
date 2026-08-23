@@ -3,14 +3,12 @@
 #chopper {
   --chopper-bg: #080604;
   --chopper-surface: #100c08;
-  --chopper-surface-hi: #17110c;
   --chopper-border: #4b3928;
   --chopper-border-hot: #765a34;
   --chopper-border-bright: #9a7038;
   --chopper-text: #dcc8a9;
   --chopper-muted: #8f795d;
   --chopper-amber: #e2ad5f;
-  --chopper-amber-hot: #f0b45f;
   --chopper-active: #80552c;
 }
 
