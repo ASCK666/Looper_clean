@@ -3,7 +3,7 @@
 // SP-1200 inspired DSP engine.
 // Scope is deliberately narrow: mono input, 26.04 kHz sampling, 12-bit linear
 // quantization, 7-bit carry address stepping, multiplexed DAC/sample-hold
-// reconstruction and an optional derived fixed-output filter. This is a
+// reconstruction and optional derived fixed-output filters. This is a
 // behavioral approximation, not a bit-perfect hardware clone.
 (() => {
   const SP_SAMPLE_RATE=26040;
@@ -41,11 +41,13 @@
   const SP_DAC_MULTIPLEX_RATE=SP_SAMPLE_RATE*SP_DAC_CHANNELS;
   const SP_HOLD_MODEL="ideal-zoh-v1";
   const SP_OUTPUT_FILTER_MODEL="fixed34-cheb5-derived-v2";
+  const SP_OUTPUT_FILTER_56_MODEL="fixed56-cheb5-derived-v1";
   const SP_OUTPUT_FILTER_FAMILY="chebyshev1-derived";
   const SP_OUTPUT_FILTER_CUTOFF_HZ=9000;
+  const SP_OUTPUT_FILTER_56_CUTOFF_HZ=10000;
   const SP_OUTPUT_FILTER_ORDER=5;
   const SP_OUTPUT_FILTER_RIPPLE_DB=1;
-  const SP_OUTPUT_MODES=Object.freeze(["raw","filter"]);
+  const SP_OUTPUT_MODES=Object.freeze(["raw","filter","filter56"]);
 
   // SP-1200 exposes 32 total tune/decay positions (0..31), with INIT DK/TUNE
   // 16 as original pitch and only a 16-position window accessible at once.
@@ -108,8 +110,8 @@
   // Normalized poles for a fifth-order, 1 dB-ripple Chebyshev type-I low-pass.
   // Archival SP documentation identifies the fixed 3-6 outputs as five-pole
   // 1 dB Chebyshev filters, but does not publish a calibrated component transfer.
-  // Keep the already-conservative 9 kHz 3/4 passband edge and bilinear-transform
-  // this standard prototype instead of inventing component tolerances or EQ gain.
+  // Keep conservative derived edges and bilinear-transform this standard
+  // prototype instead of inventing component tolerances or EQ gain.
   const CHEBYSHEV_5_1DB_REAL_POLE=.2894933412;
   const CHEBYSHEV_5_1DB_PAIR_POLES=Object.freeze([
     Object.freeze({real:.2342050328,imag:.6119198477}),
@@ -239,7 +241,7 @@
   function resolveOutputMode(mode="raw"){
     const value=String(mode||"raw").toLowerCase();
     if(!SP_OUTPUT_MODES.includes(value)){
-      throw new Error("SP1200: output mode must be raw or filter");
+      throw new Error("SP1200: output mode must be raw, filter or filter56");
     }
     return value;
   }
@@ -380,17 +382,19 @@
     return output;
   }
 
-  // Vintage SP-1200 channels 3/4 use a fixed lower-cutoff output filter, while
-  // 5/6 use a higher fixed cutoff and 7/8 are unfiltered. Archival technical
-  // documentation identifies the four fixed filters as five-pole, 1 dB-ripple
-  // Chebyshev responses, while a complete calibrated component transfer is not
-  // public. V2 therefore keeps the conservative 9 kHz 3/4 edge but corrects the
-  // response family/order after DAC/level-DAC/S&H reconstruction. It adds no
-  // makeup gain and does not claim the dynamic SSM2044 path used by channels 1/2.
+  // Vintage SP-1200 channels 3/4 use the darker fixed output filter, 5/6 use
+  // a somewhat more open fixed filter, and 7/8 are unfiltered. Archival technical
+  // documentation identifies the fixed 3-6 filters as five-pole, 1 dB-ripple
+  // Chebyshev responses. Complete calibrated SP-1200 component transfers are not
+  // public here, so 3/4 retains its conservative 9 kHz edge and 5/6 uses the
+  // separately published 10 kHz second-profile calibration as a derived point.
+  // Both profiles remain post DAC/level-DAC/S&H, with no makeup gain and no claim
+  // to the dynamic SSM2044 path used by channels 1/2.
   function applyOutputProfile(output,sampleRate,mode){
     const resolved=resolveOutputMode(mode);
     if(resolved==="raw" || !output.length)return output;
-    const filter=makeChebyshev5Lowpass(sampleRate,SP_OUTPUT_FILTER_CUTOFF_HZ);
+    const cutoff=resolved==="filter56" ? SP_OUTPUT_FILTER_56_CUTOFF_HZ : SP_OUTPUT_FILTER_CUTOFF_HZ;
+    const filter=makeChebyshev5Lowpass(sampleRate,cutoff);
     for(let i=0;i<output.length;i++){
       let value=filterOnePole(filter.firstOrder,output[i]);
       for(const section of filter.sections)value=filterSample(section,value);
@@ -804,6 +808,16 @@
       family:SP_OUTPUT_FILTER_FAMILY,
       hardwarePair:"3-4",
       cutoffHz:SP_OUTPUT_FILTER_CUTOFF_HZ,
+      order:SP_OUTPUT_FILTER_ORDER,
+      rippleDb:SP_OUTPUT_FILTER_RIPPLE_DB,
+      makeupGainDb:0,
+      exactCircuit:false
+    }),
+    outputFilter56:Object.freeze({
+      model:SP_OUTPUT_FILTER_56_MODEL,
+      family:SP_OUTPUT_FILTER_FAMILY,
+      hardwarePair:"5-6",
+      cutoffHz:SP_OUTPUT_FILTER_56_CUTOFF_HZ,
       order:SP_OUTPUT_FILTER_ORDER,
       rippleDb:SP_OUTPUT_FILTER_RIPPLE_DB,
       makeupGainDb:0,
