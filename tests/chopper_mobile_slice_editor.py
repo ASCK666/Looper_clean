@@ -14,13 +14,14 @@ loader=(ROOT/'js/chopper-wave-slices.js').read_text(encoding='utf-8')
 assert './js/chopper-mobile-slice-editor.js' in loader
 
 
-def make_wav(path,duration=1.6,freq=190,sr=44100):
+def make_wav(path,duration=36.0,freq=190,sr=8000):
     n=int(duration*sr)
     with wave.open(str(path),'wb') as w:
         w.setnchannels(1);w.setsampwidth(2);w.setframerate(sr)
         frames=bytearray()
+        period=max(1,sr//10);accent_frames=max(20,sr//40)
         for i in range(n):
-            env=.82 if (i%(sr//10)) < 1500 else .28
+            env=.82 if (i%period) < accent_frames else .28
             v=max(-1,min(1,env*math.sin(2*math.pi*freq*i/sr)))
             frames += struct.pack('<h',int(v*32767))
         w.writeframes(frames)
@@ -53,12 +54,25 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
 
     errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     page.set_content(html,wait_until='load',timeout=20000)
-    page.wait_for_function('window.ChopperWaveSlices && window.ChopperMobileSliceEditor',timeout=10000)
+    page.wait_for_function('window.ChopperWaveSlices && window.ChopperMobileSliceEditor && window.ChopperBanks',timeout=10000)
     page.click('[data-tab="chopper"]');page.set_input_files('#sampleFile',str(sample))
-    page.wait_for_function('sampleBuffer !== null && markers.length === 17',timeout=10000)
+    page.wait_for_function('sampleBuffer !== null && markers.length === 17 && ChopperBanks.banks.length === 3',timeout=10000)
     page.click('#autoMarkers');page.wait_for_timeout(80)
-    state=page.evaluate('''() => ({mode:ChopperWaveSlices.mode,markers:markers.length,pads:document.querySelectorAll('#pads .pad').length,enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,mobile:matchMedia('(max-width:760px)').matches,touch:navigator.maxTouchPoints>0})''')
-    assert state=={'mode':'markers','markers':17,'pads':16,'enabled':16,'mobile':True,'touch':True},state
+    state=page.evaluate('''() => ({
+      mode:ChopperWaveSlices.mode,
+      markers:markers.length,
+      pads:document.querySelectorAll('#pads .pad').length,
+      enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,
+      mobile:matchMedia('(max-width:760px)').matches,
+      touch:navigator.maxTouchPoints>0,
+      banks:ChopperBanks.banks.map(bank=>bank.label),
+      bankTabsVisible:getComputedStyle(document.getElementById('chopperBankTabs')).display!=='none',
+      saveVisible:getComputedStyle(document.getElementById('addFlipLibrary')).display!=='none'
+    })''')
+    assert state=={
+      'mode':'markers','markers':17,'pads':16,'enabled':16,'mobile':True,'touch':True,
+      'banks':['ALL','0–30','25–36'],'bankTabsVisible':True,'saveVisible':True
+    },state
 
     pad=page.locator('#pads .pad').nth(5);x,y=touch_point(pad);page.touchscreen.tap(x,y)
     page.wait_for_function('chopAuditionPad === 5',timeout=3000)
@@ -67,11 +81,43 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
 
     touch_start(pad);page.wait_for_timeout(520)
     page.wait_for_function('ChopperMobileSliceEditor.visible && ChopperMobileSliceEditor.activePad === 5',timeout=3000)
-    held=page.evaluate('''() => {const w=document.getElementById('mobileChopWave').getBoundingClientRect(),p=document.getElementById('mobileChopPlayhead').getBoundingClientRect(),r=document.getElementById('mobileChopEditorRange').getBoundingClientRect();return {title:document.getElementById('mobileChopEditorTitle').textContent,workspace:getComputedStyle(document.getElementById('mobileChopWorkspace')).display,upper:getComputedStyle(document.querySelector('.samplerUpperDeck')).display,performance:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,drums:getComputedStyle(document.querySelector('.samplerDrumSection')).display,w:w.width,h:w.height,playheadOverlay:p.width===w.width && p.height===w.height,above:w.bottom<=r.top+1,flag:document.getElementById('chopper').dataset.mobileChopView,audition:chopAuditionPad}}''')
+    held=page.evaluate('''() => {
+      const w=document.getElementById('mobileChopWave').getBoundingClientRect(),p=document.getElementById('mobileChopPlayhead').getBoundingClientRect(),r=document.getElementById('mobileChopEditorRange').getBoundingClientRect();
+      const save=document.getElementById('addFlipLibrary'),tabs=document.getElementById('chopperBankTabs');
+      return {
+        title:document.getElementById('mobileChopEditorTitle').textContent,
+        workspace:getComputedStyle(document.getElementById('mobileChopWorkspace')).display,
+        upper:getComputedStyle(document.querySelector('.samplerUpperDeck')).display,
+        performance:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,
+        drums:getComputedStyle(document.querySelector('.samplerDrumSection')).display,
+        w:w.width,h:w.height,playheadOverlay:p.width===w.width && p.height===w.height,above:w.bottom<=r.top+1,
+        flag:document.getElementById('chopper').dataset.mobileChopView,audition:chopAuditionPad,
+        saveParent:save.parentElement.id,saveVisible:getComputedStyle(save).display!=='none',
+        bankParent:tabs.parentElement.id,bankVisible:getComputedStyle(tabs).display!=='none',
+        bankButtons:[...tabs.querySelectorAll('.chopperBankTab')].map(button=>button.textContent)
+      };
+    }''')
     touch_end();page.wait_for_timeout(40)
     assert held['title']=='CHOP 06 / 16 • MARKERS' and held['workspace']!='none' and held['flag']=='1',held
     assert held['upper']=='none' and held['performance']=='none' and held['drums']=='none' and held['w']>340 and held['h']>=180 and held['playheadOverlay'] and held['above'],held
     assert held['audition']==-1 and page.evaluate('chopAuditionPad')==-1
+    assert held['saveParent']=='mobileChopActionHost' and held['saveVisible'],held
+    assert held['bankParent']=='mobileChopBankHost' and held['bankVisible'] and held['bankButtons']==['ALL','0–30','25–36'],held
+
+    page.locator('#mobileChopBankHost .chopperBankTab').nth(1).click()
+    page.wait_for_function('ChopperBanks.activeIndex === 1 && ChopperMobileSliceEditor.visible',timeout=3000)
+    page.wait_for_timeout(80)
+    bank_switch=page.evaluate('''() => ({
+      active:ChopperBanks.active.label,
+      pad:ChopperMobileSliceEditor.activePad,
+      title:document.getElementById('mobileChopEditorTitle').textContent,
+      start:markers[5],end:markers[6]
+    })''')
+    assert bank_switch['active']=='0–30' and bank_switch['pad']==5 and bank_switch['title']=='CHOP 06 / 16 • MARKERS',bank_switch
+    assert 0<=bank_switch['start']<bank_switch['end']<=30,bank_switch
+    page.locator('#mobileChopBankHost .chopperBankTab').nth(0).click()
+    page.wait_for_function('ChopperBanks.activeIndex === 0 && ChopperMobileSliceEditor.visible',timeout=3000)
+    page.wait_for_timeout(80)
 
     page.click('#mobileChopNext');page.wait_for_function('ChopperMobileSliceEditor.activePad === 6',timeout=2000)
     assert page.evaluate("document.getElementById('mobileChopEditorTitle').textContent")=='CHOP 07 / 16 • MARKERS'
@@ -90,8 +136,20 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.wait_for_timeout(int((after['end']-after['start'])*1000+160));assert page.evaluate('chopAuditionPad')==-1
 
     assert page.locator('#mobileChopDone').inner_text()=='← CHOPS';page.click('#mobileChopDone')
-    done=page.evaluate('''() => ({visible:ChopperMobileSliceEditor.visible,workspace:getComputedStyle(document.getElementById('mobileChopWorkspace')).display,performance:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,pads:getComputedStyle(document.getElementById('pads')).display,enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,flag:document.getElementById('chopper').dataset.mobileChopView||'',status:document.getElementById('chopStatus').textContent})''')
+    done=page.evaluate('''() => ({
+      visible:ChopperMobileSliceEditor.visible,
+      workspace:getComputedStyle(document.getElementById('mobileChopWorkspace')).display,
+      performance:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,
+      pads:getComputedStyle(document.getElementById('pads')).display,
+      enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,
+      flag:document.getElementById('chopper').dataset.mobileChopView||'',
+      status:document.getElementById('chopStatus').textContent,
+      saveParent:document.getElementById('addFlipLibrary').parentElement.id,
+      bankParent:document.getElementById('chopperBankTabs').parentElement.className,
+      bankVisible:getComputedStyle(document.getElementById('chopperBankTabs')).display!=='none'
+    })''')
     assert not done['visible'] and done['workspace']=='none' and done['performance']!='none' and done['pads']!='none' and done['enabled']==16 and done['flag']=='' and done['status']=='CHOP MODE • MARKERS',done
+    assert done['saveParent']!='mobileChopActionHost' and done['bankParent']!='mobileChopBankHost' and done['bankVisible'],done
 
     pad=page.locator('#pads .pad').nth(5);touch_start(pad);page.wait_for_timeout(520)
     page.wait_for_function('ChopperMobileSliceEditor.visible && ChopperMobileSliceEditor.activePad === 5',timeout=3000);touch_end();page.wait_for_timeout(40);page.click('#mobileChopDone')
@@ -106,4 +164,4 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.click('#mobileChopDone');assert not errors,errors
     page.close();context.close();browser.close()
 
-print('OK: Chopper mobile CHOP view — touch hold, static waveform + overlay playhead, 16 AUTO CHOP pads, PREV/NEXT, START/END, CHOPS return, SLICES')
+print('OK: Chopper mobile CHOP view — touch hold, static waveform + overlay playhead, 16 AUTO CHOP pads, SAVE + 30s bank tabs, PREV/NEXT, START/END, CHOPS return, SLICES')
