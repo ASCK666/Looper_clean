@@ -184,7 +184,7 @@
     const renderMode=currentMode();
     const activeBank=currentBank();
     const renderBank=activeBank?Object.freeze({...activeBank}):null;
-    const renderEvents=Object.freeze(Array.from({length:16},(_,step)=>Number(events?.[step])||0));
+    const renderEvents=Object.freeze(Array.from(events||[],value=>Number(value)||0));
     const renderCueMarkers=Object.freeze(Array.isArray(cueMarkers)
       ? cueMarkers.map(value=>Number(value)||0)
       : []);
@@ -201,15 +201,15 @@
     await ensureAudio();
 
     const stepDur=(60/bpm)/2;
-    const bars=2;
-    const targetDur=8*60/bpm;
+    const bars=Math.max(1,Math.ceil(renderEvents.length/8));
+    const targetDur=bars*4*60/bpm;
     const rate=sessionOutputRate();
     const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
     const master=makePunchMaster(offline);
     const slices=renderMode==="slices";
 
     const placed=[];
-    for(let step=0;step<16;step++){
+    for(let step=0;step<renderEvents.length;step++){
       const chop=renderEvents[step];
       const available=slices
         ? chop>=1 && chop<=renderSlices.length

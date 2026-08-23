@@ -280,14 +280,16 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
           vinyl.dispatchEvent(new Event('input',{bubbles:true}));
         }''')
 
-        # PLAY must render through the SP wrapper at the same reconstruction
-        # rate as PAD audition, then STOP must kill all Chopper playback state.
+        # PLAY must render all four bars through the SP wrapper at the same
+        # reconstruction rate as PAD audition. A trigger at step 16 proves bars
+        # 3-4 are not truncated by the SP adapter.
         page.evaluate('''() => {
           ChopperBanks.selectBank(1);
           ChopperWaveSlices.setEditMode('markers');
           moveMarker(15,29,false);
-          loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+          loopGridEvents=new Array(CHOPPER_SEQUENCE_TOTAL_STEPS).fill(0);
           loopGridEvents[0]=16;
+          loopGridEvents[16]=16;
           renderLoopGrid();
         }''')
         page.click('#previewFlip')
@@ -295,18 +297,27 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
             "isLoopPlaying === true && lastPreviewMode === 'full' && renderedFlip && flipSource",
             timeout=30000,
         )
-        play_state = page.evaluate('''() => ({
-          enabled:ChopperSP1200.enabled,
-          same:flipSource.buffer===renderedFlip,
-          duration:renderedFlip.duration,
-          channels:renderedFlip.numberOfChannels,
-          rate:renderedFlip.sampleRate,
-          sessionRate:ctx.sampleRate,
-          settingsRate:ChopperSP1200.settings().reconstructionRate
-        })''')
+        play_state = page.evaluate('''() => {
+          const data=renderedFlip.getChannelData(0);
+          const start=Math.floor(renderedFlip.sampleRate*4.05);
+          const end=Math.min(data.length,Math.floor(renderedFlip.sampleRate*4.45));
+          let latePeak=0;
+          for(let i=start;i<end;i++)latePeak=Math.max(latePeak,Math.abs(data[i]));
+          return {
+            enabled:ChopperSP1200.enabled,
+            same:flipSource.buffer===renderedFlip,
+            duration:renderedFlip.duration,
+            latePeak,
+            channels:renderedFlip.numberOfChannels,
+            rate:renderedFlip.sampleRate,
+            sessionRate:ctx.sampleRate,
+            settingsRate:ChopperSP1200.settings().reconstructionRate
+          };
+        }''')
         assert play_state['enabled'] is True, play_state
         assert play_state['same'] is True, play_state
-        assert 3.9 < play_state['duration'] < 4.1, play_state
+        assert 7.9 < play_state['duration'] < 8.1, play_state
+        assert play_state['latePeak'] > .001, play_state
         assert play_state['channels'] == 2, play_state
         assert play_state['rate'] == play_state['sessionRate'], play_state
         assert play_state['settingsRate'] == play_state['sessionRate'], play_state
@@ -317,16 +328,18 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
 
         # SAVE: preserve the real button handler and real SP render, but replace
         # only filesystem permission/download side effects with deterministic
-        # browser-test hooks. The rendered save buffer must stay on the same rate.
+        # browser-test hooks. The saved SP buffer must keep all four bars.
         page.evaluate('''() => {
           window.__spSaved=null;
           window.__spSaveMode=null;
           window.__spSaveRate=null;
+          window.__spSaveDuration=null;
           const renderSaveBase=renderCurrentBeatForSave;
           renderCurrentBeatForSave=async events=>{
             window.__spSaveMode=ChopperSP1200.enabled;
             const rendered=await renderSaveBase(events);
             window.__spSaveRate=rendered?.sampleRate||null;
+            window.__spSaveDuration=rendered?.duration||null;
             return rendered;
           };
           prepareBeatFolderFromSaveGesture=async()=>({direct:false,reason:'browser test'});
@@ -343,6 +356,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
           saved:window.__spSaved,
           mode:window.__spSaveMode,
           saveRate:window.__spSaveRate,
+          saveDuration:window.__spSaveDuration,
           rendered:!!renderedFlip,
           renderedRate:renderedFlip?.sampleRate||null,
           sessionRate:ctx.sampleRate,
@@ -352,6 +366,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert saved['rendered'] is True, saved
         assert saved['saved']['size'] > 44, saved
         assert saved['saved']['filename'].lower().endswith('.wav'), saved
+        assert 7.9 < saved['saveDuration'] < 8.1, saved
         assert saved['saveRate'] == saved['sessionRate'], saved
         assert saved['renderedRate'] == saved['sessionRate'], saved
         assert saved['saveRate'] == marker_preview['rate'], (marker_preview, saved)
@@ -372,4 +387,4 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         context.close()
         browser.close()
 
-print('OK: SP1200 browser — PAD/PLAY audio parity, shared reconstruction rate, ON/OFF, BANK/SLICES, VINYL and STOP')
+print('OK: SP1200 browser — PAD/PLAY audio parity, four-bar PLAY/SAVE, shared reconstruction rate, ON/OFF, BANK/SLICES, VINYL and STOP')
