@@ -410,3 +410,10 @@
     font-size: 8px !important;
   }
 }
+
+/* Keep mode navigation aligned with the native-width Looper66 mobile shell. */
+@media (max-width: 680px) {
+  .mainModeTabs {
+    width: min(100%, 441px) !important;
+  }
+}
