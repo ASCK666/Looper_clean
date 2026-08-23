@@ -1237,7 +1237,6 @@ button.active:not(:disabled), button[aria-pressed="true"]:not(:disabled),
 
 /* --- Sampler chassis / composition -------------------------------------- */
 #chopper .samplerDeck {
-  --sampler-shell:#11100e;
   --sampler-edge:#3b3228;
   display:grid;
   width:100%;
