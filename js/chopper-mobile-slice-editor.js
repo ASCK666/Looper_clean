@@ -1,10 +1,13 @@
 "use strict";
 
-// Mobile-only pad hold editor. It reuses the active Chopper edit model:
-// MARKERS keeps the linked 1..16 chop boundaries; SLICES keeps independent ranges.
+// Mobile-only pad hold editor. A hold opens a dedicated CHOP workspace while
+// keeping the active Chopper edit model: MARKERS keeps linked 1..16 chop
+// boundaries; SLICES keeps independent ranges.
 (() => {
+  const root=document.getElementById("chopper");
   const pads=document.getElementById("pads");
-  if(!pads?.parentElement || !globalThis.ChopperWaveSlices || globalThis.ChopperMobileSliceEditor)return;
+  const deck=pads?.closest(".samplerDeck");
+  if(!root || !pads || !deck || !globalThis.ChopperWaveSlices || globalThis.ChopperMobileSliceEditor)return;
 
   const mobileMedia=window.matchMedia("(max-width:760px)");
   const HOLD_MS=450;
@@ -19,13 +22,23 @@
   let holdStartX=0;
   let holdStartY=0;
   let suppressClickButton=null;
+  let hiddenDeckChildren=[];
 
-  const editor=document.createElement("div");
-  editor.id="mobileChopEditor";
-  editor.hidden=true;
-  editor.setAttribute("aria-label","Éditeur mobile du chop");
-  editor.innerHTML=`
-    <div id="mobileChopEditorTitle" class="title compactTitle">CHOP --</div>
+  const workspace=document.createElement("section");
+  workspace.id="mobileChopWorkspace";
+  workspace.className="panel";
+  workspace.hidden=true;
+  workspace.setAttribute("aria-label","Éditeur mobile du chop");
+  workspace.innerHTML=`
+    <div class="samplerSequenceHead">
+      <div id="mobileChopEditorTitle" class="title compactTitle">CHOP --</div>
+      <div class="sequenceActions">
+        <button id="mobileChopDone" class="btn" type="button">DONE</button>
+      </div>
+    </div>
+    <div class="wavewrap largeWave samplerScreen">
+      <canvas id="mobileChopWave" width="900" height="220" aria-label="Waveform du sample et chop sélectionné"></canvas>
+    </div>
     <div id="mobileChopEditorRange" class="status" aria-live="polite">START — • END —</div>
     <div>
       <label>START</label>
@@ -45,16 +58,23 @@
         <button class="btn" type="button" data-mobile-boundary="end" data-mobile-delta="${COARSE_SEC}" aria-label="Avancer la fin de 25 millisecondes">+25</button>
       </div>
     </div>
-    <div class="grid2">
-      <button id="mobileChopPreview" class="btn primary" type="button">PREVIEW</button>
-      <button id="mobileChopDone" class="btn" type="button">DONE</button>
-    </div>`;
-  pads.insertAdjacentElement("afterend",editor);
+    <button id="mobileChopPreview" class="btn primary" type="button">PREVIEW CHOP</button>`;
+  deck.appendChild(workspace);
 
   const title=document.getElementById("mobileChopEditorTitle");
   const rangeReadout=document.getElementById("mobileChopEditorRange");
+  const wave=document.getElementById("mobileChopWave");
+  const wave2d=wave.getContext("2d");
   const preview=document.getElementById("mobileChopPreview");
   const done=document.getElementById("mobileChopDone");
+
+  // The dedicated view deliberately reuses existing Chopper primitives instead
+  // of adding another mobile stylesheet/component skin.
+  wave.style.display="block";
+  wave.style.width="100%";
+  wave.style.height="190px";
+  wave.style.touchAction="none";
+  workspace.style.width="100%";
 
   function isMobile(){
     return mobileMedia.matches;
@@ -69,6 +89,41 @@
     return {start:markers[index],end:markers[index+1]};
   }
 
+  function drawEditorWave(){
+    const w=wave.width,h=wave.height;
+    wave2d.clearRect(0,0,w,h);
+    wave2d.fillStyle="#080604";
+    wave2d.fillRect(0,0,w,h);
+    if(!sampleBuffer)return;
+
+    wave2d.strokeStyle="#d7a455";
+    wave2d.lineWidth=1;
+    drawBufferRange(wave2d,sampleBuffer,0,sampleBuffer.duration,0,w,h);
+
+    const range=currentRange();
+    if(!range)return;
+    const dur=Math.max(.001,sampleBuffer.duration);
+    const left=clamp(range.start/dur*w,0,w);
+    const right=clamp(range.end/dur*w,0,w);
+
+    wave2d.fillStyle="rgba(0,0,0,.58)";
+    wave2d.fillRect(0,0,left,h);
+    wave2d.fillRect(right,0,w-right,h);
+    wave2d.fillStyle="rgba(226,173,95,.10)";
+    wave2d.fillRect(left,0,Math.max(0,right-left),h);
+
+    wave2d.strokeStyle="#ffe0a5";
+    wave2d.lineWidth=3;
+    wave2d.beginPath();
+    wave2d.moveTo(left,0);wave2d.lineTo(left,h);
+    wave2d.moveTo(right,0);wave2d.lineTo(right,h);
+    wave2d.stroke();
+
+    wave2d.fillStyle="#fff0d0";
+    wave2d.font="700 12px monospace";
+    wave2d.fillText(`CHOP ${String(activePad+1).padStart(2,"0")}`,Math.min(w-78,Math.max(8,left+8)),20);
+  }
+
   function updateEditor(){
     const range=currentRange();
     if(!range){
@@ -78,7 +133,34 @@
     const mode=ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices?"SLICES":"MARKERS";
     title.textContent=`CHOP ${String(activePad+1).padStart(2,"0")} • ${mode}`;
     rangeReadout.textContent=`START ${Math.round(range.start*1000)} ms • END ${Math.round(range.end*1000)} ms • LEN ${Math.round((range.end-range.start)*1000)} ms`;
+    drawEditorWave();
     return range;
+  }
+
+  function showDedicatedView(){
+    hiddenDeckChildren=[];
+    for(const child of deck.children){
+      if(child===workspace)continue;
+      hiddenDeckChildren.push({
+        element:child,
+        display:child.style.getPropertyValue("display"),
+        priority:child.style.getPropertyPriority("display")
+      });
+      child.style.setProperty("display","none","important");
+    }
+    workspace.hidden=false;
+    root.dataset.mobileChopView="1";
+    try{workspace.scrollIntoView({block:"start",behavior:"auto"});}catch{}
+  }
+
+  function restoreDeckView(){
+    for(const state of hiddenDeckChildren){
+      if(state.display)state.element.style.setProperty("display",state.display,state.priority);
+      else state.element.style.removeProperty("display");
+    }
+    hiddenDeckChildren=[];
+    workspace.hidden=true;
+    delete root.dataset.mobileChopView;
   }
 
   function openEditor(index){
@@ -94,18 +176,16 @@
       drawWave();
     }
 
-    pads.hidden=true;
-    editor.hidden=false;
+    showDedicatedView();
     updateEditor();
     $("chopStatus").textContent=`MOBILE CHOP ${String(index+1).padStart(2,"0")} • START / END`;
     return true;
   }
 
   function closeEditor(){
-    if(activePad>=0 || !editor.hidden)stopChopAudition();
+    if(activePad>=0 || !workspace.hidden)stopChopAudition();
     activePad=-1;
-    editor.hidden=true;
-    pads.hidden=false;
+    restoreDeckView();
   }
 
   function adjustBoundary(boundary,delta){
@@ -124,11 +204,11 @@
   async function previewCurrent(){
     const range=currentRange();
     if(!range)return;
-    const button=document.querySelectorAll("#pads .pad")[activePad]||editor;
+    const button=document.querySelectorAll("#pads .pad")[activePad]||workspace;
     await previewSlice(activePad,button);
 
-    // MARKERS normally auditions from cue to sample end. In this editor the END
-    // control must be audible, so stop this mobile preview at the chop boundary.
+    // MARKERS normally auditions from cue to sample end. In this dedicated CHOP
+    // view the END control must be audible, so stop at the current chop boundary.
     if(ChopperWaveSlices.mode===ChopperWaveSlices.modes.markers && chopAuditionSource){
       const audible=Math.max(.005,(range.end-range.start)/samplePitchRate());
       const stopAt=Math.max(ctx.currentTime+.005,chopAuditionStartedAt+audible);
@@ -197,7 +277,7 @@
     if(isMobile() && padFromEvent(event))event.preventDefault();
   });
 
-  editor.querySelectorAll("[data-mobile-boundary]").forEach(button=>{
+  workspace.querySelectorAll("[data-mobile-boundary]").forEach(button=>{
     button.addEventListener("click",()=>adjustBoundary(button.dataset.mobileBoundary,button.dataset.mobileDelta));
   });
   preview.addEventListener("click",()=>{void previewCurrent();});
@@ -211,6 +291,6 @@
   globalThis.ChopperMobileSliceEditor=Object.freeze({
     holdMs:HOLD_MS,
     get activePad(){return activePad;},
-    get visible(){return !editor.hidden;}
+    get visible(){return !workspace.hidden;}
   });
 })();
