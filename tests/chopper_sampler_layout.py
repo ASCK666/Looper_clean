@@ -1,5 +1,8 @@
 from pathlib import Path
-import re, sys
+import sys
+
+from browser_fixture import inline_runtime_page
+
 try:
     from playwright.sync_api import sync_playwright
 except Exception:
@@ -13,50 +16,7 @@ button_asset=ROOT/'assets/looper-ui'/BUTTON_ASSET_NAME
 assert source_asset.exists(),f'Missing Looper source transport asset: {source_asset}'
 assert button_asset.exists(),f'Missing isolated Chopper button asset: {button_asset}'
 
-
-def inline_project():
-    html=(ROOT/'index.html').read_text(encoding='utf-8')
-    html=re.sub(r'<link\b[^>]*\brel=["\']manifest["\'][^>]*>','',html,flags=re.I)
-
-    def inline_stylesheet(match):
-        tag=match.group(0)
-        rel=re.search(r'\brel=["\']([^"\']+)["\']',tag,flags=re.I)
-        href=re.search(r'\bhref=["\']([^"\']+)["\']',tag,flags=re.I)
-        if not rel or not href or 'stylesheet' not in rel.group(1).lower().split():
-            return tag
-        value=href.group(1)
-        if value.startswith(('http://','https://','data:')):
-            return tag
-        clean=value.split('?',1)[0].split('#',1)[0]
-        path=(ROOT/clean.lstrip('./')).resolve()
-        assert path.exists(),f'Runtime CSS missing from sampler layout fixture: {value}'
-        return f'<style data-inline-from="{clean}">{path.read_text(encoding="utf-8")}</style>'
-
-    html=re.sub(r'<link\b[^>]*>',inline_stylesheet,html,flags=re.I)
-    html=re.sub(r'src="assets/[^"]+"','src=""',html)
-
-    def inline_script(match):
-        tag=match.group(0)
-        src=re.search(r'\bsrc=["\']([^"\']+)["\']',tag,flags=re.I)
-        if not src:
-            return tag
-        value=src.group(1)
-        if value.startswith(('http://','https://','data:')):
-            return tag
-        clean=value.split('?',1)[0].split('#',1)[0]
-        path=(ROOT/clean.lstrip('./')).resolve()
-        assert path.exists(),f'Runtime JS missing from sampler layout fixture: {value}'
-        return f'<script data-inline-from="{clean}">{path.read_text(encoding="utf-8")}</script>'
-
-    return re.sub(
-        r'<script\b[^>]*\bsrc=["\'][^"\']+["\'][^>]*>\s*</script>',
-        inline_script,
-        html,
-        flags=re.I
-    )
-
-
-html=inline_project()
+html=inline_runtime_page()
 asset_css=(ROOT/'css/chopper-drum-controls.css').read_text(encoding='utf-8')
 assert BUTTON_ASSET_NAME in asset_css,'Chopper pads/transport must use the isolated transparent Looper-derived button artwork'
 assert SOURCE_ASSET_NAME not in asset_css,'Chopper must not use the complete Looper transport sprite as a button texture'

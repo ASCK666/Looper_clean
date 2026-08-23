@@ -1,10 +1,13 @@
 from pathlib import Path
-import math,re,struct,sys,tempfile,wave
+import math,struct,sys,tempfile,wave
+
+from browser_fixture import inline_runtime_page
+
 try:
     from playwright.sync_api import sync_playwright
 except Exception:
     print('SKIP: playwright is not installed');sys.exit(0)
-ROOT=Path(__file__).resolve().parents[1]
+
 
 def make_wav(path,duration=.55,freq=220,sr=44100):
     n=int(duration*sr)
@@ -18,49 +21,13 @@ def make_wav(path,duration=.55,freq=220,sr=44100):
             frames += struct.pack('<h',int(v*32767))
         w.writeframes(frames)
 
-def inline_project():
-    html=(ROOT/'index.html').read_text(encoding='utf-8')
-    html=re.sub(r'<link\b[^>]*\brel=["\']manifest["\'][^>]*>','',html,flags=re.I)
-
-    def inline_stylesheet(match):
-        tag=match.group(0)
-        rel=re.search(r'\brel=["\']([^"\']+)["\']',tag,flags=re.I)
-        href=re.search(r'\bhref=["\']([^"\']+)["\']',tag,flags=re.I)
-        if not rel or not href or 'stylesheet' not in rel.group(1).lower().split():
-            return tag
-        value=href.group(1)
-        if value.startswith(('http://','https://','data:')):
-            return tag
-        clean=value.split('?',1)[0].split('#',1)[0]
-        path=(ROOT/clean.lstrip('./')).resolve()
-        assert path.exists(),f'Runtime CSS missing from Chopper UI fixture: {value}'
-        return f'<style data-inline-from="{clean}">{path.read_text(encoding="utf-8")}</style>'
-
-    html=re.sub(r'<link\b[^>]*>',inline_stylesheet,html,flags=re.I)
-    html=re.sub(r'src="assets/[^"]+"','src=""',html)
-
-    def inline_script(match):
-        tag=match.group(0)
-        src=re.search(r'\bsrc=["\']([^"\']+)["\']',tag,flags=re.I)
-        if not src:
-            return tag
-        value=src.group(1)
-        if value.startswith(('http://','https://','data:')):
-            return tag
-        clean=value.split('?',1)[0].split('#',1)[0]
-        path=(ROOT/clean.lstrip('./')).resolve()
-        assert path.exists(),f'Runtime JS missing from Chopper UI fixture: {value}'
-        return f'<script data-inline-from="{clean}">{path.read_text(encoding="utf-8")}</script>'
-
-    html=re.sub(r'<script\b[^>]*\bsrc=["\'][^"\']+["\'][^>]*>\s*</script>',inline_script,html,flags=re.I)
-    return html
 
 with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     sample=Path(td)/'chopper-ui.wav';make_wav(sample)
     browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
     page=browser.new_page(viewport={'width':1280,'height':1000})
     errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
-    page.set_content(inline_project(),wait_until='load',timeout=20000)
+    page.set_content(inline_runtime_page(),wait_until='load',timeout=20000)
     page.wait_for_function('window.__SP && window.__SP.ready === true',timeout=10000)
     page.click('[data-tab="chopper"]')
     page.set_input_files('#sampleFile',str(sample));page.wait_for_timeout(150)

@@ -1,13 +1,14 @@
 from pathlib import Path
 import os, sys, tempfile, wave, struct, math
 
+from browser_fixture import inline_runtime_page
+
 try:
     from playwright.sync_api import sync_playwright
 except Exception:
     print('SKIP: playwright is not installed')
     sys.exit(0)
 
-ROOT=Path(__file__).resolve().parents[1]
 
 def make_wav(path: Path, seconds=.35, hz=220, amp=.2):
     rate=44100
@@ -22,14 +23,13 @@ def make_wav(path: Path, seconds=.35, hz=220, amp=.2):
             out.append(struct.pack('<h',v))
         wf.writeframes(b''.join(out))
 
-html=(ROOT/'index.html').read_text(encoding='utf-8')
-for rel in ['./css/base.css','./css/clean-ui.css','./css/chopper-drum-controls.css','./css/chopper-deck-texture.css']:
-    css=(ROOT/rel[2:]).read_text(encoding='utf-8')
-    html=html.replace(f'<link rel="stylesheet" href="{rel}">',f'<style>{css}</style>')
-for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/chopper.js','./js/drums.js','./js/events.js']:
-    js=(ROOT/rel[2:]).read_text(encoding='utf-8')
-    html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
-    html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
+
+html=inline_runtime_page(
+    script_paths=(
+        'js/bootstrap.js','js/core.js','js/looper.js',
+        'js/chopper.js','js/drums.js','js/events.js',
+    )
+)
 
 with tempfile.TemporaryDirectory() as td:
     td=Path(td)
