@@ -116,25 +116,14 @@ Manifest-driven inline fixtures may share `tests/browser_fixture.py`; tests that
 can serve the real application should prefer that. Do not grow a second fixture
 framework around this helper.
 
-### Known remaining manifest-test coupling
-
-`tests/chopper_runtime_css.py` is still over-coupled to the **entire** global CSS
-manifest: it asserts an exact stylesheet count and the exact ordered list of all
-seven filenames.
-
-That assertion is valid for the current P3 snapshot, but it is not a scalable
-Chopper invariant. A future legitimate extraction that adds an eighth runtime
-stylesheet can make the Chopper test fail even when Chopper behavior and ownership
-are unchanged.
-
-This is recorded debt, not a reason to freeze the manifest. Before the next
-manifest-changing extraction, refactor that test so it still verifies that the
-real page loads its declared stylesheets and that Chopper's required owners are
-present/loaded, without hard-coding the total global stylesheet count. Do not
-weaken the actual Chopper geometry/material assertions.
-
-Because this coupling remains, Regression safety is intentionally scored **14/15**
-rather than 15/15 at P3 completion.
+`tests/chopper_runtime_css.py` deliberately does **not** freeze the global
+stylesheet count or the complete ordered manifest. It serves the real page,
+requires every declared stylesheet link it observes to be loaded without
+duplication, verifies the current Chopper owners exactly once and in their required
+relative order, then asserts Chopper geometry/material behavior across the four
+maintained viewports. A legitimate unrelated extraction may therefore add another
+runtime stylesheet without breaking the Chopper gate merely because the global
+file count changed.
 
 ## Specificity discipline
 
@@ -163,8 +152,8 @@ new ones merely to win cascade order.
 
 ## Current P3 completion state
 
-Full validation on commit `8d941cd1a61c7ea06f24fd021b10c13459da018b`
-(run #186) reports:
+The P3 runtime extraction was fully validated on commit
+`8d941cd1a61c7ea06f24fd021b10c13459da018b` (run #186):
 
 ```text
 runtime stylesheets: 7
@@ -175,7 +164,11 @@ fully-shadowed declarations: 0
 ALL PROJECT CHECKS PASSED
 ```
 
-Architecture score at P3 completion: **74 / 100**. The score is a migration
+The final manifest-test decoupling commit
+`da353194c968efbb41e95c13f728e43638f0a431` also passed the complete project
+workflow (run #188). It changed no production CSS or runtime behavior.
+
+Architecture score at P3 completion: **75 / 100**. The score is a migration
 safety measure, not a visual-quality score; exact category deltas are recorded in
 `docs/CSS_MIGRATION_LOG.md`.
 
