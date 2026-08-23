@@ -20,31 +20,55 @@ pbright=re.search(r'brightness\(([^)]+)\)',playhead.group(1))
 assert psat and float(psat.group(1))<=.25,playhead.group(1)
 assert pbright and float(pbright.group(1))>=1.10,playhead.group(1)
 
-# At rest the pad surface must be neutral: no permanent amber radial halo.
+# At rest the SLICES-specific rule owns only the neutral border. The physical
+# face is owned later by the shared pad asset rule; do not duplicate it here.
 rest=re.search(
     r'#chopper\.screen:has\(#waveCanvas\[data-edit-mode="slices"\]\) '
     r'\.pad:not\(\.slice-selected\):not\(\.hit\):not\(\.active\)\s*\{([^}]*)\}',
     css,re.S
 )
 assert rest,'missing neutral SLICES pad state'
-assert 'radial-gradient' not in rest.group(1),rest.group(1)
-assert 'rgba(226,173,95' not in rest.group(1),rest.group(1)
+assert '#474038' in rest.group(1),rest.group(1)
+assert 'background:' not in rest.group(1),rest.group(1)
+assert 'box-shadow:' not in rest.group(1),rest.group(1)
 
-# Amber remains an explicit selected/action state rather than the base state.
+# Selection is split intentionally: the SLICES rule owns its amber border while
+# the shared selected-pad owner supplies the live lamp/filter state.
 selected=re.search(
     r'#chopper\.screen \.pad\.slice-selected:not\(\.hit\):not\(\.active\)\s*\{([^}]*)\}',
     css,re.S
 )
-assert selected,'missing selected SLICES pad state'
+assert selected,'missing selected SLICES border state'
 assert '#9a7038' in selected.group(1),selected.group(1)
-assert 'rgba(226,173,95,.12)' in selected.group(1),selected.group(1)
+assert 'background:' not in selected.group(1),selected.group(1)
 
-# Pads without a matching slice are deliberately quieter than available pads.
+selected_owner=re.search(
+    r'#chopper \.pad\.selected,\s*#chopper \.pad\.slice-selected\s*\{([^}]*)\}',
+    css,re.S
+)
+assert selected_owner,'missing shared selected-pad owner'
+assert '--chopper-light-core: rgba(255,238,170,.34)' in selected_owner.group(1),selected_owner.group(1)
+assert 'filter: sepia(.18) saturate(.94) brightness(1.04)' in selected_owner.group(1),selected_owner.group(1)
+
+# Unavailable pads follow the same ownership rule: SLICES owns the dark border;
+# the shared unavailable owner supplies reduced opacity and grayscale.
 unavailable=re.search(
     r'#chopper\.screen:has\(#waveCanvas\[data-edit-mode="slices"\]\) '
     r'\.pad\.unavailable:not\(\.hit\):not\(\.active\)\s*\{([^}]*)\}',
     css,re.S
 )
-assert unavailable and 'opacity: .58' in unavailable.group(1),unavailable.group(1) if unavailable else ''
+assert unavailable,'missing unavailable SLICES border state'
+assert '#302c27' in unavailable.group(1),unavailable.group(1)
+assert 'opacity:' not in unavailable.group(1),unavailable.group(1)
 
-print('OK: Chopper SLICES CSS — neutral waveform/pads, ivory playhead, amber reserved for selection/action')
+unavailable_owner=re.search(
+    r'#chopper \.pad\.unavailable,\s*'
+    r'#chopper\.screen:has\(#waveCanvas\[data-edit-mode="slices"\]\) '
+    r'\.pad\.unavailable:not\(\.hit\):not\(\.active\)\s*\{([^}]*)\}',
+    css,re.S
+)
+assert unavailable_owner,'missing shared unavailable-pad owner'
+assert 'opacity: .34 !important' in unavailable_owner.group(1),unavailable_owner.group(1)
+assert 'filter: grayscale(.45) brightness(.58) !important' in unavailable_owner.group(1),unavailable_owner.group(1)
+
+print('OK: Chopper SLICES CSS — neutral waveform/pads, ivory playhead, shared pad owners keep amber/action states explicit')
