@@ -64,7 +64,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.evaluate('stopChopAudition()')
 
     # A long press opens a dedicated CHOP view for PAD 06. The regular Chopper
-    # deck is hidden and a full-sample waveform is displayed above START / END.
+    # deck is hidden and a focused waveform is displayed above START / END.
     box=pad.bounding_box();assert box,box
     page.mouse.move(box['x']+box['width']/2,box['y']+box['height']/2)
     page.mouse.down();page.wait_for_timeout(520)
@@ -88,7 +88,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     }''')
     page.mouse.up();page.wait_for_timeout(40)
     assert held['audition']==-1,held
-    assert held['title']=='CHOP 06 • MARKERS',held
+    assert held['title']=='CHOP 06 / 16 • MARKERS',held
     assert held['workspaceDisplay']!='none' and held['viewFlag']=='1',held
     assert held['upperDisplay']=='none' and held['performanceDisplay']=='none' and held['drumsDisplay']=='none',held
     assert held['waveWidth']>340 and held['waveHeight']>=180 and held['waveAboveRange'],held
@@ -138,7 +138,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.wait_for_function('ChopperMobileSliceEditor.visible && ChopperMobileSliceEditor.activePad === 1',timeout=3000)
     slice_view=page.evaluate("document.getElementById('mobileChopEditorTitle').textContent")
     page.mouse.up();page.wait_for_timeout(40)
-    assert slice_view=='CHOP 02 • SLICES',slice_view
+    assert slice_view=='CHOP 02 / 04 • SLICES',slice_view
     page.click('[data-mobile-boundary="start"][data-mobile-delta="0.005"]')
     slice_after=page.evaluate('ChopperWaveSlices.slices[1].start')
     assert abs((slice_after-slice_before)-.005)<1e-6,(slice_before,slice_after)
@@ -148,4 +148,4 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert not errors,errors
     page.close();browser.close()
 
-print('OK: Chopper mobile CHOP view — 16 AUTO CHOP pads, hold opens dedicated waveform editor, START/END, bounded preview, SLICES')
+print('OK: Chopper mobile CHOP view — 16 AUTO CHOP pads, hold opens dedicated focused waveform editor, START/END, bounded preview, SLICES')
