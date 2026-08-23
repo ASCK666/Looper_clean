@@ -207,6 +207,31 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.click('#clearGrid');page.wait_for_timeout(20)
     assert page.evaluate('loopGridEvents.length===32 && loopGridEvents.every(v=>v===0)') is True
 
+    # SLICES may expose more pads than MARKERS. Rendering must validate against the active SLICES model without erasing high-pad events.
+    slices_over_markers=page.evaluate('''() => {
+      setMarkers(4);
+      ChopperWaveSlices.setEditMode('slices');
+      const dur=sampleBuffer.duration;
+      for(const fraction of [1,3,5,7]){
+        if(!ChopperWaveSlices.addSliceAt(dur*fraction/8))throw new Error(`failed to add slice at ${fraction}/8`);
+      }
+      loopGridEvents=new Array(CHOPPER_SEQUENCE_TOTAL_STEPS).fill(0);
+      loopGridEvents[16]=6;
+      const events=gridEventsForRender();
+      return {
+        markers:markers.length-1,
+        slices:ChopperWaveSlices.slices.length,
+        rendered:events[16],
+        stored:loopGridEvents[16]
+      };
+    }''')
+    assert slices_over_markers=={'markers':4,'slices':8,'rendered':6,'stored':6},slices_over_markers
+    page.evaluate('''() => {
+      ChopperWaveSlices.setEditMode('markers');
+      setMarkers(16);
+      clearLoopGrid();
+    }''')
+
     # The musical playhead uses the existing loop transport/RAF, keeps moving through silent sample gaps, and clears on STOP.
     first_pad_step0=page.locator('#loopGrid .matrixCell:not(.unavailable)').nth(0)
     first_pad_step0.click();page.wait_for_timeout(20)

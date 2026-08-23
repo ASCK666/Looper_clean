@@ -647,13 +647,15 @@
 
   const gridEventsForRenderBase=gridEventsForRender;
   gridEventsForRender=function(...args){
-    const events=gridEventsForRenderBase(...args);
-    if(editMode!==MODE_SLICES)return events;
-    const count=independentSlices.length;
-    return events.map(value=>{
-      const pad=Number(value)||0;
-      return pad>=1 && pad<=count?pad:0;
-    });
+    if(editMode!==MODE_SLICES)return gridEventsForRenderBase(...args);
+    ensureIndependentSlices();
+    const savedMarkers=markers;
+    try{
+      markers=independentCueMarkers();
+      return gridEventsForRenderBase(...args);
+    }finally{
+      markers=savedMarkers;
+    }
   };
 
   const renderLoopGridBase=renderLoopGrid;
