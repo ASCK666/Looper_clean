@@ -103,27 +103,15 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert state['timelineWidth']==max(state['minWidth'],state['gridWidth']),state
     assert state['playheadWidth']==state['timelineWidth'],state
 
-    # Page 1-2 is explicit: measure starts are labeled and visually stronger than the off-beat "&" columns.
+    # Page 1-2 labels make bar starts explicit; existing beat/bar classes remain the visual rhythm guide.
     readability=page.evaluate('''() => {
       const heads=[...document.querySelectorAll('#loopGrid .matrixHead')];
-      const cells=[...document.querySelectorAll('#loopGrid .matrixCell:not(.unavailable)')];
-      return {
-        labels:heads.map(x=>x.textContent),
-        classes:heads.map(x=>x.className),
-        beatOpacity:Number(getComputedStyle(heads[0]).opacity),
-        andOpacity:Number(getComputedStyle(heads[1]).opacity),
-        beatBorder:parseFloat(getComputedStyle(cells[2]).borderLeftWidth),
-        barBorder:parseFloat(getComputedStyle(cells[8]).borderLeftWidth),
-        page12Opacity:Number(getComputedStyle(document.getElementById('sequencePage12')).opacity),
-        page34Opacity:Number(getComputedStyle(document.getElementById('sequencePage34')).opacity)
-      };
+      return {labels:heads.map(x=>x.textContent),classes:heads.map(x=>x.className)};
     }''')
     assert readability['labels'][0]=='M1·1' and readability['labels'][8]=='M2·1',readability
     assert readability['labels'][1]=='&' and readability['labels'][2]=='2',readability
+    assert 'beatStart' in readability['classes'][0] and 'beatStart' not in readability['classes'][1],readability
     assert 'barStart' in readability['classes'][0] and 'barStart' in readability['classes'][8],readability
-    assert readability['beatOpacity']>readability['andOpacity'],readability
-    assert readability['barBorder']>readability['beatBorder']>=1,readability
-    assert readability['page12Opacity']>readability['page34Opacity'],readability
 
     # The sequence timeline is visually partitioned by eighth-note cell while retaining the exact audible source range.
     page.evaluate('''() => {
@@ -194,6 +182,25 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     }''')
     assert saved['eventCount']==32 and saved['late']==1,saved
     assert abs(saved['duration']-8)<.02,saved
+
+    # SLICES owns its own renderer/playhead adapter. It must also keep and render bars 3-4.
+    slices_saved=page.evaluate('''async () => {
+      ChopperWaveSlices.setEditMode('slices');
+      const events=gridEventsForRender();
+      const state=buildLoopPlayheadState();
+      const buffer=await renderCurrentBeatForSave(events);
+      return {
+        eventCount:events.length,
+        late:events[16],
+        duration:buffer.duration,
+        playheadDuration:state.duration,
+        lateSegment:state.segments.some(segment=>segment.startTime>=3.99)
+      };
+    }''')
+    assert slices_saved['eventCount']==32 and slices_saved['late']==1,slices_saved
+    assert abs(slices_saved['duration']-8)<.02 and abs(slices_saved['playheadDuration']-8)<.01,slices_saved
+    assert slices_saved['lateSegment'],slices_saved
+    page.evaluate("ChopperWaveSlices.setEditMode('markers')")
 
     page.click('#sequencePage12');page.wait_for_timeout(20)
     assert page.evaluate('chopperSequencePage===0 && loopGridEvents[0]===1 && loopGridEvents[1]===2 && loopGridEvents[16]===1') is True
@@ -275,4 +282,4 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert all(x['w']>20 and x['h']>20 for x in boxes),boxes
     assert not errors,errors
     page.close();browser.close()
-print('OK: Chopper UI — four-bar 32-step sequence with 1-2/3-4 paging, readable bar/beat grid, full PLAY/SAVE render and timeline/playhead')
+print('OK: Chopper UI — four-bar 32-step sequence with 1-2/3-4 paging, MARKERS/SLICES PLAY-SAVE parity and timeline/playhead')

@@ -1,7 +1,7 @@
 "use strict";
 
 // Long-sample Chopper banks. A bank owns its marker/slice pad layout and its
-// 16-step Chopper sequence. Windows are 30 seconds wide and advance by 25
+// four-bar Chopper sequence. Windows are 30 seconds wide and advance by 25
 // seconds, giving adjacent banks a 5-second overlap. ALL remains independent.
 (() => {
   const root=document.getElementById("chopper");
@@ -136,9 +136,9 @@
   }
 
   function normalizeGrid(values){
-    const result=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+    const result=new Array(CHOPPER_SEQUENCE_TOTAL_STEPS).fill(0);
     if(!Array.isArray(values))return result;
-    for(let i=0;i<Math.min(values.length,CHOPPER_SEQUENCE_STEPS);i++){
+    for(let i=0;i<Math.min(values.length,CHOPPER_SEQUENCE_TOTAL_STEPS);i++){
       const pad=Number(values[i])||0;
       result[i]=pad>=1 && pad<=16 ? pad : 0;
     }
@@ -285,7 +285,7 @@
     return {
       markers:autoMarkersForBank(bank,count),
       selectedMarker:0,
-      grid:new Array(CHOPPER_SEQUENCE_STEPS).fill(0),
+      grid:new Array(CHOPPER_SEQUENCE_TOTAL_STEPS).fill(0),
       mode:inheritedMode==="slices"?"slices":"markers",
       slices:defaultSliceRanges(bank),
       selectedSlice:0,
@@ -309,7 +309,7 @@
 
     // Restore private SLICES before the grid because adding slices can remap
     // grid pad numbers internally. The saved bank sequence wins afterwards.
-    loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+    loopGridEvents=new Array(CHOPPER_SEQUENCE_TOTAL_STEPS).fill(0);
     restoreSliceRanges(state.slices,state.selectedSlice,state.mode);
     loopGridEvents=normalizeGrid(state.grid);
 
@@ -497,12 +497,12 @@
     const bank=activeBank();
     const bpm=Math.max(40,Number($("sampleBpm")?.value)||90);
     const stepDur=(60/bpm)/2;
-    const targetDur=8*60/bpm;
+    const targetDur=CHOPPER_SEQUENCE_TOTAL_STEPS*stepDur;
     const pitchRate=samplePitchRate();
     const events=gridEventsForRender();
     const placed=[];
 
-    for(let step=0;step<CHOPPER_SEQUENCE_STEPS;step++){
+    for(let step=0;step<CHOPPER_SEQUENCE_TOTAL_STEPS;step++){
       const chop=Number(events[step])||0;
       if(chop>=1 && chop<markers.length)placed.push({step,chop});
     }

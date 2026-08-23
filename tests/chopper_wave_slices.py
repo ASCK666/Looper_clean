@@ -34,8 +34,20 @@ for invariant in [
     'waveScroll?.addEventListener("input",()=>{',
     'get viewportPinned(){return viewportPinned;}',
     'resumePlayheadFollow(){',
+    'const targetDur=CHOPPER_SEQUENCE_TOTAL_STEPS*stepDur;',
+    'const bars=Math.max(1,Math.ceil(events.length/8));',
+    'for(let step=0;step<events.length;step++){',
 ]:
-    assert invariant in core,f'Missing waveform viewport invariant: {invariant}'
+    assert invariant in core,f'Missing waveform/SLICES invariant: {invariant}'
+
+banks=(ROOT/'js/chopper-banks.js').read_text(encoding='utf-8')
+for invariant in [
+    'new Array(CHOPPER_SEQUENCE_TOTAL_STEPS).fill(0)',
+    'Math.min(values.length,CHOPPER_SEQUENCE_TOTAL_STEPS)',
+    'const targetDur=CHOPPER_SEQUENCE_TOTAL_STEPS*stepDur;',
+    'for(let step=0;step<CHOPPER_SEQUENCE_TOTAL_STEPS;step++){',
+]:
+    assert invariant in banks,f'Missing four-bar bank invariant: {invariant}'
 
 legacy=ROOT/'tests/chopper_wave_slices_legacy.py'
 source=legacy.read_text(encoding='utf-8')

@@ -751,12 +751,12 @@
 
     const bpm=Math.max(40,Number($("sampleBpm").value)||90);
     const stepDur=(60/bpm)/2;
-    const targetDur=8*60/bpm;
+    const targetDur=CHOPPER_SEQUENCE_TOTAL_STEPS*stepDur;
     const pitchRate=samplePitchRate();
     const events=gridEventsForRender();
     const placed=[];
 
-    for(let step=0;step<CHOPPER_SEQUENCE_STEPS;step++){
+    for(let step=0;step<CHOPPER_SEQUENCE_TOTAL_STEPS;step++){
       const chop=Number(events[step])||0;
       if(chop>=1 && chop<=independentSlices.length)placed.push({step,chop});
     }
@@ -786,15 +786,15 @@
 
     const bpm=Math.max(40,Number($("sampleBpm").value)||90);
     const stepDur=(60/bpm)/2;
-    const bars=2;
-    const targetDur=8*60/bpm;
+    const bars=Math.max(1,Math.ceil(events.length/8));
+    const targetDur=bars*4*60/bpm;
     const rate=44100;
     const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
     const master=makePunchMaster(offline);
     const sampleConditioner=makeSampleConditioner(offline,master.input,.72*sampleVolumeGain());
 
     const placed=[];
-    for(let step=0;step<16;step++){
+    for(let step=0;step<events.length;step++){
       const chop=Number(events[step])||0;
       if(chop>=1 && chop<=independentSlices.length)placed.push({step,chop});
     }
