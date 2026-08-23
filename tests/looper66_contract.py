@@ -9,7 +9,10 @@ from PIL import Image
 
 ROOT=Path(__file__).resolve().parents[1]
 HTML=(ROOT/'index.html').read_text(encoding='utf-8')
-CSS=(ROOT/'css/base.css').read_text(encoding='utf-8')
+CSS='\n'.join(
+    (ROOT/href.split('?',1)[0].split('#',1)[0].removeprefix('./')).read_text(encoding='utf-8')
+    for href in re.findall(r'<link\b[^>]*\brel="stylesheet"[^>]*\bhref="([^"]+)"',HTML)
+)
 LOOPER=(ROOT/'js/looper.js').read_text(encoding='utf-8')
 EVENTS=(ROOT/'js/events.js').read_text(encoding='utf-8')
 
@@ -19,6 +22,7 @@ for control in controls:
 
 assert 'class="looper66Skin"' in HTML
 assert './css/base.css?v=looper66-tabs-210826-5' in HTML
+assert './css/looper.css' in HTML
 assert './css/clean-ui.css' in HTML
 assert 'assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp' in HTML
 assert 'assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp' in HTML
