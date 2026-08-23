@@ -26,7 +26,7 @@ html=(ROOT/'index.html').read_text(encoding='utf-8')
 for rel in ['./css/base.css','./css/clean-ui.css']:
     css=(ROOT/rel[2:]).read_text(encoding='utf-8')
     html=html.replace(f'<link rel="stylesheet" href="{rel}">',f'<style>{css}</style>')
-for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js','./js/chopper.js','./js/drums.js','./js/events.js']:
+for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/chopper.js','./js/drums.js','./js/events.js']:
     js=(ROOT/rel[2:]).read_text(encoding='utf-8')
     html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
     html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
@@ -143,13 +143,19 @@ with tempfile.TemporaryDirectory() as td:
         assert page.evaluate('deckSource !== null') is True
         page.click('#stopBeat')
 
-        # 6) Closing PRACTICE must stop the hidden timer.
-        page.click('#practiceOverlayOpen')
-        page.click('#startPractice')
-        page.wait_for_function('practiceTimer !== null')
-        page.click('#practiceOverlayClose')
-        assert page.evaluate('practiceTimer === null') is True
-        assert page.locator('#practice.overlayOpen').count() == 0
+        # 6) PRACTICE is retired completely: no surface, script or runtime symbols.
+        assert page.locator('#practice').count() == 0
+        assert page.locator('script[src*="practice.js"]').count() == 0
+        practice_retired=page.evaluate('''() => ({
+          makePractice:typeof makePractice,
+          startPractice:typeof startPractice,
+          practiceTimer:typeof practiceTimer
+        })''')
+        assert practice_retired == {
+            'makePractice':'undefined',
+            'startPractice':'undefined',
+            'practiceTimer':'undefined',
+        }, practice_retired
         page.click('#stopBeat')
 
         # 7) Deleting the currently loaded imported beat fully unloads the deck.
@@ -267,4 +273,4 @@ with tempfile.TemporaryDirectory() as td:
         context.close()
         browser.close()
 
-print('OK: V63 regressions — loop edge, stereo conditioner, deterministic reverb, master dB, pitch rerender, delete unload, save validation, practice close, PREV/NEXT state, drum folders')
+print('OK: V63 regressions — loop edge, stereo conditioner, deterministic reverb, master dB, pitch rerender, delete unload, save validation, Practice retirement, PREV/NEXT state, drum folders')
