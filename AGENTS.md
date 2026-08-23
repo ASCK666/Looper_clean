@@ -10,9 +10,12 @@ The architecture source of truth remains:
 
 - `docs/ARCHITECTURE.md` for current ownership;
 - `docs/STATE_DEPENDENCY_MAP.md` for current dependencies and deferred debt;
-- `docs/TARGET_ARCHITECTURE.md` for the target and non-negotiable constraints.
+- `docs/TARGET_ARCHITECTURE.md` for the target and non-negotiable constraints;
+- `docs/CSS_TARGET_ARCHITECTURE.md` for CSS/HTML ownership, migration order,
+  regression gates and the monotonic architecture score.
 
-Read those files before changing JavaScript ownership or shared state.
+Read those files before changing JavaScript ownership, shared state, HTML
+structure or CSS ownership.
 
 ## Authorization boundary
 
@@ -47,33 +50,90 @@ Read those files before changing JavaScript ownership or shared state.
 - Remove the retired implementation path in the same change; do not leave a
   compatibility layer behind.
 
+## CSS / HTML simplification contract
+
+- Treat `index.html` as the explicit runtime CSS manifest. Application JavaScript
+  must not inject a stylesheet to win load order or specificity.
+- Target the responsibility split documented in
+  `docs/CSS_TARGET_ARCHITECTURE.md`: tokens, shared primitives, Looper, Chopper
+  sampler, Chopper sequence and Chopper Drums.
+- A component selector has one owning stylesheet. Do not fix a rule by adding a
+  later override in another file.
+- Do not create or extend `override`, `fix`, `polish`, `compat`, versioned UI or
+  separate mobile stylesheets. Responsive rules stay beside the component they
+  modify.
+- Prefer deleting/replacing the losing declaration over escalating selector
+  specificity.
+- Do not introduce a new `!important` to resolve an ownership conflict. Any
+  temporary legacy whitelist used during migration may only shrink.
+- Do not use `display:none` as a substitute for deleting a retired component path.
+- Remove retired declarations/selectors/files in the same micro-change that
+  replaces them; do not leave compatibility CSS behind.
+- Keep semantic/stable component classes explicit enough that a maintainer can
+  find a component's styling without relying on `nth-child` or incidental DOM
+  ancestry.
+- CSS health, redundancy and ownership tests must inspect the complete real
+  runtime stylesheet set, not a hand-picked subset.
+- Do not optimize line count or file count by themselves. The target is local
+  ownership and safe human editing, not minification.
+
 ## Small-change gate
 
 Every simplification PR must answer all of these questions before editing:
 
 1. Which single ownership or dependency problem is being removed?
 2. Which domain owns the responsibility before and after?
-3. Which direct cross-domain read, write or workflow becomes simpler?
+3. Which direct cross-domain read, write, CSS override or workflow becomes
+   simpler?
 4. Why is the result easier for a maintainer to follow locally?
 5. How will unchanged user-visible and audio behavior be verified?
+6. Which focused test protects this exact boundary?
+7. What is the architecture score before the change, and what is it after?
 
 Reject or split the change when those answers are unclear. Do not optimize line
 count, function count or file count by themselves.
 
+## Monotonic score gate
+
+For CSS/HTML cleanup, use the six-category scorecard in
+`docs/CSS_TARGET_ARCHITECTURE.md`.
+
+- Start from the recorded branch baseline before the first runtime cleanup.
+- After every micro-change, rescore all categories and record `before -> after`.
+- No individual category may decrease.
+- The total score may not decrease.
+- A visual, responsive, accessibility or behavior regression is a score decrease
+  even when dead code or selector count improved.
+- Do not weaken tests, hide DOM, minify code or grow a whitelist to manufacture a
+  higher score.
+- If any category decreases, fix or revert that micro-change before starting the
+  next one.
+
 ## Required workflow
 
-1. Start from current `main` and inspect the working tree. Preserve unrelated work.
-2. Run `python3 tools/test_all.py` before the change. Fix an unstable baseline in a
-   separate PR before refactoring production code.
-3. Change one complete responsibility. Do not mix ownership, design and audio work.
-4. Add or strengthen the smallest behavioral regression invariant that protects
+1. Start from the requested branch/current target and inspect the working tree.
+   Preserve unrelated work.
+2. Run `python3 tools/test_all.py` before the first runtime change. If the baseline
+   is red, identify and record the exact failing maintained gate before editing;
+   repair that baseline as its own micro-change when it is in scope.
+3. Record the current architecture score before the micro-change.
+4. Change one complete responsibility. Do not mix ownership, design and audio
+   work.
+5. Add or strengthen the smallest behavioral/regression invariant that protects
    the changed boundary.
-5. Run `git diff --check` and `python3 tools/test_all.py` after the change.
-6. If local browser tests are skipped, require the full GitHub Actions browser run
-   to pass before merge.
-7. Publish a small draft PR whose body states the ownership problem, affected
-   files, dependency reduction and validation performed.
-8. Keep documentation-only updates separate from runtime ownership changes.
+6. Run the focused test for the changed component first.
+7. For CSS/HTML changes, run CSS health/redundancy/ownership guards and affected
+   desktop/tablet/mobile browser checks before the full suite.
+8. Run `git diff --check` and `python3 tools/test_all.py` after the change.
+9. Self-audit the diff for dead code, retired paths, duplicate ownership, new
+   specificity escalation and unintended visual/behavior changes.
+10. Rescore every architecture category. Accept only a non-decreasing result.
+11. If local browser tests are skipped, require the full GitHub Actions browser run
+    to pass before merge/acceptance.
+12. Publish a small PR/commit whose description states the ownership problem,
+    affected files, dependency/cascade reduction, validation performed and score
+    delta.
+13. Keep documentation-only updates separate from runtime ownership changes.
 
 ## Stop conditions
 
@@ -81,11 +141,18 @@ Stop and reassess instead of continuing mechanically when:
 
 - the next step would only move code without reducing or clarifying a dependency;
 - a proposed API is longer or more abstract than the hidden relationship it replaces;
+- a CSS move would leave the old declaration active as a compatibility copy;
+- a CSS fix requires a new late stylesheet, more specificity or a new
+  `!important` to win;
 - the change requires touching UI or audio behavior outside the explicit request;
 - the target owner is disputed or the state has more than one writer;
-- maintained tests are failing for an unrelated reason;
+- a focused or maintained test regresses;
+- any architecture score category decreases;
+- maintained tests are failing for an unrelated reason that makes the change
+  impossible to validate safely;
 - the PR can no longer be summarized as one responsibility.
 
-After each merged ownership change, re-read `docs/STATE_DEPENDENCY_MAP.md`. Broad
-architecture cleanup is not a standing queue: continue only with another narrow,
-explicitly approved simplification.
+After each merged ownership change, re-read `docs/STATE_DEPENDENCY_MAP.md` and,
+for CSS/HTML work, `docs/CSS_TARGET_ARCHITECTURE.md`. Broad architecture cleanup
+is not a standing queue: continue only with another narrow, explicitly approved
+simplification.
