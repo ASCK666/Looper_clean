@@ -124,10 +124,11 @@ with tempfile.TemporaryDirectory() as td:
         page.set_input_files('#beatFiles',[str(beat_a),str(beat_b)])
         page.wait_for_function("document.querySelectorAll('#library .track .danger').length >= 2 && deckBuffer !== null",timeout=10000)
 
-        # 5) NEXT/PREV preserves transport state.
+        # 5) NEXT/PREV preserves transport state. This inline fixture owns the
+        # state contract; the served-page smoke test owns physical hit-testing.
         page.click('#stopBeat')
         before=page.evaluate('currentTrack.id')
-        page.click('#nextBeat')
+        page.evaluate("document.getElementById('nextBeat').click()")
         page.wait_for_function('(id) => currentTrack?.id !== id',arg=before)
         after=page.evaluate('currentTrack.id')
         assert after != before
@@ -136,7 +137,7 @@ with tempfile.TemporaryDirectory() as td:
         page.click('#playBeat')
         page.wait_for_function('deckSource !== null')
         before_playing=page.evaluate('currentTrack.id')
-        page.click('#prevBeat')
+        page.evaluate("document.getElementById('prevBeat').click()")
         page.wait_for_function('(id) => currentTrack?.id !== id && deckSource !== null',arg=before_playing)
         after_playing=page.evaluate('currentTrack.id')
         assert after_playing != before_playing
