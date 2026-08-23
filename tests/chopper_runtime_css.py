@@ -86,12 +86,13 @@ with contextlib.ExitStack() as stack:
             }''')
 
             assert not state['missing'],(width,state['missing'])
-            assert len(state['links'])==6,state
+            assert len(state['links'])==7,state
             assert all(item['loaded'] for item in state['links']),state['links']
             assert [item['href'] for item in state['links']]==[
                 './css/tokens.css',
                 './css/shared.css',
                 './css/base.css',
+                './css/looper.css',
                 './css/clean-ui.css',
                 './css/chopper-drum-controls.css',
                 './css/chopper-deck-texture.css'
@@ -120,4 +121,4 @@ with contextlib.ExitStack() as stack:
             page.close()
         browser.close()
 
-print('OK: Chopper runtime CSS — real 6-sheet manifest, responsive modules, texture ownership and image-free inner controls')
+print('OK: real Chopper runtime loads the full CSS manifest with stable visual ownership across desktop/tablet/mobile widths')
