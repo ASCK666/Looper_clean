@@ -120,9 +120,6 @@ $("stopBeat").onclick=()=>stopDeck();
 $("prevBeat").onclick=()=>runLooperAction("PREV",()=>selectRelative(-1));
 $("nextBeat").onclick=()=>runLooperAction("NEXT",()=>selectRelative(1));
 
-$("newPattern").onclick=makePractice;
-$("startPractice").onclick=startPractice;
-
 $("loadSampleBtn").onclick=()=>openFilePicker("sampleFile");
 $("sampleFile").onchange=()=>loadChopperSample($("sampleFile").files[0]);
 $("sliceCount").onchange=()=>{
@@ -270,7 +267,6 @@ document.addEventListener("keydown",async ev=>{
     tag==="input" || tag==="textarea" || tag==="select" || tag==="button" || tag==="a" ||
     target?.isContentEditable || target?.closest?.('[role="button"],[role="slider"]');
   if(interactive)return;
-  if($("practice")?.classList.contains("overlayOpen"))return;
 
   ev.preventDefault();
 
@@ -381,7 +377,6 @@ function safeInit(name,fn){
 }
 
 [
-  ["practice",makePractice],
   ["drum-selection",updateDrumSelectionUI],
   ["auto-looper",refreshAutoLooperCompact],
   ["punch",refreshPunchUI],
