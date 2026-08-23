@@ -1,5 +1,8 @@
 from pathlib import Path
-import re,sys
+import sys
+
+from browser_fixture import inline_runtime_page
+
 try:
     from playwright.sync_api import sync_playwright
 except Exception:
@@ -7,23 +10,13 @@ except Exception:
     sys.exit(0)
 
 ROOT=Path(__file__).resolve().parents[1]
-
-
-def inline_project():
-    html=(ROOT/'index.html').read_text(encoding='utf-8')
-    html=re.sub(r'<link rel="manifest"[^>]*>','',html)
-    for rel in ['./css/base.css','./css/clean-ui.css','./css/chopper-drum-controls.css']:
-        css=(ROOT/rel[2:]).read_text(encoding='utf-8')
-        html=html.replace(f'<link rel="stylesheet" href="{rel}">',f'<style>{css}</style>')
-    html=re.sub(r'src="assets/[^"]+"','src=""',html)
-    for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js','./js/chopper.js','./js/drums.js','./js/events.js','./js/chopper-drum-controls.js']:
-        js=(ROOT/rel[2:]).read_text(encoding='utf-8')
-        html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
-        html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
-    reconnect=(ROOT/'js/chopper-folder-reconnect.js').read_text(encoding='utf-8')
-    html=html.replace('</body>',f'<script>{reconnect}</script></body>')
-    return html
-
+html=inline_runtime_page(
+    script_paths=(
+        'js/bootstrap.js','js/core.js','js/looper.js','js/chopper.js',
+        'js/drums.js','js/events.js','js/chopper-drum-controls.js',
+    ),
+    append_scripts=('js/chopper-folder-reconnect.js',),
+)
 
 with sync_playwright() as p:
     browser=p.chromium.launch(
@@ -34,7 +27,7 @@ with sync_playwright() as p:
     page=browser.new_page(viewport={'width':1280,'height':900})
     errors=[]
     page.on('pageerror',lambda e:errors.append(str(e)))
-    page.set_content(inline_project(),wait_until='load',timeout=20000)
+    page.set_content(html,wait_until='load',timeout=20000)
     page.wait_for_function('window.__SP && window.__SP.ready === true',timeout=10000)
     page.wait_for_function('window.ChopperFolderPersistence && window.ChopperFolderReconnect',timeout=10000)
 
