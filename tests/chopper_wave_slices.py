@@ -22,6 +22,9 @@ runtime_order=[
 positions=[html.index(f'src="{path}"') for path in runtime_order]
 assert positions==sorted(positions),'Chopper feature scripts must stay explicit and ordered in index.html'
 
+chopper=(ROOT/'js/chopper.js').read_text(encoding='utf-8')
+assert 'function buildSequencePlan(events,bpm,padCount)' in chopper
+
 core=(ROOT/'js/chopper-wave-slices-core.js').read_text(encoding='utf-8')
 for invariant in [
     'const visibleRatio=1/zoom;',
@@ -34,7 +37,8 @@ for invariant in [
     'waveScroll?.addEventListener("input",()=>{',
     'get viewportPinned(){return viewportPinned;}',
     'resumePlayheadFollow(){',
-    'const targetDur=CHOPPER_SEQUENCE_TOTAL_STEPS*stepDur;',
+    'const plan=buildSequencePlan(',
+    'const segments=plan.placed.map(event=>{',
     'const bars=Math.max(1,Math.ceil(events.length/8));',
     'for(let step=0;step<events.length;step++){',
 ]:
@@ -44,8 +48,8 @@ banks=(ROOT/'js/chopper-banks.js').read_text(encoding='utf-8')
 for invariant in [
     'new Array(CHOPPER_SEQUENCE_TOTAL_STEPS).fill(0)',
     'Math.min(values.length,CHOPPER_SEQUENCE_TOTAL_STEPS)',
-    'const targetDur=CHOPPER_SEQUENCE_TOTAL_STEPS*stepDur;',
-    'for(let step=0;step<CHOPPER_SEQUENCE_TOTAL_STEPS;step++){',
+    'const plan=buildSequencePlan(',
+    'const segments=plan.placed.map(event=>{',
 ]:
     assert invariant in banks,f'Missing four-bar bank invariant: {invariant}'
 

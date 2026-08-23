@@ -495,33 +495,24 @@
     if(!sampleBuffer)return null;
 
     const bank=activeBank();
-    const bpm=Math.max(40,Number($("sampleBpm")?.value)||90);
-    const stepDur=(60/bpm)/2;
-    const targetDur=CHOPPER_SEQUENCE_TOTAL_STEPS*stepDur;
     const pitchRate=samplePitchRate();
-    const events=gridEventsForRender();
-    const placed=[];
+    const plan=buildSequencePlan(
+      gridEventsForRender(),
+      $("sampleBpm")?.value,
+      Math.max(0,markers.length-1)
+    );
+    if(!plan.placed.length)return null;
 
-    for(let step=0;step<CHOPPER_SEQUENCE_TOTAL_STEPS;step++){
-      const chop=Number(events[step])||0;
-      if(chop>=1 && chop<markers.length)placed.push({step,chop});
-    }
-    if(!placed.length)return null;
-
-    const segments=[];
-    for(let i=0;i<placed.length;i++){
-      const event=placed[i];
-      const startTime=event.step*stepDur;
-      const nextTime=i+1<placed.length?placed[i+1].step*stepDur:targetDur;
+    const segments=plan.placed.map(event=>{
       const sampleStart=markers[event.chop-1];
-      const available=Math.max(0,bank.end-sampleStart);
-      const maxAudible=available/pitchRate;
-      const endTime=Math.min(targetDur,nextTime,startTime+maxAudible);
-      if(endTime>startTime){
-        segments.push({pad:event.chop-1,startTime,endTime,sampleStart});
-      }
-    }
-    return {duration:targetDur,pitchRate,segments};
+      const maxAudible=Math.max(0,bank.end-sampleStart)/pitchRate;
+      const endTime=Math.min(plan.targetDur,event.nextTime,event.startTime+maxAudible);
+      return endTime>event.startTime
+        ? {pad:event.chop-1,startTime:event.startTime,endTime,sampleStart}
+        : null;
+    }).filter(Boolean);
+
+    return {duration:plan.targetDur,pitchRate,segments};
   };
 
   function copyBankBuffer(sourceBuffer,bank){
