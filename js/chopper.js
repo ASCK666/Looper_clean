@@ -18,6 +18,29 @@ const SEQUENCE_MIN_WIDTH=830;
 const SAMPLE_TIMELINE_HEIGHT=86;
 let chopperSequencePage=0;
 
+function buildSequencePlan(events,bpm,padCount){
+  const sequence=Array.from(events||[],value=>Number(value)||0);
+  const tempo=Math.max(40,Number(bpm)||90);
+  const availablePads=Math.max(0,Math.floor(Number(padCount)||0));
+  const stepDur=(60/tempo)/2;
+  const bars=Math.max(1,Math.ceil(sequence.length/8));
+  const targetDur=bars*4*60/tempo;
+  const triggers=[];
+
+  for(let step=0;step<sequence.length;step++){
+    const chop=sequence[step];
+    if(chop>=1 && chop<=availablePads)triggers.push({step,chop});
+  }
+
+  const placed=triggers.map((event,index)=>({
+    ...event,
+    startTime:event.step*stepDur,
+    nextTime:index+1<triggers.length?triggers[index+1].step*stepDur:targetDur
+  }));
+
+  return {events:sequence,bpm:tempo,stepDur,bars,targetDur,placed};
+}
+
 function samplePitchRate(){
   return Math.pow(2,samplePitchSemitones/12);
 }
@@ -463,39 +486,25 @@ function clearPlayhead(){
 function buildLoopPlayheadState(){
   if(!sampleBuffer)return null;
 
-  const bpm=Math.max(40,Number($("sampleBpm").value)||90);
-  const stepDur=(60/bpm)/2;
-  const targetDur=CHOPPER_SEQUENCE_TOTAL_STEPS*stepDur;
   const pitchRate=samplePitchRate();
-  const events=gridEventsForRender();
-
-  const placed=[];
-  for(let step=0;step<CHOPPER_SEQUENCE_TOTAL_STEPS;step++){
-    const chop=Number(events[step])||0;
-    if(chop>=1 && chop<markers.length){
-      placed.push({step,chop});
-    }
-  }
-
-  if(!placed.length)return null;
+  const plan=buildSequencePlan(
+    gridEventsForRender(),
+    $("sampleBpm").value,
+    Math.max(0,markers.length-1)
+  );
+  if(!plan.placed.length)return null;
 
   const segments=[];
-  for(let i=0;i<placed.length;i++){
-    const ev=placed[i];
-    const startTime=ev.step*stepDur;
-    const nextTime=i+1<placed.length
-      ? placed[i+1].step*stepDur
-      : targetDur;
-
+  for(const ev of plan.placed){
     const sampleStart=markers[ev.chop-1];
     const available=Math.max(0,sampleBuffer.duration-sampleStart);
     const maxAudible=available/pitchRate;
-    const endTime=Math.min(targetDur,nextTime,startTime+maxAudible);
+    const endTime=Math.min(plan.targetDur,ev.nextTime,ev.startTime+maxAudible);
 
-    if(endTime>startTime){
+    if(endTime>ev.startTime){
       segments.push({
         pad:ev.chop-1,
-        startTime,
+        startTime:ev.startTime,
         endTime,
         sampleStart
       });
@@ -503,7 +512,7 @@ function buildLoopPlayheadState(){
   }
 
   return {
-    duration:targetDur,
+    duration:plan.targetDur,
     pitchRate,
     segments
   };

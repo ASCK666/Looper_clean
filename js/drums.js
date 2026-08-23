@@ -1123,10 +1123,8 @@ async function renderDrumsOnly(){
 
 async function renderSequence(events,sourceBuffer,cueMarkers,pitchRate){
   if(!sourceBuffer)throw new Error("Charge un sample");
-  const bpm=Math.max(40,Number($("sampleBpm")?.value)||90);
-  const stepDur=(60/bpm)/2; // eighth note
-  const bars=Math.max(1,Math.ceil(events.length/8));
-  const targetDur=bars*4*60/bpm;
+  const plan=buildSequencePlan(events,$("sampleBpm")?.value,Math.max(0,(cueMarkers?.length||0)-1));
+  const {bpm,bars,targetDur,placed}=plan;
   const rate=44100;
   const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
   const master=makePunchMaster(offline);
@@ -1136,39 +1134,31 @@ async function renderSequence(events,sourceBuffer,cueMarkers,pitchRate){
     .72*sampleVolumeGain()*sampleAutoMixGain(sourceBuffer)
   );
 
-  const placed=[];
-  for(let step=0;step<events.length;step++){
-    const chop=Number(events[step])||0;
-    if(chop>=1 && chop<cueMarkers.length)placed.push({step,chop});
-  }
   if(!placed.length)throw new Error("Place au moins un PAD sur la grille");
 
   // Monophonic chop lane: a pad plays from its cue until the next active
   // eighth-note trigger, or until the sample itself ends.
-  for(let e=0;e<placed.length;e++){
-    const ev=placed[e];
-    const startTime=ev.step*stepDur;
-    const nextTime=e+1<placed.length?placed[e+1].step*stepDur:targetDur;
+  for(const ev of placed){
     const idx=ev.chop-1;
     const sampleStart=cueMarkers[idx];
     const available=Math.max(.01,sourceBuffer.duration-sampleStart);
-    const wanted=Math.max(.01,nextTime-startTime);
+    const wanted=Math.max(.01,ev.nextTime-ev.startTime);
 
     const maxAudible=available/pitchRate;
-    const stopTime=Math.min(targetDur,startTime+Math.min(wanted,maxAudible));
-    const audibleDur=Math.max(.001,stopTime-startTime);
+    const stopTime=Math.min(targetDur,ev.startTime+Math.min(wanted,maxAudible));
+    const audibleDur=Math.max(.001,stopTime-ev.startTime);
     const edgeFade=Math.min(CHOP_EDGE_FADE_SECONDS,audibleDur*.5);
 
     const src=offline.createBufferSource();
     src.buffer=sourceBuffer;
     src.playbackRate.value=pitchRate;
     const edge=offline.createGain();
-    edge.gain.setValueAtTime(0,startTime);
-    edge.gain.linearRampToValueAtTime(1,startTime+edgeFade);
-    edge.gain.setValueAtTime(1,Math.max(startTime+edgeFade,stopTime-edgeFade));
+    edge.gain.setValueAtTime(0,ev.startTime);
+    edge.gain.linearRampToValueAtTime(1,ev.startTime+edgeFade);
+    edge.gain.setValueAtTime(1,Math.max(ev.startTime+edgeFade,stopTime-edgeFade));
     edge.gain.linearRampToValueAtTime(0,stopTime);
     src.connect(edge).connect(sampleConditioner.input);
-    src.start(startTime,sampleStart);
+    src.start(ev.startTime,sampleStart);
     src.stop(stopTime);
   }
 

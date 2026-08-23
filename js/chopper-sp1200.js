@@ -196,40 +196,29 @@
       : []);
     const renderOutputMode=outputMode;
     const renderLevelCode=levelCodeForSampleVolume();
-    const bpm=Math.max(40,Number($("sampleBpm")?.value)||90);
+    const slices=renderMode==="slices";
+    const plan=buildSequencePlan(
+      renderEvents,
+      $("sampleBpm")?.value,
+      slices?renderSlices.length:Math.max(0,renderCueMarkers.length-1)
+    );
 
     await ensureAudio();
 
-    const stepDur=(60/bpm)/2;
-    const bars=Math.max(1,Math.ceil(renderEvents.length/8));
-    const targetDur=bars*4*60/bpm;
     const rate=sessionOutputRate();
-    const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
+    const offline=new OfflineAudioContext(2,Math.ceil(plan.targetDur*rate),rate);
     const master=makePunchMaster(offline);
-    const slices=renderMode==="slices";
-
-    const placed=[];
-    for(let step=0;step<renderEvents.length;step++){
-      const chop=renderEvents[step];
-      const available=slices
-        ? chop>=1 && chop<=renderSlices.length
-        : chop>=1 && chop<renderCueMarkers.length;
-      if(available)placed.push({step,chop});
-    }
-    if(!placed.length)throw new Error("Place au moins un PAD sur la grille");
+    if(!plan.placed.length)throw new Error("Place au moins un PAD sur la grille");
 
     const tune=tuneForPitchRate(pitchRate);
     const localEncoded=new Map();
 
-    for(let e=0;e<placed.length;e++){
-      const event=placed[e];
-      const startTime=event.step*stepDur;
-      const nextTime=e+1<placed.length?placed[e+1].step*stepDur:targetDur;
+    for(const event of plan.placed){
       const index=event.chop-1;
       const range=rangeForPad(index,sourceBuffer,renderCueMarkers,renderMode,renderBank,renderSlices);
       if(!range || range.end<=range.start)continue;
 
-      const durationLimit=Math.max(.001,Math.min(nextTime-startTime,targetDur-startTime));
+      const durationLimit=Math.max(.001,Math.min(event.nextTime-event.startTime,plan.targetDur-event.startTime));
       const renderedChop=await renderSpChop(offline,{
         sourceBuffer,
         range,
@@ -249,18 +238,18 @@
       }else{
         const edge=offline.createGain();
         const fade=Math.min(typeof CHOP_EDGE_FADE_SECONDS==="number"?CHOP_EDGE_FADE_SECONDS:.0025,audible*.5);
-        edge.gain.setValueAtTime(0,startTime);
-        edge.gain.linearRampToValueAtTime(1,startTime+fade);
-        edge.gain.setValueAtTime(1,Math.max(startTime+fade,startTime+audible-fade));
-        edge.gain.linearRampToValueAtTime(0,startTime+audible);
+        edge.gain.setValueAtTime(0,event.startTime);
+        edge.gain.linearRampToValueAtTime(1,event.startTime+fade);
+        edge.gain.setValueAtTime(1,Math.max(event.startTime+fade,event.startTime+audible-fade));
+        edge.gain.linearRampToValueAtTime(0,event.startTime+audible);
         source.connect(edge).connect(master.input);
       }
-      source.start(startTime);
-      source.stop(startTime+audible);
+      source.start(event.startTime);
+      source.stop(event.startTime+audible);
     }
 
     const selection=await ensureDrumSelection();
-    renderSelectedDrums(offline,selection,bpm,bars,targetDur,master.input);
+    renderSelectedDrums(offline,selection,plan.bpm,plan.bars,plan.targetDur,master.input);
     const rendered=finalizeLoopBuffer(await offline.startRendering());
     return await maybeVinyl(rendered);
   }
