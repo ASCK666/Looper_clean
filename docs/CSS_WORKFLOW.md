@@ -3,29 +3,29 @@
 This document describes the **current browser reality** on branch `230826` and the
 safe workflow for moving toward `docs/CSS_TARGET_ARCHITECTURE.md`.
 
-The current state is transitional debt, not the target architecture.
+The current state is transitional debt, not the target architecture. Accepted
+micro-changes and score deltas are recorded in `docs/CSS_MIGRATION_LOG.md`.
 
 ## Current runtime truth
 
-`index.html` currently loads these stylesheets in this order:
+`index.html` is now the explicit runtime CSS manifest and currently loads these
+stylesheets in this order:
 
 ```text
 css/base.css
 css/clean-ui.css
 css/chopper-drum-controls.css
-```
-
-`js/bootstrap.js` also injects:
-
-```text
 css/chopper-deck-texture.css
 ```
 
-at runtime so that it loads late enough to win part of the cascade.
+Application JavaScript no longer injects `chopper-deck-texture.css` or any other
+stylesheet to win load order. The four-file layout above remains transitional:
+the files still overlap in responsibility and later layers still override earlier
+ones.
 
-That JavaScript-injected stylesheet and the current cross-file overrides are
-explicit migration targets. Do not add new rules to them merely because they are
-convenient late layers.
+`tests/css_health.py` and `tests/css_redundancy.py` now derive their runtime CSS
+set from the local `<link rel="stylesheet">` entries in `index.html`, in browser
+order. They no longer keep a separate hand-written production CSS list.
 
 There is no CSS generator pipeline and no hidden source directory. Runtime CSS is
 maintained directly.
@@ -61,7 +61,7 @@ Every runtime CSS/HTML change is one micro-change.
 
 1. State the single ownership/cascade problem being removed.
 2. Record the architecture score before the change using
-   `docs/CSS_TARGET_ARCHITECTURE.md`.
+   `docs/CSS_MIGRATION_LOG.md` and `docs/CSS_TARGET_ARCHITECTURE.md`.
 3. Identify the component owner and the smallest focused regression test.
 4. Make the smallest direct edit.
 5. Delete declarations/selectors/files made obsolete by that edit in the **same
@@ -110,17 +110,24 @@ owner files and must keep any temporary legacy `!important` whitelist shrinking.
 
 `index.html` is the runtime CSS manifest.
 
-The migration must reach a state where:
+Current P1 guarantees:
 
-- every maintained runtime stylesheet is declared explicitly there;
+- every maintained runtime stylesheet is declared explicitly in `index.html`;
 - application JavaScript injects no stylesheet;
-- tests discover/analyze the complete real runtime stylesheet set;
-- dead/orphan runtime CSS files are rejected;
-- documentation and tests agree with the browser about which CSS files exist.
+- CSS health and redundancy checks discover/analyze the real runtime stylesheet
+  set from `index.html`;
+- missing and duplicate local runtime stylesheet entries are rejected;
+- dead/orphan runtime CSS files remain covered by the existing dead-code/runtime
+  dependency checks.
 
-Until that target is reached, any change to the runtime CSS set must also update
-the tests that model it. A browser/test manifest mismatch is itself a failing
-architecture condition.
+Any future change to the runtime CSS set must update `index.html`; the health and
+redundancy tests follow that manifest automatically.
+
+Some older inline browser fixtures still embed a historical subset of the CSS
+cascade. P1 deliberately preserves their existing minimum guard rather than
+rewriting unrelated behavior fixtures. Before owner-level visual equivalence is
+used as a migration gate, those relevant fixtures must be migrated to one shared
+manifest-driven inlining path or replaced by tests that serve the real page.
 
 ## Ownership rules
 
@@ -172,9 +179,13 @@ never grow to make a change pass.
 
 ## Baseline and score
 
-The audited `230826` CSS architecture baseline is **41 / 100**. The six categories
-and their exact starting values are recorded in
-`docs/CSS_TARGET_ARCHITECTURE.md`.
+The historical audit started at **41 / 100**. Immediately before P1, the branch had
+already removed several unreachable/shadowed declarations; the operational B0 was
+therefore re-frozen at commit `39854c695f2c732fb12d9e011e127feadd10c790` as
+**44 / 100**.
+
+P1 completes at **54 / 100**, with no category decrease. Exact per-commit scoring
+and validation evidence live in `docs/CSS_MIGRATION_LOG.md`.
 
 The score is a migration safety tool, not a visual-quality score. Every accepted
 micro-change must be monotonic:
@@ -188,16 +199,29 @@ total_after >= total_before
 A responsive, accessibility, visual or product-behavior regression is considered
 a score decrease even if the CSS became shorter or selector count fell.
 
-## Current baseline failure
+## Current truthful CSS gates after P1
 
-At the audited baseline, the maintained GitHub Actions run passes the runtime,
-JavaScript, audio and SP1200 checks that precede CSS health, then fails in
-`tests/css_health.py` because `base.css` still contains unreachable selector paths,
-including `.stableTop`, `.utilityBtn` and `.headerActions` variants.
+P1 intentionally does **not** make the CSS clean; it makes the tests describe the
+real runtime before P2 starts.
 
-The first runtime cleanup phase must make that baseline truthful and green before
-moving broad component ownership. Do not use migration work to hide or bypass the
-failure.
+The current full-runtime CSS model reports:
+
+```text
+selector branches: 775 / 750  -> FAIL
+unused custom properties:
+  --sampler-shell
+  --chopper-amber-hot
+  --chopper-surface-hi
+```
+
+The selector budget remains 750. Do not raise it to make CI green. The unused
+variables and enough real selector/redundancy debt must be removed in P2 so the
+truthful gates pass naturally.
+
+Maintained runtime, JavaScript, audio, SP1200 and regression checks that execute
+before CSS health continue to pass in P1 runs. The current CI failure is therefore
+a known architecture gate exposed by complete CSS accounting, not a reason to
+weaken the test.
 
 ## Maintenance goal
 
