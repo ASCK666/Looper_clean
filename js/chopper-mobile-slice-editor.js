@@ -225,7 +225,9 @@
     activePad=-1;
     restoreDeckView();
     renderPads();
-    $("chopStatus").textContent="CHOP MODE";
+    $("chopStatus").textContent=ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices
+      ? `CHOP MODE • SLICES • ${ChopperWaveSlices.slices.length}/${ChopperWaveSlices.maxSlices}`
+      : "CHOP MODE • MARKERS";
     try{pads.scrollIntoView({block:"center",behavior:"auto"});}catch{}
   }
 
