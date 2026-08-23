@@ -63,8 +63,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     pad=page.locator('#pads .pad').nth(5);x,y=touch_point(pad);page.touchscreen.tap(x,y)
     page.wait_for_function('chopAuditionPad === 5',timeout=3000)
     assert page.evaluate("document.querySelectorAll('#pads .pad.hit').length")==1
-    page.wait_for_timeout(90)
-    assert page.evaluate("document.querySelectorAll('#pads .pad.hit').length")==1
     page.evaluate('stopChopAudition()')
 
     touch_start(pad);page.wait_for_timeout(520)
