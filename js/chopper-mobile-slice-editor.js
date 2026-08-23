@@ -102,7 +102,7 @@
   }
 
   function closeEditor(){
-    stopChopAudition();
+    if(activePad>=0 || !editor.hidden)stopChopAudition();
     activePad=-1;
     editor.hidden=true;
     pads.hidden=false;
