@@ -204,17 +204,24 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       for(let i=3;i<d.length;i+=4)if(d[i]!==0)return true;
       return false;
     }''',timeout=5000)
-    # Input remaps the view immediately but must not launch an expensive audio render until the tempo value is committed.
+    # Input remaps the view immediately and invalidates the cached preview, but it must not rebuild audio until the tempo value is committed.
     page.evaluate('''() => {
       window.__tempoBufferBefore=renderedFlip;
       window.__tempoStateBefore=loopPlayheadState;
       window.__tempoDurationBefore=loopPlayheadState.duration;
+      window.__tempoGenerationBefore=previewRenderGeneration;
       document.getElementById('sampleBpm').value='100';
     }''')
     page.dispatch_event('#sampleBpm','input');page.wait_for_timeout(30)
-    assert page.evaluate('renderedFlip===window.__tempoBufferBefore && loopPlayheadState===window.__tempoStateBefore') is True
+    assert page.evaluate('''() =>
+      renderedFlip===null &&
+      loopPlayheadState===window.__tempoStateBefore &&
+      previewRenderGeneration===window.__tempoGenerationBefore+1 &&
+      isLoopPlaying===true
+    ''') is True
     page.dispatch_event('#sampleBpm','change')
     page.wait_for_function('''() =>
+      renderedFlip!==null &&
       renderedFlip!==window.__tempoBufferBefore &&
       loopPlayheadState!==window.__tempoStateBefore &&
       Math.abs(loopPlayheadState.duration-4.8)<.01
