@@ -6,24 +6,24 @@ Baseline audit: `docs/SP1200_CORRECTION_AUDIT_BASELINE.md`
 
 ## Current accepted scores
 
-Current accepted audit state: C4
-Last runtime/test/validation HEAD audited: `b36ea11d1c3ca7580c344a80bf10cbce8657d65e`
+Current accepted audit state: C6
+Last runtime/test/validation HEAD audited: `ebc1b457c6c6992de643726e5cf072caf7092118`
 Current documentation HEAD: this file may be one commit ahead of the runtime/test HEAD because rescoring is committed separately.
-Current merge verdict: **SP1200 correction accepted through B6 and D4; full-project PR remains draft/not mergeable** — the maintained suite executes and passes all SP1200 unit/browser/race gates plus the dedicated PUNCH pending-preview regression, then stops later in unrelated `tests/regression_v63.py` while waiting for `#practiceOverlayOpen`. Practice remains frozen and out of scope for this correction.
+Current merge verdict: **SP1200 correction accepted through B1-B6, D4, D2 and the C6 fixed-output fidelity correction; full-project PR remains draft/not mergeable** — the maintained suite executes and passes all SP1200 unit/browser/race gates plus the dedicated PUNCH and Drum-edit regressions, then stops later in unrelated `tests/regression_v63.py` while waiting for the intentionally removed Practice control `#practiceOverlayOpen`.
 
 | Area | Current score |
 | --- | ---: |
-| SP DSP | **8.3 / 10** |
+| SP DSP | **8.5 / 10** |
 | `renderSpChop()` / PAD-PLAY boundary | **7.8 / 10** |
-| Claimable SP fidelity | **6.5 / 10** |
+| Claimable SP fidelity | **6.9 / 10** |
 | Async / race handling | **8.2 / 10** |
 | Ownership / architecture | **7.2 / 10** |
-| DSP tests | **7.5 / 10** |
-| Integration tests | **7.0 / 10** |
-| Overall maintainability | **6.7 / 10** |
-| **Total feature** | **7.1 / 10** |
+| DSP tests | **7.8 / 10** |
+| Integration tests | **7.1 / 10** |
+| Overall maintainability | **6.8 / 10** |
+| **Total feature** | **7.3 / 10** |
 
-These scores use the same rubric as the immutable baseline. No score is raised solely because a correction was authored on this branch. B1-B6 and D4 are now closed at the accepted SP1200 correction level. Duplicate Drum invalidations and classic-script/global debt continue to cap architecture and maintainability. The remaining full-suite blocker is outside the SP1200 lifecycle and does not downgrade the validated SP1200 categories.
+These scores use the same rubric as the immutable baseline. No score is raised solely because a correction was authored on this branch. B1-B6, D4 and D2 are closed at the accepted SP1200 correction level. The C6 output profile improves one evidence-backed hardware characteristic without claiming an exact component transfer: the fixed 3/4 path now uses a derived five-pole 1 dB Chebyshev response, while its 9 kHz edge remains a conservative calibration point. Classic-script/global debt and unmodelled or unmeasured analog details continue to cap architecture and fidelity. The remaining full-suite blocker is outside the SP1200 lifecycle and does not downgrade the validated SP1200 categories.
 
 ## C1 — maintained PLAY race contract
 
@@ -403,3 +403,117 @@ The full-project draft PR remains red only because the maintained suite later hi
 C4 is accepted. D4 is closed. B1-B6 and D4 are now closed at the SP1200 correction level. No score decreased, no runtime dead code was introduced, no DSP/fidelity claim changed, and the renderer-owned generation remains the only mechanism used to invalidate pending combined previews.
 
 The SP1200 feature score is **7.1 / 10**, up from **7.0 / 10** at C3, **6.6 / 10** at C2 and **5.8 / 10** at baseline.
+
+## C5 — Drum edit generation reuse
+
+Accepted runtime/test commits:
+
+- `63eed4b6dd178a65f75becf23a1de1e0798310fb` — Drum edits reuse the mutation's preview generation when rerendering instead of invalidating a second time;
+- `6d95dfc62fef103fa4ed83df540f26ffe9d13364` — adds `tests/drum_edit_invalidation.py` and runs it before the known Practice gate.
+
+Finding addressed: **D2 — duplicate invalidation in Drum edit paths**.
+
+### Runtime contract after C5
+
+The cleanup keeps the existing renderer owner and changes only how a Drum edit carries its generation into an active rerender:
+
+- synchronous CLEAR, step-click and velocity-wheel edits allocate one preview generation for one user mutation;
+- `rerenderPreviewMode()` can reuse that already-owned edit generation instead of allocating another one;
+- when an edit must actually cross `ensureDrumSelection()` / selection generation, invalidation remains deliberately two-phase: once before the await to retire old work, once after the newly generated selection is published so the post-await edit is the latest intent;
+- a concurrent later invalidation still makes an in-flight rerender stale and prevents publication/playback;
+- `markDrumSelectionEdited()` is limited to the Drum EDIT/CUSTOM state transition instead of also duplicating renderer invalidation.
+
+No new token, state manager, helper object, compatibility path or cross-domain writer was added.
+
+### C5 validation evidence
+
+GitHub Actions run `32631076262` on the final clean D2 history confirms before the unrelated Practice failure:
+
+- dead-code and JS health pass, with 173 functions, 96 top-level bindings and no dead declarations;
+- all existing SP DSP/input/output/level unit tests pass;
+- `tests/sp1200_browser.py` passes;
+- `tests/sp1200_races.py` passes;
+- `tests/punch_preview_race.py` passes;
+- `tests/drum_edit_invalidation.py` passes: one generation for synchronous edits, two-phase across the real selection await, stale rerender rejected.
+
+The suite then reaches the same stale Practice selector. C5 does not touch Practice.
+
+### Scores after C5
+
+| Area | After C4 | After C5 | Verdict |
+| --- | ---: | ---: | --- |
+| SP DSP | 8.3 | **8.3** | unchanged |
+| `renderSpChop()` / PAD-PLAY boundary | 7.8 | **7.8** | unchanged |
+| Claimable SP fidelity | 6.5 | **6.5** | unchanged |
+| Async / race handling | 8.2 | **8.2** | unchanged; safety preserved rather than newly expanded |
+| Ownership / architecture | 7.2 | **7.2** | unchanged; same renderer owner |
+| DSP tests | 7.5 | **7.5** | unchanged |
+| Integration tests | 7.0 | **7.1** | focused Drum lifecycle regression joins maintained Chromium coverage |
+| Overall maintainability | 6.7 | **6.8** | one mutation no longer performs redundant renderer invalidation |
+| **Total feature** | **7.1** | **7.1** | cleanup is useful but not inflated into a new feature-level gain |
+
+### C5 verdict
+
+D2 is closed without weakening stale-render rejection. The runtime/test history is intentionally two commits: one focused `drums.js` change and one focused regression/runner change. No score decreases and no dead code is introduced.
+
+## C6 — fixed 3/4 output filter fidelity
+
+Accepted runtime/test commits:
+
+- `dce08b9083ed39b2c49586c838c741abcf0912f7` — replaces the fixed 3/4 V1 fourth-order Butterworth approximation with an explicitly derived fifth-order, 1 dB-ripple Chebyshev type-I profile;
+- `ebc1b457c6c6992de643726e5cf072caf7092118` — strengthens `tests/sp1200_output_filter_unit.js` around topology metadata, passband ripple/edge and stopband attenuation.
+
+Finding addressed: **fidelity gap in the fixed output-filter family/order**. Archival SP technical documentation describes the fixed 3-6 output filters as five-pole 1 dB Chebyshev responses; the previous V1 used a fourth-order Butterworth solely as a conservative placeholder.
+
+### DSP contract after C6
+
+The change stays inside `js/sp1200.js` and preserves the existing product boundary:
+
+- `FILTER` still represents the lower-cutoff fixed 3/4 profile; no new UI or output mode is added;
+- the existing conservative 9 kHz 3/4 calibration point is retained because a complete calibrated component transfer is not publicly established here;
+- the filter family is now `chebyshev1-derived`, order 5, ripple 1 dB;
+- a standard fifth-order 1 dB Chebyshev prototype is bilinear-transformed at the session output rate as one real-pole section plus two complex-pole sections;
+- processing remains after the 12-bit shared DAC, 8-bit level DAC and multiplexed sample/hold reconstruction;
+- RAW remains unchanged;
+- no makeup gain is added and `exactCircuit:false` remains explicit;
+- no dynamic SSM2044 behavior for channels 1/2, separate 5/6 calibration, capacitor droop, crosstalk, analog nonlinearity, noise or saturation is invented.
+
+`renderSpChop()`, tuning/address carry behavior, ADC/input filtering, encoded PCM/cache lifecycle and preview ownership are unchanged.
+
+### C6 validation evidence
+
+GitHub Actions run `32631630788` validates the final C6 runtime/test HEAD before the unrelated Practice failure:
+
+- resource paths, dead code, assets, validation and Looper66 contracts pass;
+- JS health remains **173 functions, 96 top-level bindings, no dead declarations**;
+- core/AUTO MIX pass;
+- SP DSP, input gain and level DAC units pass unchanged;
+- output-filter unit passes with `Cheb5 FILTER 3/4 -1.0 dB @ 9 kHz, -36.2 dB @ 10.5 kHz`;
+- `tests/sp1200_browser.py` passes PAD/PLAY parity, shared reconstruction rate, ON/OFF, BANK/SLICES, VINYL and STOP;
+- `tests/sp1200_races.py`, `tests/punch_preview_race.py` and `tests/drum_edit_invalidation.py` all pass.
+
+The maintained chain then fails only in `tests/regression_v63.py` waiting for the intentionally removed Practice opener. C6 does not touch that domain and does not claim a repository-wide green exit.
+
+### Scores after C6
+
+| Area | After C5 | After C6 | Verdict |
+| --- | ---: | ---: | --- |
+| SP DSP | 8.3 | **8.5** | evidence-backed fixed-output topology/family is now closer to documented hardware |
+| `renderSpChop()` / PAD-PLAY boundary | 7.8 | **7.8** | unchanged |
+| Claimable SP fidelity | 6.5 | **6.9** | meaningful fixed-filter improvement, still capped by derived cutoff and unmodelled analog/channel details |
+| Async / race handling | 8.2 | **8.2** | unchanged |
+| Ownership / architecture | 7.2 | **7.2** | unchanged; DSP remains sole output-filter owner |
+| DSP tests | 7.5 | **7.8** | family/order/ripple, 9 kHz edge and 10.5 kHz attenuation now have explicit contracts |
+| Integration tests | 7.1 | **7.1** | browser/lifecycle coverage stays green; no new integration surface added |
+| Overall maintainability | 6.8 | **6.8** | one justified DSP helper replaces the obsolete V1 Butterworth path; no dead declarations |
+| **Total feature** | **7.1** | **7.3** | real fidelity gain without broadening product or architecture scope |
+
+### Remaining fidelity limits after C6
+
+The score is deliberately not pushed higher merely because the filter family is corrected. The 9 kHz 3/4 edge remains derived rather than a calibrated exact component response. Channels 5/6 are not exposed as a separate higher-cutoff profile, channels 1/2 dynamic SSM2044 behavior is not emulated here, and unmeasured DAC/S&H nonlinearity, droop, crosstalk and noise remain explicitly unmodelled.
+
+### C6 verdict
+
+C6 is accepted. The fixed output-filter model now reflects the documented five-pole 1 dB Chebyshev topology while retaining honest derived labeling and all previously accepted lifecycle/ownership boundaries. No score decreases, no dead code is introduced, RAW behavior is preserved, and every maintained SP gate reaches green before the unrelated Practice test.
+
+The SP1200 feature score is **7.3 / 10**, up from **7.1 / 10** after C4/C5, **7.0 / 10** at C3, **6.6 / 10** at C2 and **5.8 / 10** at baseline.
