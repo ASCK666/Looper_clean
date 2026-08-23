@@ -114,7 +114,7 @@ function main(){
   assert(adapter.includes('let outputMode="raw"'),"Chopper must default SP playback to RAW");
   assert(adapter.includes("outputMode:renderOutputMode"),"SP PLAY/SAVE must render the snapshotted output profile");
   assert(adapter.includes("outputMode:requestOutputMode"),"SP PAD audition must render the snapshotted output profile");
-  assert(adapter.includes('button.id="sp1200FilterToggle"'),"Chopper must expose the compact FILTER control");
+  assert(adapter.includes('filterButton.id="sp1200FilterToggle"'),"Chopper must expose the compact FILTER control");
   assert(adapter.includes("setOutputMode"),"Chopper must expose programmatic RAW/FILTER switching");
   assert(adapter.includes("output:outputMode"),"SP settings must report the audible output profile");
   assert(!adapter.includes("createBiquadFilter"),"SP output filtering must remain DSP-owned, not Chopper UI wiring");
