@@ -164,6 +164,7 @@
 #chopper .drumQuickActions {
   grid-area: auto !important;
   display: grid !important;
+  grid-template-columns: 76px 64px max-content max-content !important;
   column-gap: 24px !important;
   row-gap: 14px !important;
   width: max-content !important;
@@ -207,7 +208,7 @@
   margin: 0 0 4px !important;
   color: var(--chopper-muted) !important;
   font: 800 8px/1 var(--font-mono) !important;
-  letter-spacing: .6px;
+  letter-spacing: .6px !important;
   text-align: center;
   cursor: default;
 }
