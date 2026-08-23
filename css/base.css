@@ -1278,7 +1278,6 @@ button.active:not(:disabled), button[aria-pressed="true"]:not(:disabled),
   margin:0!important;
   border-color:var(--sampler-edge)!important;
   border-radius:8px!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 7px 16px rgba(0,0,0,.14)!important;
 }
 
 #chopper .samplerDeck .panel:before {display:none!important}
@@ -1402,7 +1401,7 @@ button.active:not(:disabled), button[aria-pressed="true"]:not(:disabled),
 }
 #chopper .samplerDeck .btn:hover {border-color:#80623a!important;color:#fff!important;background:linear-gradient(180deg,#332a20,#1c1610)!important}
 #chopper .samplerDeck .btn:active {transform:translateY(1px)}
-#chopper .samplerDeck .btn.primary,#chopper .samplerDeck .btn.blue,#chopper .samplerDeck .btn.good {border-color:#765a34!important;color:#f0d39c!important;background:linear-gradient(180deg,#3b2d1e,#211811)!important}
+#chopper .samplerDeck .btn.primary,#chopper .samplerDeck .btn.blue,#chopper .samplerDeck .btn.good {border-color:#765a34!important;color:#f0d39c!important}
 
 .samplerDrumSection {margin-top:1px!important;border-top:1px solid #43372b!important;background:linear-gradient(180deg,#14110d,#080605)!important}
 
