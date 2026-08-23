@@ -39,9 +39,25 @@ with contextlib.ExitStack() as stack:
             page.wait_for_timeout(50)
 
             state=page.evaluate('''() => {
-              const style=selector=>getComputedStyle(document.querySelector(selector));
+              const required=[
+                '#chopper .samplerDeck','#chopper .samplerDeck .panel',
+                '#chopper .samplerDrumSection','#chopper .wavewrap.largeWave',
+                '#chopper .loopGridWrap','#chopper .drumEditBox','#chopper .advancedBox',
+                '#chopper #sampleBpm','#chopper #punchMode','#chopper .samplerUpperDeck',
+                '#chopper .samplerSequenceModule'
+              ];
+              const missing=required.filter(selector=>!document.querySelector(selector));
+              const style=selector=>{
+                const element=document.querySelector(selector);
+                return element?getComputedStyle(element):null;
+              };
               const rect=selector=>document.querySelector(selector).getBoundingClientRect().toJSON();
+              const displayOrAbsent=selector=>{
+                const value=style(selector);
+                return value?value.display:'absent';
+              };
               const links=[...document.querySelectorAll('link[rel~="stylesheet"]')];
+              if(missing.length)return {missing};
               const backgrounds={
                 deck:style('#chopper .samplerDeck').backgroundImage,
                 panel:style('#chopper .samplerDeck .panel').backgroundImage,
@@ -51,15 +67,16 @@ with contextlib.ExitStack() as stack:
                 editor:style('#chopper .drumEditBox').backgroundImage,
                 advanced:style('#chopper .advancedBox').backgroundImage,
                 input:style('#chopper #sampleBpm').backgroundImage,
-                select:style('#chopper #punchMode').backgroundImage
+                punch:style('#chopper #punchMode').backgroundImage
               };
               return {
+                missing,
                 links:links.map(link=>({href:link.getAttribute('href'),loaded:Boolean(link.sheet)})),
                 upperColumns:style('#chopper .samplerUpperDeck').gridTemplateColumns,
                 hidden:{
-                  sampleInfo:style('#chopper .samplerSampleInfo').display,
-                  titleMeta:style('#chopper .titleMeta').display,
-                  currentDrums:style('#chopper .currentDrums').display
+                  sampleInfo:displayOrAbsent('#chopper .samplerSampleInfo'),
+                  titleMeta:displayOrAbsent('#chopper .titleMeta'),
+                  currentDrums:displayOrAbsent('#chopper .currentDrums')
                 },
                 backgrounds,
                 deck:rect('#chopper .samplerDeck'),
@@ -68,6 +85,7 @@ with contextlib.ExitStack() as stack:
               };
             }''')
 
+            assert not state['missing'],(width,state['missing'])
             assert len(state['links'])==4,state
             assert all(item['loaded'] for item in state['links']),state['links']
             assert [item['href'] for item in state['links']]==[
@@ -77,22 +95,18 @@ with contextlib.ExitStack() as stack:
                 './css/chopper-deck-texture.css'
             ],state['links']
 
-            # chopper-drum-controls.css is the active owner of the one-column upper deck.
             assert len(state['upperColumns'].split())==1,state['upperColumns']
 
-            # These legacy readouts are intentionally absent from the rendered UI.
-            assert state['hidden']=={
-                'sampleInfo':'none','titleMeta':'none','currentDrums':'none'
-            },state['hidden']
+            # Hidden legacy/readout nodes may also be removed by runtime code;
+            # either state is non-visible and therefore valid for this CSS gate.
+            assert all(value in ('none','absent') for value in state['hidden'].values()),state['hidden']
 
-            # The deck/panels keep their runtime texture, while inner controls stay
-            # image-free without the deleted late reset block.
             for key in ['deck','panel','drums']:
                 assert state['backgrounds'][key] != 'none',(width,key,state['backgrounds'][key])
                 assert 'deck-black-ui-texture.png' in state['backgrounds'][key],(
                     width,key,state['backgrounds'][key]
                 )
-            for key in ['wave','grid','editor','advanced','input','select']:
+            for key in ['wave','grid','editor','advanced','input','punch']:
                 assert state['backgrounds'][key] == 'none',(width,key,state['backgrounds'][key])
 
             for key in ['deck','sequence','drums']:
