@@ -67,8 +67,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     # deck is hidden and a full-sample waveform is displayed above START / END.
     box=pad.bounding_box();assert box,box
     page.mouse.move(box['x']+box['width']/2,box['y']+box['height']/2)
-    page.mouse.down()
-    page.wait_for_timeout(520)
+    page.mouse.down();page.wait_for_timeout(520)
     page.wait_for_function('ChopperMobileSliceEditor.visible && ChopperMobileSliceEditor.activePad === 5',timeout=3000)
     held=page.evaluate('''() => {
       const workspace=document.getElementById('mobileChopWorkspace');
@@ -109,7 +108,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert abs((after['end']-before['end'])+.025)<1e-6,(before,after)
     assert 'LEN' in after['range'],after
 
-    # PREVIEW in the dedicated CHOP view respects END, unlike normal MARKERS cue-to-end audition.
+    # PREVIEW in the dedicated CHOP view respects END.
     page.click('#mobileChopPreview')
     page.wait_for_function('chopAuditionPad === 5',timeout=3000)
     chop_len=after['end']-after['start']
