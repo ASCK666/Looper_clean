@@ -41,7 +41,15 @@ def inline_project():
         clean=value.split('?',1)[0].split('#',1)[0]
         path=(ROOT/clean.lstrip('./')).resolve()
         assert path.exists(),f'Runtime JS missing from punch master fixture: {value}'
-        return f'<script data-inline-from="{clean}">{path.read_text(encoding="utf-8")}</script>'
+        body=f'<script data-inline-from="{clean}">{path.read_text(encoding="utf-8")}</script>'
+        if clean.lstrip('./')=='js/chopper-wave-slices.js':
+            dynamic=[]
+            for dep in ('js/sp1200.js','js/chopper-sp1200.js'):
+                dep_path=(ROOT/dep).resolve()
+                assert dep_path.exists(),f'Dynamic Chopper dependency missing from punch master fixture: {dep}'
+                dynamic.append(f'<script data-inline-from="{dep}">{dep_path.read_text(encoding="utf-8")}</script>')
+            return ''.join(dynamic)+body
+        return body
 
     return re.sub(
         r'<script\b[^>]*\bsrc=["\'][^"\']+["\'][^>]*>\s*</script>',
