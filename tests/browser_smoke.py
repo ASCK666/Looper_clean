@@ -96,11 +96,41 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.wait_for_function('autoLooperSpeedPercent === 101',timeout=5000)
         page.click('#stopBeat')
 
+        page.evaluate('''() => {
+          window.__spaceTrace=[];
+          const snap=(kind,ev=null)=>window.__spaceTrace.push({
+            kind,
+            target:ev?.target?.id||ev?.target?.tagName||null,
+            active:document.activeElement?.id||document.activeElement?.tagName||null,
+            source:deckSource!==null,
+            seq:deckTransportSequence,
+            search:document.getElementById('librarySearch')?.value||''
+          });
+          document.addEventListener('keydown',ev=>{ if(ev.code==='Space')snap('keydown-capture',ev); },true);
+          document.addEventListener('keydown',ev=>{ if(ev.code==='Space')queueMicrotask(()=>snap('keydown-microtask',ev)); });
+          document.addEventListener('keyup',ev=>{ if(ev.code==='Space')snap('keyup-capture',ev); },true);
+          window.__spaceSnap=label=>snap(label);
+          let last=deckSource!==null;
+          window.__spacePoll=setInterval(()=>{
+            const next=deckSource!==null;
+            if(next!==last){ last=next; snap(next?'source-on':'source-off'); }
+          },1);
+        }''')
+        page.evaluate("window.__spaceSnap('before-blur')")
         page.evaluate('document.activeElement && document.activeElement.blur()')
+        page.evaluate("window.__spaceSnap('after-blur')")
         page.keyboard.press('Space'); page.wait_for_function('deckSource !== null')
+        page.evaluate("window.__spaceSnap('after-first-space')")
         page.keyboard.press('Space'); page.wait_for_function('deckSource === null')
-        page.focus('#librarySearch'); page.keyboard.press('Space'); page.wait_for_timeout(120)
-        assert page.evaluate('deckSource === null') is True
+        page.evaluate("window.__spaceSnap('after-second-space')")
+        page.focus('#librarySearch')
+        page.evaluate("window.__spaceSnap('after-search-focus')")
+        page.keyboard.press('Space'); page.wait_for_timeout(120)
+        page.evaluate("window.__spaceSnap('after-search-space')")
+        keyboard_ok=page.evaluate('deckSource === null')
+        keyboard_trace=page.evaluate('window.__spaceTrace')
+        assert keyboard_ok,keyboard_trace
+        page.evaluate('clearInterval(window.__spacePoll)')
         page.fill('#librarySearch','')
 
         page.click('[data-tab="chopper"]')
