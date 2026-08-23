@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # Cheap source-contract checks still run when Playwright is unavailable.
 adapter_source = (ROOT / 'js' / 'chopper-sp1200.js').read_text(encoding='utf-8')
+chopper_source = (ROOT / 'js' / 'chopper.js').read_text(encoding='utf-8')
 drums_source = (ROOT / 'js' / 'drums.js').read_text(encoding='utf-8')
 events_source = (ROOT / 'js' / 'events.js').read_text(encoding='utf-8')
 
@@ -44,6 +45,19 @@ assert 'cueMarkers?.[' not in post_snapshot_block, 'SP full render must use its 
 assert 'let previewGeneration=0' in adapter_source, 'SP pad audition needs an async generation token'
 assert 'const stopChopAuditionBase=stopChopAudition' in adapter_source, 'normal Chopper stop must invalidate pending SP auditions'
 assert 'generation!==previewGeneration' in adapter_source, 'stale SP pad continuations must be rejected'
+
+# Sample replacement owns a separate last-request-wins token. It must stop an
+# already-audible combined preview, invalidate a pending one, and reject stale
+# decode continuations before they can publish source state or an obsolete error.
+load_start = chopper_source.index('async function loadChopperSample')
+load_end = chopper_source.index('\nfunction viewWindow', load_start)
+load_block = chopper_source[load_start:load_end]
+assert 'let sampleLoadGeneration=0' in chopper_source, 'sample loading needs its own request generation token'
+assert 'const generation=++sampleLoadGeneration' in load_block, 'each sample load must allocate a new generation'
+assert 'if(typeof stopCurrentBeat==="function" && isLoopPlaying)stopCurrentBeat();' in load_block, 'sample replacement must stop an active combined preview'
+assert 'invalidatePreviewRender();' in load_block, 'sample replacement must invalidate a pending combined preview'
+assert load_block.count('if(generation!==sampleLoadGeneration)return false;') >= 2, 'stale sample decodes and errors must both be rejected'
+assert load_block.index('if(generation!==sampleLoadGeneration)return false;') < load_block.index('sampleBuffer=decoded;'), 'stale sample decode must be rejected before publishing sampleBuffer'
 
 # The combined PLAY/DRUMS preview generation has one runtime writer. The SP
 # pad-audition token above is intentionally separate because it owns a different
@@ -98,7 +112,9 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
 with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
     td = Path(td)
     sample = td / 'sp-race-48k.wav'
+    replacement = td / 'sp-replacement-48k.wav'
     make_wav(sample)
+    make_wav(replacement, hz=241)
 
     handler = lambda *a, **kw: QuietHandler(*a, directory=str(ROOT), **kw)
     server = socketserver.TCPServer(('127.0.0.1', 0), handler)
@@ -351,9 +367,124 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
           vinyl.dispatchEvent(new Event('input',{bubbles:true}));
         }''')
 
+        # Regression 7: replacing the sample while a combined preview is already
+        # audible must stop that source before the new sample context is published.
+        page.evaluate('''() => {
+          SP1200DSP.clearCache(sampleBuffer);
+          window.__spLiveStarts=0;
+          loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+          loopGridEvents[0]=1;
+          renderLoopGrid();
+        }''')
+        page.click('#previewFlip')
+        page.wait_for_function(
+            "isLoopPlaying === true && flipSource !== null && lastPreviewMode === 'full'",
+            timeout=10000,
+        )
+        active_starts = page.evaluate('window.__spLiveStarts')
+        page.set_input_files('#sampleFile', str(replacement))
+        page.wait_for_function(
+            "sampleName === 'sp-replacement-48k.wav' && sampleBuffer && sampleBuffer.duration > 7.5",
+            timeout=15000,
+        )
+        active_load = page.evaluate('''() => ({
+          playing:isLoopPlaying,
+          source:flipSource,
+          mode:lastPreviewMode,
+          starts:window.__spLiveStarts,
+          name:sampleName
+        })''')
+        assert active_load['playing'] is False, active_load
+        assert active_load['source'] is None, active_load
+        assert active_load['mode'] is None, active_load
+        assert active_load['starts'] == active_starts, active_load
+        assert active_load['name'] == 'sp-replacement-48k.wav', active_load
+
+        # Regression 8: replacing the sample while PLAY is still rendering must
+        # invalidate the old generation so it cannot become audible afterward.
+        page.set_input_files('#sampleFile', str(sample))
+        page.wait_for_function(
+            "sampleName === 'sp-race-48k.wav' && sampleBuffer && sampleBuffer.duration > 7.5",
+            timeout=15000,
+        )
+        page.evaluate('''() => {
+          document.getElementById('sampleBpm').value='120';
+          currentDrumSelection={
+            mode:'off',patternId:'OFF',patternName:'OFF',
+            kicks:[],snares:[],ghosts:[],hats:[],hatSteps:[],
+            kickVelocity:{},snareVelocity:{},hatVelocity:{},
+            kick:null,snare:null,hat:null
+          };
+          ChopperBanks.selectBank(0);
+          ChopperWaveSlices.setEditMode('markers');
+          loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+          loopGridEvents[0]=1;
+          renderLoopGrid();
+          SP1200DSP.clearCache(sampleBuffer);
+          window.__spLiveStarts=0;
+        }''')
+        page.click('#previewFlip')
+        page.wait_for_timeout(5)
+        page.set_input_files('#sampleFile', str(replacement))
+        page.wait_for_function(
+            "sampleName === 'sp-replacement-48k.wav' && sampleBuffer && sampleBuffer.duration > 7.5",
+            timeout=15000,
+        )
+        page.wait_for_timeout(1200)
+        pending_load = page.evaluate('''() => ({
+          playing:isLoopPlaying,
+          source:flipSource,
+          starts:window.__spLiveStarts,
+          name:sampleName
+        })''')
+        assert pending_load['playing'] is False, pending_load
+        assert pending_load['source'] is None, pending_load
+        assert pending_load['starts'] == 0, pending_load
+        assert pending_load['name'] == 'sp-replacement-48k.wav', pending_load
+
+        # Regression 9: overlapping decodes are last-request-wins. The stale
+        # first decode may finish later, but it cannot overwrite sample state.
+        overlapping_loads = page.evaluate('''async () => {
+          const decodeBase=decodeFile;
+          const rate=ctx.sampleRate;
+          const slowBuffer=ctx.createBuffer(1,Math.max(1,Math.floor(rate*.25)),rate);
+          const fastBuffer=ctx.createBuffer(1,Math.max(1,Math.floor(rate*.5)),rate);
+          decodeFile=async file=>{
+            if(file.name==='slow-a.wav'){
+              await new Promise(resolve=>setTimeout(resolve,120));
+              return slowBuffer;
+            }
+            if(file.name==='fast-b.wav'){
+              await new Promise(resolve=>setTimeout(resolve,10));
+              return fastBuffer;
+            }
+            return await decodeBase(file);
+          };
+          try{
+            const slow=loadChopperSample({name:'slow-a.wav',size:1,type:'audio/wav'});
+            await new Promise(resolve=>setTimeout(resolve,5));
+            const fast=loadChopperSample({name:'fast-b.wav',size:1,type:'audio/wav'});
+            const [slowResult,fastResult]=await Promise.all([slow,fast]);
+            return {
+              slowResult,
+              fastResult,
+              name:sampleName,
+              duration:sampleBuffer?.duration||0,
+              status:document.getElementById('chopStatus').textContent
+            };
+          }finally{
+            decodeFile=decodeBase;
+          }
+        }''')
+        assert overlapping_loads['slowResult'] is False, overlapping_loads
+        assert overlapping_loads['fastResult'] is True, overlapping_loads
+        assert overlapping_loads['name'] == 'fast-b.wav', overlapping_loads
+        assert abs(overlapping_loads['duration'] - .5) < .01, overlapping_loads
+        assert 'fast-b.wav' in overlapping_loads['status'], overlapping_loads
+
         assert page.evaluate('window.__SP.errors.length') == 0
         assert not page_errors, page_errors
         context.close()
         browser.close()
 
-print('OK: SP1200 async races — single-owner preview invalidation plus STOP-safe PAD/PLAY snapshots')
+print('OK: SP1200 async races — single-owner preview invalidation plus STOP-safe PAD/PLAY/sample-load lifecycle')
