@@ -23,6 +23,10 @@
   let holdStartY=0;
   let suppressClickButton=null;
   let hiddenDeckChildren=[];
+  let playheadRAF=0;
+  let playheadRange=null;
+  let playheadStartedAt=0;
+  let playheadRate=1;
 
   const workspace=document.createElement("section");
   workspace.id="mobileChopWorkspace";
@@ -31,8 +35,9 @@
   workspace.setAttribute("aria-label","Éditeur mobile du chop");
   workspace.innerHTML=`
     <div class="samplerSequenceHead">
+      <button id="mobileChopPrev" class="btn" type="button" aria-label="Chop précédent">◀</button>
       <div id="mobileChopEditorTitle" class="title compactTitle">CHOP --</div>
-      <div class="sequenceActions"><button id="mobileChopDone" class="btn" type="button">DONE</button></div>
+      <button id="mobileChopNext" class="btn" type="button" aria-label="Chop suivant">▶</button>
     </div>
     <div class="wavewrap largeWave samplerScreen">
       <canvas id="mobileChopWave" width="900" height="220" aria-label="Waveform du chop sélectionné"></canvas>
@@ -56,7 +61,10 @@
         <button class="btn" type="button" data-mobile-boundary="end" data-mobile-delta="${COARSE_SEC}" aria-label="Avancer la fin de 25 millisecondes">+25</button>
       </div>
     </div>
-    <button id="mobileChopPreview" class="btn primary" type="button">PREVIEW CHOP</button>`;
+    <div class="grid2">
+      <button id="mobileChopPreview" class="btn primary" type="button">PREVIEW CHOP</button>
+      <button id="mobileChopDone" class="btn" type="button">← CHOPS</button>
+    </div>`;
   deck.appendChild(workspace);
 
   const title=document.getElementById("mobileChopEditorTitle");
@@ -65,6 +73,8 @@
   const wave2d=wave.getContext("2d");
   const preview=document.getElementById("mobileChopPreview");
   const done=document.getElementById("mobileChopDone");
+  const prev=document.getElementById("mobileChopPrev");
+  const next=document.getElementById("mobileChopNext");
 
   wave.style.cssText="display:block;width:100%;height:190px;touch-action:none";
   workspace.style.width="100%";
@@ -83,22 +93,27 @@
       : Math.max(0,markers.length-1);
   }
 
-  function drawEditorWave(){
+  function editorWindow(range=currentRange()){
+    if(!sampleBuffer || !range)return null;
+    const span=Math.max(.001,range.end-range.start);
+    const start=Math.max(0,range.start-span*.55);
+    const end=Math.min(sampleBuffer.duration,range.end+span*.55);
+    return {start,end,dur:Math.max(.001,end-start)};
+  }
+
+  function drawEditorWave(playheadSec=null){
     const w=wave.width,h=wave.height;
     wave2d.clearRect(0,0,w,h);
     wave2d.fillStyle="#080604";wave2d.fillRect(0,0,w,h);
     const range=currentRange();
-    if(!sampleBuffer || !range)return;
+    const view=editorWindow(range);
+    if(!range || !view)return;
 
-    const span=Math.max(.001,range.end-range.start);
-    const viewStart=Math.max(0,range.start-span*.55);
-    const viewEnd=Math.min(sampleBuffer.duration,range.end+span*.55);
-    const viewDur=Math.max(.001,viewEnd-viewStart);
     wave2d.strokeStyle="#d7a455";wave2d.lineWidth=1;
-    drawBufferRange(wave2d,sampleBuffer,viewStart,viewEnd,0,w,h);
+    drawBufferRange(wave2d,sampleBuffer,view.start,view.end,0,w,h);
 
-    const left=clamp((range.start-viewStart)/viewDur*w,0,w);
-    const right=clamp((range.end-viewStart)/viewDur*w,0,w);
+    const left=clamp((range.start-view.start)/view.dur*w,0,w);
+    const right=clamp((range.end-view.start)/view.dur*w,0,w);
     wave2d.fillStyle="rgba(0,0,0,.58)";
     wave2d.fillRect(0,0,left,h);wave2d.fillRect(right,0,w-right,h);
     wave2d.fillStyle="rgba(226,173,95,.10)";wave2d.fillRect(left,0,Math.max(0,right-left),h);
@@ -109,6 +124,37 @@
     wave2d.textAlign="left";wave2d.fillText("START",Math.min(w-52,left+8),20);
     wave2d.textAlign="right";wave2d.fillText("END",Math.max(38,right-8),20);
     wave2d.textAlign="left";
+
+    if(Number.isFinite(playheadSec) && playheadSec>=range.start && playheadSec<=range.end){
+      const x=clamp((playheadSec-view.start)/view.dur*w,0,w);
+      wave2d.save();
+      wave2d.strokeStyle="rgba(5,3,2,.88)";wave2d.lineWidth=6;
+      wave2d.beginPath();wave2d.moveTo(x,0);wave2d.lineTo(x,h);wave2d.stroke();
+      wave2d.strokeStyle="#ffd98e";wave2d.lineWidth=2.5;
+      wave2d.shadowColor="rgba(240,180,95,.9)";wave2d.shadowBlur=9;
+      wave2d.beginPath();wave2d.moveTo(x,0);wave2d.lineTo(x,h);wave2d.stroke();
+      wave2d.fillStyle="#ffe1a6";
+      wave2d.beginPath();wave2d.moveTo(x-6,0);wave2d.lineTo(x+6,0);wave2d.lineTo(x,9);wave2d.closePath();wave2d.fill();
+      wave2d.restore();
+    }
+  }
+
+  function stopEditorPlayhead({redraw=true}={}){
+    if(playheadRAF)cancelAnimationFrame(playheadRAF);
+    playheadRAF=0;playheadRange=null;
+    if(redraw && !workspace.hidden)drawEditorWave();
+  }
+
+  function runEditorPlayhead(){
+    if(!playheadRange || workspace.hidden)return stopEditorPlayhead({redraw:false});
+    const sec=playheadRange.start+Math.max(0,ctx.currentTime-playheadStartedAt)*playheadRate;
+    if(sec>=playheadRange.end || chopAuditionPad<0){
+      drawEditorWave(playheadRange.end);
+      playheadRAF=setTimeout(()=>stopEditorPlayhead(),70);
+      return;
+    }
+    drawEditorWave(sec);
+    playheadRAF=requestAnimationFrame(runEditorPlayhead);
   }
 
   function updateEditor(){
@@ -145,9 +191,25 @@
     delete root.dataset.mobileChopView;
   }
 
+  function selectActiveChop(index){
+    const count=currentCount();
+    if(!count)return false;
+    stopChopAudition();stopEditorPlayhead({redraw:false});
+    activePad=(Math.round(index)%count+count)%count;
+    if(ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices)ChopperWaveSlices.selectSlice(activePad);
+    else{selectedMarker=activePad;refreshMarkerEditor();drawWave();}
+    updateEditor();
+    return true;
+  }
+
+  function navigateChop(delta){
+    if(activePad<0)return false;
+    return selectActiveChop(activePad+Number(delta||0));
+  }
+
   function openEditor(index){
     if(!isMobile() || !sampleBuffer || !currentRange(index))return false;
-    stopChopAudition();
+    stopChopAudition();stopEditorPlayhead({redraw:false});
     activePad=index;
     if(ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices)ChopperWaveSlices.selectSlice(index);
     else{selectedMarker=index;refreshMarkerEditor();drawWave();}
@@ -158,14 +220,19 @@
   }
 
   function closeEditor(){
+    stopEditorPlayhead({redraw:false});
     if(activePad>=0 || !workspace.hidden)stopChopAudition();
     activePad=-1;
     restoreDeckView();
+    renderPads();
+    $("chopStatus").textContent="CHOP MODE";
+    try{pads.scrollIntoView({block:"center",behavior:"auto"});}catch{}
   }
 
   function adjustBoundary(boundary,delta){
     const range=currentRange();
     if(!range)return;
+    stopChopAudition();stopEditorPlayhead({redraw:false});
     const target=range[boundary]+Number(delta||0);
     if(ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices)ChopperWaveSlices.setSliceBoundary(activePad,boundary,target);
     else moveMarker(activePad+(boundary==="end"?1:0),target,false);
@@ -175,11 +242,18 @@
   async function previewCurrent(){
     const range=currentRange();
     if(!range)return;
+    stopEditorPlayhead({redraw:false});
     const button=document.querySelectorAll("#pads .pad")[activePad]||workspace;
     await previewSlice(activePad,button);
     if(ChopperWaveSlices.mode===ChopperWaveSlices.modes.markers && chopAuditionSource){
       const audible=Math.max(.005,(range.end-range.start)/samplePitchRate());
       try{chopAuditionSource.stop(Math.max(ctx.currentTime+.005,chopAuditionStartedAt+audible));}catch{}
+    }
+    if(chopAuditionSource){
+      playheadRange={start:range.start,end:range.end};
+      playheadStartedAt=chopAuditionStartedAt;
+      playheadRate=samplePitchRate();
+      runEditorPlayhead();
     }
   }
 
@@ -228,6 +302,8 @@
   workspace.querySelectorAll("[data-mobile-boundary]").forEach(button=>{
     button.addEventListener("click",()=>adjustBoundary(button.dataset.mobileBoundary,button.dataset.mobileDelta));
   });
+  prev.addEventListener("click",()=>navigateChop(-1));
+  next.addEventListener("click",()=>navigateChop(1));
   preview.addEventListener("click",()=>{void previewCurrent();});
   done.addEventListener("click",closeEditor);
 
