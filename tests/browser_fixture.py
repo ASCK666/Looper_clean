@@ -11,17 +11,27 @@ def _local_path(root: Path, value: str) -> tuple[str, Path]:
     return clean, path
 
 
+def _inline_script_tag(root: Path, clean: str, path: Path) -> str:
+    return f'<script data-inline-from="{clean}">{path.read_text(encoding="utf-8")}</script>'
+
+
 def inline_runtime_page(
     root: Path = ROOT,
     *,
+    script_paths: tuple[str, ...] | None = None,
+    append_scripts: tuple[str, ...] = (),
     preload_before: dict[str, tuple[str, ...]] | None = None,
 ) -> str:
-    """Inline the real index.html CSS/JS manifest for about:blank Playwright pages.
+    """Inline index.html runtime dependencies for about:blank Playwright pages.
 
-    Tests that can serve index.html directly should prefer that. This helper exists
-    only for fixtures that intentionally use page.set_content().
+    CSS always follows the real stylesheet manifest. Tests that intentionally use
+    only a subset of application scripts may pass ``script_paths``; tests that can
+    serve index.html directly should prefer the real page instead.
     """
     root = Path(root).resolve()
+    selected_scripts = None if script_paths is None else {
+        value.split('?', 1)[0].split('#', 1)[0].lstrip('./') for value in script_paths
+    }
     preload_before = preload_before or {}
     html = (root / 'index.html').read_text(encoding='utf-8')
     html = re.sub(
@@ -57,18 +67,25 @@ def inline_runtime_page(
         if value.startswith(('http://', 'https://', 'data:')):
             return tag
         clean, path = _local_path(root, value)
+        normalized = clean.lstrip('./')
+        if selected_scripts is not None and normalized not in selected_scripts:
+            return tag
         before = []
-        for dependency in preload_before.get(clean.lstrip('./'), ()):
+        for dependency in preload_before.get(normalized, ()):
             dep_clean, dep_path = _local_path(root, dependency)
-            before.append(
-                f'<script data-inline-from="{dep_clean}">{dep_path.read_text(encoding="utf-8")}</script>'
-            )
-        body = f'<script data-inline-from="{clean}">{path.read_text(encoding="utf-8")}</script>'
-        return ''.join(before) + body
+            before.append(_inline_script_tag(root, dep_clean, dep_path))
+        return ''.join(before) + _inline_script_tag(root, clean, path)
 
-    return re.sub(
+    html = re.sub(
         r'<script\b[^>]*\bsrc=["\'][^"\']+["\'][^>]*>\s*</script>',
         inline_script,
         html,
         flags=re.I,
     )
+    if append_scripts:
+        appended = []
+        for dependency in append_scripts:
+            clean, path = _local_path(root, dependency)
+            appended.append(_inline_script_tag(root, clean, path))
+        html = html.replace('</body>', ''.join(appended) + '</body>')
+    return html
