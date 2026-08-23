@@ -1,21 +1,6 @@
 /* Scratch Practice - maintained runtime base stylesheet.
    There is no CSS generator pipeline; edit this file directly. */
 
-:root {
-  /* Core UI */
-  --line: #252b30;
-  --accent: #e2ad5f;
-  --accent-secondary: #b87349;
-  --amber: #e2ad5f;
-
-  /* Typography */
-  --font-mono: ui-monospace,SFMono-Regular,Consolas,monospace;
-  --font-condensed: "Arial Narrow","Helvetica Neue",Arial,sans-serif;
-
-  /* Shared physical surface */
-  --deck-texture: url("../assets/deck-black-ui-texture.png");
-}
-
 * {
   box-sizing: border-box;
 }
