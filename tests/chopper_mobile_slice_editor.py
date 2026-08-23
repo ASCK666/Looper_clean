@@ -26,19 +26,11 @@ def make_wav(path,duration=1.6,freq=190,sr=44100):
         w.writeframes(frames)
 
 
-html=inline_runtime_page(
-    preload_before={
-        'js/chopper-wave-slices.js':('js/chopper-mobile-slice-editor.js',),
-    }
-)
+html=inline_runtime_page(preload_before={'js/chopper-wave-slices.js':('js/chopper-mobile-slice-editor.js',)})
 
 with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     sample=Path(td)/'mobile-chops.wav';make_wav(sample)
-    browser=p.chromium.launch(
-        headless=True,
-        executable_path='/usr/bin/chromium',
-        args=['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required']
-    )
+    browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required'])
     context=browser.new_context(viewport={'width':390,'height':900},is_mobile=True,has_touch=True,device_scale_factor=2)
     page=context.new_page();cdp=context.new_cdp_session(page)
 
@@ -55,10 +47,8 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
 
     def canvas_checksum(canvas_id):
         return page.evaluate('''canvasId => {
-          const c=document.getElementById(canvasId);
-          const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
-          let sum=0;for(let i=0;i<d.length;i+=4)sum=(sum+d[i]*3+d[i+1]*5+d[i+2]*7+d[i+3])%2147483647;
-          return sum;
+          const c=document.getElementById(canvasId),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+          let sum=0;for(let i=0;i<d.length;i+=4)sum=(sum+d[i]*3+d[i+1]*5+d[i+2]*7+d[i+3])%2147483647;return sum;
         }''',canvas_id)
 
     errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
@@ -71,7 +61,13 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert state=={'mode':'markers','markers':17,'pads':16,'enabled':16,'mobile':True,'touch':True},state
 
     pad=page.locator('#pads .pad').nth(5);x,y=touch_point(pad);page.touchscreen.tap(x,y)
-    page.wait_for_function('chopAuditionPad === 5',timeout=3000);page.evaluate('stopChopAudition()')
+    page.wait_for_function('chopAuditionPad === 5',timeout=3000)
+    hit_count=page.evaluate("document.querySelectorAll('#pads .pad.hit').length")
+    assert hit_count==1,hit_count
+    page.wait_for_timeout(90)
+    assert page.evaluate("document.querySelectorAll('#pads .pad.hit').length")==1
+    page.evaluate('stopChopAudition()')
+
     touch_start(pad);page.wait_for_timeout(520)
     page.wait_for_function('ChopperMobileSliceEditor.visible && ChopperMobileSliceEditor.activePad === 5',timeout=3000)
     held=page.evaluate('''() => {const w=document.getElementById('mobileChopWave').getBoundingClientRect(),p=document.getElementById('mobileChopPlayhead').getBoundingClientRect(),r=document.getElementById('mobileChopEditorRange').getBoundingClientRect();return {title:document.getElementById('mobileChopEditorTitle').textContent,workspace:getComputedStyle(document.getElementById('mobileChopWorkspace')).display,upper:getComputedStyle(document.querySelector('.samplerUpperDeck')).display,performance:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,drums:getComputedStyle(document.querySelector('.samplerDrumSection')).display,w:w.width,h:w.height,playheadOverlay:p.width===w.width && p.height===w.height,above:w.bottom<=r.top+1,flag:document.getElementById('chopper').dataset.mobileChopView,audition:chopAuditionPad}}''')
@@ -113,4 +109,4 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.click('#mobileChopDone');assert not errors,errors
     page.close();context.close();browser.close()
 
-print('OK: Chopper mobile CHOP view — real touch hold, static waveform + overlay playhead, 16 AUTO CHOP pads, PREV/NEXT, START/END, CHOPS return, SLICES')
+print('OK: Chopper mobile CHOP view — touch hold, deduplicated pad visuals, static waveform + overlay playhead, 16 AUTO CHOP pads, PREV/NEXT, START/END, CHOPS return, SLICES')
