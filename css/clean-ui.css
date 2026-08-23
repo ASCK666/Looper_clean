@@ -11,23 +11,9 @@
   order: -20 !important;
 }
 
-.stableTop {
-  order: -10 !important;
-  min-height: 0 !important;
-  grid-template-columns: 1fr !important;
-  grid-template-areas: "actions" !important;
-  justify-items: end !important;
-  gap: 8px !important;
-  padding: 6px 8px !important;
-}
-
 .stableBrand,
 .headerDeckPill {
   display: none !important;
-}
-
-.headerActions {
-  grid-area: actions !important;
 }
 
 /* Looper: guide the first obvious action without adding instructions. */
@@ -372,16 +358,6 @@
     display: none !important;
   }
 
-  .stableTop {
-    padding: 4px !important;
-    border-radius: 0 !important;
-  }
-
-  .headerActions .utilityBtn {
-    min-height: 40px !important;
-    padding: 0 10px !important;
-  }
-
   #chopper,
   #chopper .samplerDeck,
   #chopper .samplerUpperDeck,
@@ -457,10 +433,6 @@
 }
 
 @media (max-width: 430px) {
-  .stableTop {
-    grid-template-columns: 1fr !important;
-  }
-
   #chopper .samplerScreenModule {
     grid-template-columns: minmax(0, 1fr) 40px 54px 40px !important;
     column-gap: 4px !important;
