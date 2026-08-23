@@ -35,7 +35,7 @@
       <div class="sequenceActions"><button id="mobileChopDone" class="btn" type="button">DONE</button></div>
     </div>
     <div class="wavewrap largeWave samplerScreen">
-      <canvas id="mobileChopWave" width="900" height="220" aria-label="Waveform du sample et chop sélectionné"></canvas>
+      <canvas id="mobileChopWave" width="900" height="220" aria-label="Waveform du chop sélectionné"></canvas>
     </div>
     <div id="mobileChopEditorRange" class="status" aria-live="polite">START — • END —</div>
     <div>
@@ -77,34 +77,47 @@
     return index<markers.length-1?{start:markers[index],end:markers[index+1]}:null;
   }
 
+  function currentCount(){
+    return ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices
+      ? ChopperWaveSlices.slices.length
+      : Math.max(0,markers.length-1);
+  }
+
   function drawEditorWave(){
     const w=wave.width,h=wave.height;
     wave2d.clearRect(0,0,w,h);
     wave2d.fillStyle="#080604";wave2d.fillRect(0,0,w,h);
-    if(!sampleBuffer)return;
-
-    wave2d.strokeStyle="#d7a455";wave2d.lineWidth=1;
-    drawBufferRange(wave2d,sampleBuffer,0,sampleBuffer.duration,0,w,h);
-
     const range=currentRange();
-    if(!range)return;
-    const dur=Math.max(.001,sampleBuffer.duration);
-    const left=clamp(range.start/dur*w,0,w);
-    const right=clamp(range.end/dur*w,0,w);
+    if(!sampleBuffer || !range)return;
+
+    const span=Math.max(.001,range.end-range.start);
+    const viewStart=Math.max(0,range.start-span*.55);
+    const viewEnd=Math.min(sampleBuffer.duration,range.end+span*.55);
+    const viewDur=Math.max(.001,viewEnd-viewStart);
+    wave2d.strokeStyle="#d7a455";wave2d.lineWidth=1;
+    drawBufferRange(wave2d,sampleBuffer,viewStart,viewEnd,0,w,h);
+
+    const left=clamp((range.start-viewStart)/viewDur*w,0,w);
+    const right=clamp((range.end-viewStart)/viewDur*w,0,w);
     wave2d.fillStyle="rgba(0,0,0,.58)";
     wave2d.fillRect(0,0,left,h);wave2d.fillRect(right,0,w-right,h);
     wave2d.fillStyle="rgba(226,173,95,.10)";wave2d.fillRect(left,0,Math.max(0,right-left),h);
     wave2d.strokeStyle="#ffe0a5";wave2d.lineWidth=3;
     wave2d.beginPath();wave2d.moveTo(left,0);wave2d.lineTo(left,h);wave2d.moveTo(right,0);wave2d.lineTo(right,h);wave2d.stroke();
+
     wave2d.fillStyle="#fff0d0";wave2d.font="700 12px monospace";
-    wave2d.fillText(`CHOP ${String(activePad+1).padStart(2,"0")}`,Math.min(w-78,Math.max(8,left+8)),20);
+    wave2d.textAlign="left";wave2d.fillText("START",Math.min(w-52,left+8),20);
+    wave2d.textAlign="right";wave2d.fillText("END",Math.max(38,right-8),20);
+    wave2d.textAlign="left";
   }
 
   function updateEditor(){
     const range=currentRange();
     if(!range){closeEditor();return null;}
     const mode=ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices?"SLICES":"MARKERS";
-    title.textContent=`CHOP ${String(activePad+1).padStart(2,"0")} • ${mode}`;
+    const number=String(activePad+1).padStart(2,"0");
+    title.textContent=`CHOP ${number} / ${String(currentCount()).padStart(2,"0")} • ${mode}`;
+    wave.setAttribute("aria-label",`Waveform du chop ${number}, bornes START et END`);
     rangeReadout.textContent=`START ${Math.round(range.start*1000)} ms • END ${Math.round(range.end*1000)} ms • LEN ${Math.round((range.end-range.start)*1000)} ms`;
     drawEditorWave();
     return range;
