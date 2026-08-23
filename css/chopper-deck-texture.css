@@ -21,14 +21,3 @@
   background-repeat:no-repeat,repeat !important;
   background-blend-mode:normal,normal !important;
 }
-
-/* Keep display/readout surfaces visually separate from the textured chassis. */
-#chopper.screen .wavewrap.largeWave,
-#chopper.screen .loopGridWrap,
-#chopper.screen .drumEditBox,
-#chopper.screen .advancedBox,
-#chopper.screen input,
-#chopper.screen select,
-#chopper.screen .status {
-  background-image:none !important;
-}
