@@ -77,7 +77,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     })''')
     page.mouse.up();page.wait_for_timeout(40)
     assert held['audition']==-1,held
-    assert held['title']=='06 • MARKERS' and held['padsHidden'] and not held['editorHidden'],held
+    assert held['title']=='CHOP 06 • MARKERS' and held['padsHidden'] and not held['editorHidden'],held
     assert page.evaluate('chopAuditionPad')==-1
 
     # START / END arrow buttons edit the existing 16-chop marker boundaries.
@@ -109,12 +109,17 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     })''')
     assert done=={'visible':False,'padsHidden':False,'enabled':16},done
 
-    # The same mobile controls operate independent SLICES without mutating MARKERS.
+    # The same hold gesture operates independent SLICES without mutating MARKERS.
     marker_snapshot=page.evaluate('markers.slice()')
     page.evaluate("ChopperWaveSlices.setEditMode('slices')")
     page.wait_for_function("ChopperWaveSlices.mode === 'slices' && ChopperWaveSlices.slices.length === 4",timeout=3000)
     slice_before=page.evaluate('ChopperWaveSlices.slices[1].start')
-    assert page.evaluate('ChopperMobileSliceEditor.open(1)') is True
+    slice_pad=page.locator('#pads .pad').nth(1)
+    slice_box=slice_pad.bounding_box();assert slice_box,slice_box
+    page.mouse.move(slice_box['x']+slice_box['width']/2,slice_box['y']+slice_box['height']/2)
+    page.mouse.down();page.wait_for_timeout(520)
+    page.wait_for_function('ChopperMobileSliceEditor.visible && ChopperMobileSliceEditor.activePad === 1',timeout=3000)
+    page.mouse.up();page.wait_for_timeout(40)
     page.click('[data-mobile-boundary="start"][data-mobile-delta="0.005"]')
     slice_after=page.evaluate('ChopperWaveSlices.slices[1].start')
     assert abs((slice_after-slice_before)-.005)<1e-6,(slice_before,slice_after)
