@@ -62,8 +62,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
 
     pad=page.locator('#pads .pad').nth(5);x,y=touch_point(pad);page.touchscreen.tap(x,y)
     page.wait_for_function('chopAuditionPad === 5',timeout=3000)
-    hit_count=page.evaluate("document.querySelectorAll('#pads .pad.hit').length")
-    assert hit_count==1,hit_count
+    assert page.evaluate("document.querySelectorAll('#pads .pad.hit').length")==1
     page.wait_for_timeout(90)
     assert page.evaluate("document.querySelectorAll('#pads .pad.hit').length")==1
     page.evaluate('stopChopAudition()')
@@ -109,4 +108,4 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.click('#mobileChopDone');assert not errors,errors
     page.close();context.close();browser.close()
 
-print('OK: Chopper mobile CHOP view — touch hold, deduplicated pad visuals, static waveform + overlay playhead, 16 AUTO CHOP pads, PREV/NEXT, START/END, CHOPS return, SLICES')
+print('OK: Chopper mobile CHOP view — touch hold, static waveform + overlay playhead, 16 AUTO CHOP pads, PREV/NEXT, START/END, CHOPS return, SLICES')
