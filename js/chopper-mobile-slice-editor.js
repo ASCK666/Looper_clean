@@ -23,6 +23,7 @@
   let holdStartY=0;
   let suppressClickButton=null;
   let hiddenDeckChildren=[];
+  let movedWorkspaceControls=[];
   let playheadRAF=0;
   let playheadRange=null;
   let playheadStartedAt=0;
@@ -35,6 +36,10 @@
   workspace.hidden=true;
   workspace.setAttribute("aria-label","Éditeur mobile du chop");
   workspace.innerHTML=`
+    <div id="mobileChopContext" class="samplerSequenceHead">
+      <div id="mobileChopBankHost"></div>
+      <div id="mobileChopActionHost"></div>
+    </div>
     <div class="samplerSequenceHead">
       <button id="mobileChopPrev" class="btn" type="button" aria-label="Chop précédent">◀</button>
       <div id="mobileChopEditorTitle" class="title compactTitle">CHOP --</div>
@@ -69,6 +74,9 @@
     </div>`;
   deck.appendChild(workspace);
 
+  const contextRow=document.getElementById("mobileChopContext");
+  const bankHost=document.getElementById("mobileChopBankHost");
+  const actionHost=document.getElementById("mobileChopActionHost");
   const title=document.getElementById("mobileChopEditorTitle");
   const rangeReadout=document.getElementById("mobileChopEditorRange");
   const waveWrap=document.getElementById("mobileChopWaveWrap");
@@ -81,6 +89,9 @@
   const prev=document.getElementById("mobileChopPrev");
   const next=document.getElementById("mobileChopNext");
 
+  contextRow.style.cssText="display:flex;align-items:center;gap:6px;min-width:0";
+  bankHost.style.cssText="min-width:0;flex:1 1 auto;overflow:hidden";
+  actionHost.style.cssText="display:flex;flex:0 0 auto;gap:6px";
   waveWrap.style.position="relative";
   wave.style.cssText="display:block;width:100%;height:190px;touch-action:none";
   playhead.style.cssText="position:absolute;inset:0;width:100%;height:190px;pointer-events:none";
@@ -202,7 +213,34 @@
     return range;
   }
 
+  function moveWorkspaceControl(element,host){
+    if(!element || !host || element.parentNode===host)return;
+    movedWorkspaceControls.push({element,parent:element.parentNode,next:element.nextSibling});
+    host.appendChild(element);
+  }
+
+  function moveGlobalControlsIntoWorkspace(){
+    const bankTabs=document.getElementById("chopperBankTabs");
+    const save=document.getElementById("addFlipLibrary");
+    moveWorkspaceControl(bankTabs,bankHost);
+    moveWorkspaceControl(save,actionHost);
+    bankHost.hidden=!bankTabs || bankTabs.hidden;
+    actionHost.hidden=!save;
+    contextRow.hidden=bankHost.hidden && actionHost.hidden;
+  }
+
+  function restoreWorkspaceControls(){
+    for(let i=movedWorkspaceControls.length-1;i>=0;i--){
+      const {element,parent,next}=movedWorkspaceControls[i];
+      if(!element || !parent)continue;
+      if(next && next.parentNode===parent)parent.insertBefore(element,next);
+      else parent.appendChild(element);
+    }
+    movedWorkspaceControls=[];
+  }
+
   function showDedicatedView(){
+    moveGlobalControlsIntoWorkspace();
     hiddenDeckChildren=[...deck.children].filter(child=>child!==workspace).map(element=>({
       element,
       display:element.style.getPropertyValue("display"),
@@ -215,6 +253,7 @@
   }
 
   function restoreDeckView(){
+    restoreWorkspaceControls();
     hiddenDeckChildren.forEach(({element,display,priority})=>{
       if(display)element.style.setProperty("display",display,priority);
       else element.style.removeProperty("display");
@@ -346,6 +385,14 @@
 
   workspace.querySelectorAll("[data-mobile-boundary]").forEach(button=>{
     button.addEventListener("click",()=>adjustBoundary(button.dataset.mobileBoundary,button.dataset.mobileDelta));
+  });
+  bankHost.addEventListener("click",event=>{
+    if(!event.target.closest?.(".chopperBankTab"))return;
+    requestAnimationFrame(()=>{
+      const count=currentCount();
+      if(!count){closeEditor();return;}
+      selectActiveChop(clamp(activePad,0,count-1));
+    });
   });
   prev.addEventListener("click",()=>navigateChop(-1));
   next.addEventListener("click",()=>navigateChop(1));
