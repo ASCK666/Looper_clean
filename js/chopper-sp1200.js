@@ -16,6 +16,8 @@
   let enabled=false;
   let outputMode="raw";
   let previewGeneration=0;
+  let previewEncodedSource=null;
+  const previewEncodedPages=new Map();
 
   function currentMode(){
     return globalThis.ChopperWaveSlices?.mode||"markers";
@@ -34,6 +36,14 @@
   function invalidatePendingPreview(){
     previewGeneration++;
     return previewGeneration;
+  }
+
+  function previewCacheFor(sourceBuffer){
+    if(previewEncodedSource!==sourceBuffer){
+      previewEncodedSource=sourceBuffer;
+      previewEncodedPages.clear();
+    }
+    return previewEncodedPages;
   }
 
   // Any normal Chopper stop/change must also invalidate an SP encode that has
@@ -153,11 +163,20 @@
     const cacheKey=`${encodeRange.start}:${encodeRange.end}`;
     let encoded=encodedCache?.get(cacheKey)||null;
     if(!encoded){
-      encoded=await DSP.encodeBufferAsync(sourceBuffer,{
+      const pending=DSP.encodeBufferAsync(sourceBuffer,{
         startSec:encodeRange.start,
         endSec:encodeRange.end
       });
-      encodedCache?.set(cacheKey,encoded);
+      encodedCache?.set(cacheKey,pending);
+      try{
+        encoded=await pending;
+      }catch(error){
+        if(encodedCache?.get(cacheKey)===pending)encodedCache.delete(cacheKey);
+        throw error;
+      }
+      if(encodedCache?.get(cacheKey)===pending)encodedCache.set(cacheKey,encoded);
+    }else if(typeof encoded.then==="function"){
+      encoded=await encoded;
     }
 
     // PAD requests can become stale while an encode is pending. Preserve the
@@ -217,7 +236,6 @@
       const index=event.chop-1;
       const range=rangeForPad(index,sourceBuffer,renderCueMarkers,renderMode,renderBank,renderSlices);
       if(!range || range.end<=range.start)continue;
-
       const durationLimit=Math.max(.001,Math.min(event.nextTime-event.startTime,plan.targetDur-event.startTime));
       const renderedChop=await renderSpChop(offline,{
         sourceBuffer,
@@ -283,6 +301,7 @@
       outputMode:requestOutputMode,
       durationLimit:MAX_PAD_PREVIEW_SECONDS,
       bank:requestBank,
+      encodedCache:previewCacheFor(sourceBuffer),
       shouldContinue:()=>generation===previewGeneration && enabled && sampleBuffer===sourceBuffer
     });
     if(!renderedChop)return;
