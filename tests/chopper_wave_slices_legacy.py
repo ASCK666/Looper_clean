@@ -93,20 +93,21 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     mode_ui=page.evaluate('''() => {
       const button=document.getElementById('sliceEditModeBtn');
       const title=button.closest('.stableTitle');
-      const label=title.querySelector('span');
+      const actions=title?.querySelector('.waveHeaderActions');
       const br=button.getBoundingClientRect();
-      const lr=label.getBoundingClientRect();
+      const ar=actions?.getBoundingClientRect();
       return {
         text:button.textContent,
         mode:ChopperWaveSlices.mode,
-        inTitle:!!title && title.textContent.includes('SAMPLE DISPLAY'),
+        inTitle:!!title,
+        hasWaveActions:!!actions,
         buttonX:br.x,
-        labelRight:lr.right,
+        actionsRight:ar?.right ?? -1,
         height:document.getElementById('waveCanvas').getBoundingClientRect().height
       };
     }''')
     assert mode_ui['text']=='MARKERS' and mode_ui['mode']=='markers',mode_ui
-    assert mode_ui['inTitle'] and mode_ui['buttonX']>=mode_ui['labelRight']-1,mode_ui
+    assert mode_ui['inTitle'] and mode_ui['hasWaveActions'] and mode_ui['buttonX']>=mode_ui['actionsRight']-1,mode_ui
     assert abs(mode_ui['height']-240)<1,mode_ui
 
     page.evaluate('setMarkers(8)')
