@@ -63,21 +63,36 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     pad.click();page.wait_for_function('chopAuditionPad === 5',timeout=3000)
     page.evaluate('stopChopAudition()')
 
-    # A long press opens PAD 06 in the mobile editor and must not also audition it.
+    # A long press opens a dedicated CHOP view for PAD 06. The regular Chopper
+    # deck is hidden and a full-sample waveform is displayed above START / END.
     box=pad.bounding_box();assert box,box
     page.mouse.move(box['x']+box['width']/2,box['y']+box['height']/2)
     page.mouse.down()
     page.wait_for_timeout(520)
     page.wait_for_function('ChopperMobileSliceEditor.visible && ChopperMobileSliceEditor.activePad === 5',timeout=3000)
-    held=page.evaluate('''() => ({
-      audition:chopAuditionPad,
-      title:document.getElementById('mobileChopEditorTitle').textContent,
-      padsHidden:document.getElementById('pads').hidden,
-      editorHidden:document.getElementById('mobileChopEditor').hidden
-    })''')
+    held=page.evaluate('''() => {
+      const workspace=document.getElementById('mobileChopWorkspace');
+      const wave=document.getElementById('mobileChopWave').getBoundingClientRect();
+      const range=document.getElementById('mobileChopEditorRange').getBoundingClientRect();
+      return {
+        audition:chopAuditionPad,
+        title:document.getElementById('mobileChopEditorTitle').textContent,
+        workspaceDisplay:getComputedStyle(workspace).display,
+        upperDisplay:getComputedStyle(document.querySelector('.samplerUpperDeck')).display,
+        performanceDisplay:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,
+        drumsDisplay:getComputedStyle(document.querySelector('.samplerDrumSection')).display,
+        waveWidth:wave.width,
+        waveHeight:wave.height,
+        waveAboveRange:wave.bottom <= range.top+1,
+        viewFlag:document.getElementById('chopper').dataset.mobileChopView
+      };
+    }''')
     page.mouse.up();page.wait_for_timeout(40)
     assert held['audition']==-1,held
-    assert held['title']=='CHOP 06 • MARKERS' and held['padsHidden'] and not held['editorHidden'],held
+    assert held['title']=='CHOP 06 • MARKERS',held
+    assert held['workspaceDisplay']!='none' and held['viewFlag']=='1',held
+    assert held['upperDisplay']=='none' and held['performanceDisplay']=='none' and held['drumsDisplay']=='none',held
+    assert held['waveWidth']>340 and held['waveHeight']>=180 and held['waveAboveRange'],held
     assert page.evaluate('chopAuditionPad')==-1
 
     # START / END arrow buttons edit the existing 16-chop marker boundaries.
@@ -94,7 +109,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert abs((after['end']-before['end'])+.025)<1e-6,(before,after)
     assert 'LEN' in after['range'],after
 
-    # PREVIEW in the mobile editor respects END, unlike the normal MARKERS cue-to-end audition.
+    # PREVIEW in the dedicated CHOP view respects END, unlike normal MARKERS cue-to-end audition.
     page.click('#mobileChopPreview')
     page.wait_for_function('chopAuditionPad === 5',timeout=3000)
     chop_len=after['end']-after['start']
@@ -104,12 +119,15 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.click('#mobileChopDone')
     done=page.evaluate('''() => ({
       visible:ChopperMobileSliceEditor.visible,
-      padsHidden:document.getElementById('pads').hidden,
-      enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length
+      workspaceDisplay:getComputedStyle(document.getElementById('mobileChopWorkspace')).display,
+      performanceDisplay:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,
+      enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,
+      viewFlag:document.getElementById('chopper').dataset.mobileChopView || ''
     })''')
-    assert done=={'visible':False,'padsHidden':False,'enabled':16},done
+    assert not done['visible'] and done['workspaceDisplay']=='none',done
+    assert done['performanceDisplay']!='none' and done['enabled']==16 and done['viewFlag']=='',done
 
-    # The same hold gesture operates independent SLICES without mutating MARKERS.
+    # The same dedicated view operates independent SLICES without mutating MARKERS.
     marker_snapshot=page.evaluate('markers.slice()')
     page.evaluate("ChopperWaveSlices.setEditMode('slices')")
     page.wait_for_function("ChopperWaveSlices.mode === 'slices' && ChopperWaveSlices.slices.length === 4",timeout=3000)
@@ -119,7 +137,9 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.mouse.move(slice_box['x']+slice_box['width']/2,slice_box['y']+slice_box['height']/2)
     page.mouse.down();page.wait_for_timeout(520)
     page.wait_for_function('ChopperMobileSliceEditor.visible && ChopperMobileSliceEditor.activePad === 1',timeout=3000)
+    slice_view=page.evaluate("document.getElementById('mobileChopEditorTitle').textContent")
     page.mouse.up();page.wait_for_timeout(40)
+    assert slice_view=='CHOP 02 • SLICES',slice_view
     page.click('[data-mobile-boundary="start"][data-mobile-delta="0.005"]')
     slice_after=page.evaluate('ChopperWaveSlices.slices[1].start')
     assert abs((slice_after-slice_before)-.005)<1e-6,(slice_before,slice_after)
@@ -129,4 +149,4 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert not errors,errors
     page.close();browser.close()
 
-print('OK: Chopper mobile editor — 16 AUTO CHOP pads, hold-to-edit START/END, bounded preview, independent SLICES')
+print('OK: Chopper mobile CHOP view — 16 AUTO CHOP pads, hold opens dedicated waveform editor, START/END, bounded preview, SLICES')
