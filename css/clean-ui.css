@@ -38,6 +38,16 @@
   }
 }
 
+/* Keep the vertical desktop pitch control's transparent pointer target at least
+   44px wide without changing the independently rendered fader cap. */
+@media (min-width: 681px) {
+  .looper66Shell #deckPitch {
+    left: 50%;
+    width: max(50%, 44px);
+    transform: translateX(-50%);
+  }
+}
+
 /* Remove decorative / explanatory Chopper chrome. */
 #chopper .samplerTopRail,
 #chopper .sampleConditionHelp,
