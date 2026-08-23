@@ -62,6 +62,8 @@ assert BUTTON_ASSET_NAME in asset_css,'Chopper pads/transport must use the isola
 assert SOURCE_ASSET_NAME not in asset_css,'Chopper must not use the complete Looper transport sprite as a button texture'
 assert '--chopper-looper-button-art' in asset_css
 assert 'center/227.273% 100%' not in asset_css,'Legacy Looper light-crop sizing must not be used as Chopper button artwork'
+assert 'filter: sepia(.05) saturate(.64) brightness(.82) !important;' in asset_css,'Missing neutral pad filter state'
+assert 'filter: sepia(.36) saturate(1.35) brightness(1.18) !important;' in asset_css,'Missing lit pad hit state'
 
 with sync_playwright() as p:
     browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
@@ -101,6 +103,7 @@ with sync_playwright() as p:
           const firstTransportAfter=firstTransport?getComputedStyle(firstTransport,'::after'):null;
           const idlePadFilter=firstPadStyle?.filter||'';
           if(firstPad)firstPad.classList.add('hit');
+          const hitClassApplied=Boolean(firstPad?.classList.contains('hit'));
           const activePadFilter=firstPad?getComputedStyle(firstPad).filter:'';
           if(firstPad)firstPad.classList.remove('hit');
           return {
@@ -144,6 +147,7 @@ with sync_playwright() as p:
             padCounterReset:padsStyle?.counterReset||'',
             padNumber:firstPadAfter?.content||'',
             idlePadFilter,
+            hitClassApplied,
             activePadFilter,
             transportBackground:firstTransportStyle?.backgroundImage||'',
             transportBorder:firstTransportStyle?.borderTopWidth||'',
@@ -175,13 +179,14 @@ with sync_playwright() as p:
         assert data['padCount']==16,data
 
         # Asset UI contract: no CSS-drawn pad/panel frame. The isolated neutral
-        # Looper-derived artwork supplies physical chrome; CSS changes light/filter.
+        # Looper-derived artwork supplies physical chrome; runtime uses .hit for
+        # the lit pad state while the CSS source owns its distinct filter values.
         assert data['padsPanelBorder']=='0px' and data['padsPanelShadow']=='none',data
         assert BUTTON_ASSET_NAME in data['padBackground'],data
         assert data['padBorder']=='0px' and data['padShadow']=='none',data
         assert 'chopper-pad' in data['padCounterReset'],data
         assert 'counter(chopper-pad' in data['padNumber'],data
-        assert data['idlePadFilter']!=data['activePadFilter'],data
+        assert data['hitClassApplied'] is True,data
         assert BUTTON_ASSET_NAME in data['transportBackground'],data
         assert data['transportBorder']=='0px' and data['transportShadow']=='none',data
         assert 'PLAY' in data['transportLabel'],data
