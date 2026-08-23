@@ -37,8 +37,13 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page=context.new_page();cdp=context.new_cdp_session(page)
 
     def touch_point(locator):
+        locator.scroll_into_view_if_needed()
+        page.wait_for_timeout(30)
         box=locator.bounding_box();assert box,box
-        return box['x']+box['width']/2,box['y']+box['height']/2
+        x=box['x']+box['width']/2;y=box['y']+box['height']/2
+        viewport=page.viewport_size
+        assert viewport and 0<=x<viewport['width'] and 0<=y<viewport['height'],(box,viewport)
+        return x,y
 
     def touch_start(locator):
         x,y=touch_point(locator)
