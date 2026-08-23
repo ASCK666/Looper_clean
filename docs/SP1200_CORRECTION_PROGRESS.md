@@ -6,24 +6,24 @@ Baseline audit: `docs/SP1200_CORRECTION_AUDIT_BASELINE.md`
 
 ## Current accepted scores
 
-Current accepted audit state: C3
-Last runtime/test/validation HEAD audited: `d24448edc82f3de657d1d88c43c05d8822b903f8`
+Current accepted audit state: C4
+Last runtime/test/validation HEAD audited: `b36ea11d1c3ca7580c344a80bf10cbce8657d65e`
 Current documentation HEAD: this file may be one commit ahead of the runtime/test HEAD because rescoring is committed separately.
-Current merge verdict: **SP1200 correction accepted through B6; full-project PR remains draft/not mergeable** — the maintained suite now executes and passes all SP1200 unit, browser and race tests, then stops later in unrelated `tests/regression_v63.py` while waiting for `#practiceOverlayOpen`. Practice remains frozen and out of scope for this correction.
+Current merge verdict: **SP1200 correction accepted through B6 and D4; full-project PR remains draft/not mergeable** — the maintained suite executes and passes all SP1200 unit/browser/race gates plus the dedicated PUNCH pending-preview regression, then stops later in unrelated `tests/regression_v63.py` while waiting for `#practiceOverlayOpen`. Practice remains frozen and out of scope for this correction.
 
 | Area | Current score |
 | --- | ---: |
 | SP DSP | **8.3 / 10** |
 | `renderSpChop()` / PAD-PLAY boundary | **7.8 / 10** |
 | Claimable SP fidelity | **6.5 / 10** |
-| Async / race handling | **8.0 / 10** |
+| Async / race handling | **8.2 / 10** |
 | Ownership / architecture | **7.2 / 10** |
 | DSP tests | **7.5 / 10** |
-| Integration tests | **6.8 / 10** |
-| Overall maintainability | **6.6 / 10** |
-| **Total feature** | **7.0 / 10** |
+| Integration tests | **7.0 / 10** |
+| Overall maintainability | **6.7 / 10** |
+| **Total feature** | **7.1 / 10** |
 
-These scores use the same rubric as the immutable baseline. No score is raised solely because a correction was authored on this branch. B1-B6 are now closed at the accepted SP1200 correction level. PUNCH timing debt, duplicate Drum invalidations and classic-script/global debt continue to cap architecture and maintainability. The remaining full-suite blocker is outside the SP1200 lifecycle and does not downgrade the validated SP1200 categories.
+These scores use the same rubric as the immutable baseline. No score is raised solely because a correction was authored on this branch. B1-B6 and D4 are now closed at the accepted SP1200 correction level. Duplicate Drum invalidations and classic-script/global debt continue to cap architecture and maintainability. The remaining full-suite blocker is outside the SP1200 lifecycle and does not downgrade the validated SP1200 categories.
 
 ## C1 — maintained PLAY race contract
 
@@ -301,3 +301,105 @@ The full-project draft PR also remains red because `tests/regression_v63.py` exp
 C3 is accepted. B6 is closed. B1-B6 are now closed at the SP1200 correction level. The DSP score and fidelity claims are unchanged, `renderSpChop()` remains intact, combined-preview ownership remains single-owner, and the maintained SP1200 unit/browser/race coverage passes under GitHub Actions Chromium.
 
 The SP1200 feature score is **7.0 / 10**, up from **6.6 / 10** at C2 and **5.8 / 10** at baseline. The branch/PR remains draft at the full-project level only because the maintained suite fails later in an unrelated frozen Practice regression.
+
+## C4 — PUNCH input-time preview invalidation
+
+Accepted runtime/test commits:
+
+- `9c79d3fc3c7048a1841a34871115f247b5b7a568` — PUNCH invalidates the combined-preview generation on `input` before refreshing its visual value; the old `change` invalidation is removed so the transition is not duplicated;
+- `09d0a0a213333ae93adf1651dd76ed7d9250a405` — adds a focused Chromium regression proving that an input-only PUNCH mutation invalidates a pending full PLAY before release;
+- `b36ea11d1c3ca7580c344a80bf10cbce8657d65e` — adds that regression to the maintained runner before the known frozen-Practice gate.
+
+Finding addressed: **D4 — PUNCH input timing**.
+
+### Runtime contract after C4
+
+PUNCH now follows the same temporal split used by the other combined-preview inputs:
+
+- `input` is the first meaningful PUNCH mutation, so it calls `invalidatePreviewRender()` immediately and then refreshes the PUNCH readout;
+- `change` remains the commit/release boundary for status text and the expensive rerender of an already-audible preview;
+- no additional generation token, writer, helper, wrapper or state abstraction is introduced;
+- the old `change` invalidation is removed rather than retained as a duplicate path.
+
+This means a pending combined render started with an older PUNCH preset may finish computation, but its generation is stale before it can publish or start playback. An already-audible preview keeps the existing product behavior: the control can update visually while dragging and rerenders on release.
+
+### C4 impact audit
+
+Accepted impact relative to C3:
+
+- SP DSP: unchanged; no DSP file touched;
+- `renderSpChop()`: unchanged;
+- SP fidelity model/claims: unchanged;
+- combined-preview generation ownership: unchanged; PUNCH still requests invalidation through renderer-owned `invalidatePreviewRender()`;
+- PLAY: a pending full PLAY cannot resurrect after a PUNCH `input` mutation;
+- active PLAY: audible rerender remains on `change`, so no repeated OfflineAudioContext render is added while dragging;
+- SAVE: unchanged and still renders current state rather than preview cache;
+- PUNCH audio algorithm/presets: unchanged;
+- Banks, MARKERS, SLICES, Drums, VINYL, SP RAW/FILTER/ON-OFF: unchanged;
+- script order: unchanged;
+- mobile/performance: one cheap generation increment/cache invalidation per range input; no render is added on input;
+- dead code: `tests/dead_code.py` and `tests/js_health.py` pass, with JS health still reporting 173 functions, 96 top-level bindings and no dead declarations;
+- new runtime abstraction/file: none.
+
+No scoring category decreases from C3 or from the immutable baseline.
+
+### Maintained regression coverage added for D4
+
+`tests/punch_preview_race.py` deliberately dispatches **only** `input`, not `change`, while a full PLAY is pending. It verifies that:
+
+1. PLAY allocates its renderer generation;
+2. PUNCH `input` advances that generation exactly once through the renderer owner;
+3. the older pending PLAY returns `false` and never reaches `playRendered()`;
+4. `renderedFlip` remains invalidated and transport remains stopped;
+5. the PUNCH visual readout still updates to the selected preset.
+
+The test is intentionally narrow and uses the real application wiring while replacing only the expensive render/play endpoints with delayed test doubles. It adds no product/runtime code.
+
+### Validation evidence after C4
+
+GitHub Actions run `32629172660` executes the maintained chain on the C4 runtime/test HEAD.
+
+Before the unrelated Practice failure, the run confirms:
+
+- `tests/resource_paths.py`: pass;
+- `tests/dead_code.py`: pass;
+- `tests/assets_health.py`: pass;
+- `tests/validate.py`: pass;
+- `tests/looper66_contract.py`: pass;
+- `tests/js_health.py`: pass — 173 functions, 96 top-level bindings, no dead declarations;
+- `tests/core_unit.js`: pass;
+- `tests/auto_mix_unit.js`: pass;
+- every SP1200 DSP/input/output/level unit gate: pass;
+- `tests/sp1200_browser.py`: pass;
+- `tests/sp1200_races.py`: pass;
+- `tests/punch_preview_race.py`: pass — `input` invalidates a pending combined PLAY before release.
+
+The maintained chain then reaches the same pre-existing full-project blocker in `tests/regression_v63.py`, where Playwright times out waiting for `#practiceOverlayOpen`. C4 does not touch Practice and does not claim a repository-wide green exit.
+
+### Scores after C4
+
+The same immutable baseline rubric is retained.
+
+| Area | Baseline | After C3 | After C4 | Verdict |
+| --- | ---: | ---: | ---: | --- |
+| SP DSP | 8.3 | 8.3 | **8.3** | unchanged; DSP untouched |
+| `renderSpChop()` / PAD-PLAY boundary | 7.8 | 7.8 | **7.8** | unchanged; boundary preserved |
+| Claimable SP fidelity | 6.5 | 6.5 | **6.5** | unchanged; no new hardware claim/model |
+| Async / race handling | 4.5 | 8.0 | **8.2** | D4 input-time resurrection window is closed under a maintained Chromium race |
+| Ownership / architecture | 5.0 | 7.2 | **7.2** | renderer remains the invalidation owner; no new cross-domain writer or abstraction |
+| DSP tests | 7.5 | 7.5 | **7.5** | unchanged |
+| Integration tests | 4.0 | 6.8 | **7.0** | dedicated PUNCH input-only pending-PLAY regression now runs in the maintained CI path |
+| Overall maintainability | 5.5 | 6.6 | **6.7** | PUNCH timing now matches the established input/change lifecycle without duplicate invalidation or dead code |
+| **Total feature** | **5.8** | **7.0** | **7.1** | D4 closed with no regression in previously accepted SP contracts |
+
+### Remaining debt after C4
+
+Duplicate Drum invalidation paths and classic-script/global ownership remain non-blocking maintainability debt. They are not expanded into a cleanup queue and are not justification for a new abstraction.
+
+The full-project draft PR remains red only because the maintained suite later hits the unrelated frozen Practice regression.
+
+### C4 verdict
+
+C4 is accepted. D4 is closed. B1-B6 and D4 are now closed at the SP1200 correction level. No score decreased, no runtime dead code was introduced, no DSP/fidelity claim changed, and the renderer-owned generation remains the only mechanism used to invalidate pending combined previews.
+
+The SP1200 feature score is **7.1 / 10**, up from **7.0 / 10** at C3, **6.6 / 10** at C2 and **5.8 / 10** at baseline.
