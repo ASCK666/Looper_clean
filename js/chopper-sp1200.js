@@ -13,11 +13,11 @@
   const SP_SAMPLE_RATE=DSP.sampleRate;
   const ALL_ENCODE_PAGE_SECONDS=30;
   const MAX_PAD_PREVIEW_SECONDS=30;
+  const MAX_PREVIEW_RENDER_CACHE_ENTRIES=3;
   let enabled=false;
   let outputMode="raw";
   let previewGeneration=0;
-  let previewEncodedSource=null;
-  const previewEncodedPages=new Map();
+  const previewRenderedCache=new WeakMap();
 
   function currentMode(){
     return globalThis.ChopperWaveSlices?.mode||"markers";
@@ -36,14 +36,6 @@
   function invalidatePendingPreview(){
     previewGeneration++;
     return previewGeneration;
-  }
-
-  function previewCacheFor(sourceBuffer){
-    if(previewEncodedSource!==sourceBuffer){
-      previewEncodedSource=sourceBuffer;
-      previewEncodedPages.clear();
-    }
-    return previewEncodedPages;
   }
 
   // Any normal Chopper stop/change must also invalidate an SP encode that has
@@ -144,6 +136,7 @@
     durationLimit,
     bank=null,
     encodedCache=null,
+    renderedCache=null,
     shouldContinue=null
   }){
     if(!sourceBuffer || !range || range.end<=range.start){
@@ -163,20 +156,11 @@
     const cacheKey=`${encodeRange.start}:${encodeRange.end}`;
     let encoded=encodedCache?.get(cacheKey)||null;
     if(!encoded){
-      const pending=DSP.encodeBufferAsync(sourceBuffer,{
+      encoded=await DSP.encodeBufferAsync(sourceBuffer,{
         startSec:encodeRange.start,
         endSec:encodeRange.end
       });
-      encodedCache?.set(cacheKey,pending);
-      try{
-        encoded=await pending;
-      }catch(error){
-        if(encodedCache?.get(cacheKey)===pending)encodedCache.delete(cacheKey);
-        throw error;
-      }
-      if(encodedCache?.get(cacheKey)===pending)encodedCache.set(cacheKey,encoded);
-    }else if(typeof encoded.then==="function"){
-      encoded=await encoded;
+      encodedCache?.set(cacheKey,encoded);
     }
 
     // PAD requests can become stale while an encode is pending. Preserve the
@@ -184,14 +168,32 @@
     // time reconstructing a buffer that cannot be played.
     if(typeof shouldContinue==="function" && !shouldContinue())return null;
 
-    const buffer=DSP.renderEncodedSegment(audioContext,encoded,{
-      startSec:range.start,
-      endSec:sourceEnd,
-      tune,
-      levelCode,
-      outputMode:outputProfile,
-      maxDuration:audible
-    });
+    const renderKey=`${range.start}:${sourceEnd}:t${tune.code}:l${levelCode}:o${outputProfile}:r${audioContext.sampleRate}:d${audible}`;
+    let cachedRenders=renderedCache?.get(encoded)||null;
+    let buffer=cachedRenders?.get(renderKey)||null;
+    if(buffer && cachedRenders){
+      cachedRenders.delete(renderKey);
+      cachedRenders.set(renderKey,buffer);
+    }else{
+      buffer=DSP.renderEncodedSegment(audioContext,encoded,{
+        startSec:range.start,
+        endSec:sourceEnd,
+        tune,
+        levelCode,
+        outputMode:outputProfile,
+        maxDuration:audible
+      });
+      if(renderedCache){
+        if(!cachedRenders){
+          cachedRenders=new Map();
+          renderedCache.set(encoded,cachedRenders);
+        }
+        cachedRenders.set(renderKey,buffer);
+        while(cachedRenders.size>MAX_PREVIEW_RENDER_CACHE_ENTRIES){
+          cachedRenders.delete(cachedRenders.keys().next().value);
+        }
+      }
+    }
     return {buffer,audible,sourceEnd};
   }
 
@@ -293,7 +295,7 @@
     if(generation!==previewGeneration || !enabled || sampleBuffer!==sourceBuffer)return;
     setActivePad(index);
 
-    let renderedChop=await renderSpChop(ctx,{
+    const renderedChop=await renderSpChop(ctx,{
       sourceBuffer,
       range,
       tune:requestTune,
@@ -301,7 +303,7 @@
       outputMode:requestOutputMode,
       durationLimit:MAX_PAD_PREVIEW_SECONDS,
       bank:requestBank,
-      encodedCache:previewCacheFor(sourceBuffer),
+      renderedCache:previewRenderedCache,
       shouldContinue:()=>generation===previewGeneration && enabled && sampleBuffer===sourceBuffer
     });
     if(!renderedChop)return;
