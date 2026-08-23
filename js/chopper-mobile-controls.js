@@ -58,7 +58,7 @@
     syncAccessibleValue(input,target);
     input.addEventListener("input",()=>syncAccessibleValue(input,target));
 
-    let pointerId=null;
+    let active=false;
     let startY=0;
     let startValue=0;
     let changed=false;
@@ -70,8 +70,28 @@
       syncAccessibleValue(input,target);
     };
 
-    const finish=event=>{
-      if(pointerId===null || (event?.pointerId!=null && event.pointerId!==pointerId))return;
+    const startGesture=y=>{
+      if(!mobileMedia.matches)return false;
+      active=true;
+      startY=y;
+      startValue=numeric(input.value);
+      changed=false;
+      scrubbed=false;
+      return true;
+    };
+
+    const moveGesture=y=>{
+      if(!active)return false;
+      const delta=startY-y;
+      if(!scrubbed && Math.abs(delta)<6)return false;
+      scrubbed=true;
+      const steps=Math.round(delta/Math.max(1,pixelsPerStep));
+      applyStep(startValue+steps*step);
+      return true;
+    };
+
+    const finishGesture=()=>{
+      if(!active)return;
       if(cycleTap && !scrubbed){
         const min=numeric(input.min,0);
         const max=numeric(input.max,min);
@@ -80,33 +100,41 @@
       }
       if(changed)input.dispatchEvent(new Event("change",{bubbles:true}));
       suppressClick=scrubbed;
-      pointerId=null;
+      active=false;
       changed=false;
       scrubbed=false;
     };
 
+    target.addEventListener("touchstart",event=>{
+      if(event.touches.length!==1 || !startGesture(event.touches[0].clientY))return;
+    },{passive:true});
+
+    target.addEventListener("touchmove",event=>{
+      if(event.touches.length!==1)return;
+      if(moveGesture(event.touches[0].clientY) && event.cancelable)event.preventDefault();
+    },{passive:false});
+
+    target.addEventListener("touchend",finishGesture);
+    target.addEventListener("touchcancel",finishGesture);
+
     target.addEventListener("pointerdown",event=>{
-      if(!mobileMedia.matches || !event.isPrimary || event.button!==0)return;
-      pointerId=event.pointerId;
-      startY=event.clientY;
-      startValue=numeric(input.value);
-      changed=false;
-      scrubbed=false;
-      try{target.setPointerCapture(pointerId);}catch{}
+      if(event.pointerType==="touch" || event.isPrimary===false || (event.pointerType==="mouse" && event.button!==0))return;
+      if(!startGesture(event.clientY))return;
+      try{target.setPointerCapture(event.pointerId);}catch{}
     });
 
     target.addEventListener("pointermove",event=>{
-      if(pointerId===null || event.pointerId!==pointerId)return;
-      const delta=startY-event.clientY;
-      if(!scrubbed && Math.abs(delta)<6)return;
-      scrubbed=true;
-      const steps=Math.round(delta/Math.max(1,pixelsPerStep));
-      applyStep(startValue+steps*step);
-      if(event.cancelable)event.preventDefault();
+      if(event.pointerType==="touch")return;
+      if(moveGesture(event.clientY) && event.cancelable)event.preventDefault();
     });
 
-    target.addEventListener("pointerup",finish);
-    target.addEventListener("pointercancel",finish);
+    target.addEventListener("pointerup",event=>{
+      if(event.pointerType!=="touch")finishGesture();
+    });
+    target.addEventListener("pointercancel",event=>{
+      if(event.pointerType!=="touch")finishGesture();
+    });
+
     target.addEventListener("click",event=>{
       if(!suppressClick)return;
       event.preventDefault();
