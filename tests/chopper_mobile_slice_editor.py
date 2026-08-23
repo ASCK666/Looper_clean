@@ -11,6 +11,7 @@ except Exception:
 
 ROOT=Path(__file__).resolve().parents[1]
 loader=(ROOT/'js/chopper-wave-slices.js').read_text(encoding='utf-8')
+assert './js/chopper-mobile-controls.js' in loader
 assert './js/chopper-mobile-slice-editor.js' in loader
 
 
@@ -27,7 +28,7 @@ def make_wav(path,duration=36.0,freq=190,sr=8000):
         w.writeframes(frames)
 
 
-html=inline_runtime_page(preload_before={'js/chopper-wave-slices.js':('js/chopper-mobile-slice-editor.js',)})
+html=inline_runtime_page(preload_before={'js/chopper-wave-slices.js':('js/chopper-mobile-controls.js','js/chopper-mobile-slice-editor.js')})
 
 with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     sample=Path(td)/'mobile-chops.wav';make_wav(sample)
@@ -43,8 +44,20 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
         x,y=touch_point(locator)
         cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':x,'y':y,'radiusX':8,'radiusY':8,'force':1}]})
 
+    def touch_move(x,y):
+        cdp.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':x,'y':y,'radiusX':8,'radiusY':8,'force':1}]})
+
     def touch_end():
         cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
+
+    def touch_drag(locator,dy):
+        x,y=touch_point(locator)
+        cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':x,'y':y,'radiusX':8,'radiusY':8,'force':1}]})
+        page.wait_for_timeout(20)
+        touch_move(x,y+dy)
+        page.wait_for_timeout(20)
+        touch_end()
+        page.wait_for_timeout(60)
 
     def canvas_checksum(canvas_id):
         return page.evaluate('''canvasId => {
@@ -54,7 +67,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
 
     errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     page.set_content(html,wait_until='load',timeout=20000)
-    page.wait_for_function('window.ChopperWaveSlices && window.ChopperMobileSliceEditor && window.ChopperBanks',timeout=10000)
+    page.wait_for_function('window.ChopperWaveSlices && window.ChopperMobileControls && window.ChopperMobileSliceEditor && window.ChopperBanks',timeout=10000)
     page.click('[data-tab="chopper"]');page.set_input_files('#sampleFile',str(sample))
     page.wait_for_function('sampleBuffer !== null && markers.length === 17 && ChopperBanks.banks.length === 3',timeout=10000)
     page.click('#autoMarkers');page.wait_for_timeout(80)
@@ -65,14 +78,51 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,
       mobile:matchMedia('(max-width:760px)').matches,
       touch:navigator.maxTouchPoints>0,
+      scrubActive:ChopperMobileControls.active,
       banks:ChopperBanks.banks.map(bank=>bank.label),
       bankTabsVisible:getComputedStyle(document.getElementById('chopperBankTabs')).display!=='none',
       saveVisible:getComputedStyle(document.getElementById('addFlipLibrary')).display!=='none'
     })''')
     assert state=={
-      'mode':'markers','markers':17,'pads':16,'enabled':16,'mobile':True,'touch':True,
+      'mode':'markers','markers':17,'pads':16,'enabled':16,'mobile':True,'touch':True,'scrubActive':True,
       'banks':['ALL','0–30','25–36'],'bankTabsVisible':True,'saveVisible':True
     },state
+
+    scrub_layout=page.evaluate('''() => ({
+      pitchKnob:getComputedStyle(document.querySelector('.samplePitchKnob .sampleKnobControl')).display,
+      volumeKnob:getComputedStyle(document.querySelector('.sampleVolumeKnob .sampleKnobControl')).display,
+      punchKnob:getComputedStyle(document.querySelector('.punchKnob .sampleKnobControl')).display,
+      pitchReadout:getComputedStyle(document.getElementById('samplePitchReadout')).display,
+      volumeReadout:getComputedStyle(document.getElementById('sampleVolumeReadout')).display,
+      punchReadout:getComputedStyle(document.getElementById('punchDesc')).display,
+      pitchTouch:getComputedStyle(document.getElementById('samplePitchReadout')).touchAction,
+      bpmTouch:getComputedStyle(document.getElementById('sampleBpm')).touchAction,
+      pitchRole:document.getElementById('samplePitchReadout').getAttribute('role'),
+      volumeRole:document.getElementById('sampleVolumeReadout').getAttribute('role'),
+      punchRole:document.getElementById('punchDesc').getAttribute('role')
+    })''')
+    assert scrub_layout['pitchKnob']=='none' and scrub_layout['volumeKnob']=='none' and scrub_layout['punchKnob']=='none',scrub_layout
+    assert scrub_layout['pitchReadout']!='none' and scrub_layout['volumeReadout']!='none' and scrub_layout['punchReadout']!='none',scrub_layout
+    assert scrub_layout['pitchTouch']=='none' and scrub_layout['bpmTouch']=='none',scrub_layout
+    assert scrub_layout['pitchRole']=='slider' and scrub_layout['volumeRole']=='slider' and scrub_layout['punchRole']=='slider',scrub_layout
+
+    touch_drag(page.locator('#samplePitchReadout'),-45)
+    touch_drag(page.locator('#sampleBpm'),-30)
+    touch_drag(page.locator('#sampleVolumeReadout'),20)
+    punch_target=page.locator('#punchDesc');px,py=touch_point(punch_target);page.touchscreen.tap(px,py);page.wait_for_timeout(60)
+    scrub_values=page.evaluate('''() => ({
+      pitch:document.getElementById('samplePitch').value,
+      pitchText:document.getElementById('samplePitchReadout').textContent,
+      bpm:document.getElementById('sampleBpm').value,
+      volume:document.getElementById('sampleVolume').value,
+      volumeText:document.getElementById('sampleVolumeReadout').textContent,
+      punch:document.getElementById('punchMode').value,
+      punchText:document.getElementById('punchDesc').textContent
+    })''')
+    assert scrub_values['pitch']=='2' and scrub_values['pitchText']=='+2 st',scrub_values
+    assert scrub_values['bpm']=='100',scrub_values
+    assert scrub_values['volume']=='70' and scrub_values['volumeText']=='70%',scrub_values
+    assert scrub_values['punch']=='2' and scrub_values['punchText']=='KNOCK',scrub_values
 
     pad=page.locator('#pads .pad').nth(5);x,y=touch_point(pad);page.touchscreen.tap(x,y)
     page.wait_for_function('chopAuditionPad === 5',timeout=3000)
@@ -164,4 +214,4 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.click('#mobileChopDone');assert not errors,errors
     page.close();context.close();browser.close()
 
-print('OK: Chopper mobile CHOP view — touch hold, static waveform + overlay playhead, 16 AUTO CHOP pads, SAVE + 30s bank tabs, PREV/NEXT, START/END, CHOPS return, SLICES')
+print('OK: Chopper mobile — scrub PITCH/BPM/VOL/PUNCH plus touch CHOP editor, SAVE/banks, PREV/NEXT and SLICES')
