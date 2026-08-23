@@ -3,14 +3,12 @@
 #chopper {
   --chopper-bg: #080604;
   --chopper-surface: #100c08;
-  --chopper-surface-hi: #17110c;
   --chopper-border: #4b3928;
   --chopper-border-hot: #765a34;
   --chopper-border-bright: #9a7038;
   --chopper-text: #dcc8a9;
   --chopper-muted: #8f795d;
   --chopper-amber: #e2ad5f;
-  --chopper-amber-hot: #f0b45f;
   --chopper-active: #80552c;
 }
 
@@ -57,21 +55,6 @@
   color: transparent !important;
   font-size: 0 !important;
   letter-spacing: 0 !important;
-}
-
-#chopper .padTransport {
-  display: grid;
-  grid-template-columns: repeat(3,minmax(64px,1fr));
-  gap: 5px;
-  width: min(100%,300px);
-  margin-left: auto;
-}
-
-#chopper .padTransport .btn {
-  min-width: 0;
-  min-height: 30px !important;
-  padding: 6px 8px !important;
-  white-space: nowrap;
 }
 
 #chopper .samplerSequenceHead {
@@ -225,7 +208,7 @@
   margin: 0 0 4px !important;
   color: var(--chopper-muted) !important;
   font: 800 8px/1 var(--font-mono) !important;
-  letter-spacing: .6px;
+  letter-spacing: .6px !important;
   text-align: center;
   cursor: default;
 }
@@ -371,16 +354,7 @@
 
 /* Pads keep the previous amber backlight and now carry the same warm tint on the key surface. */
 #chopper .pad {
-  color: #d8bd91 !important;
   border-color: #5a4328 !important;
-  background:
-    radial-gradient(circle at 50% 115%,rgba(226,173,95,.13),transparent 58%),
-    linear-gradient(180deg,#2b1d11 0%,#1c130c 48%,#100b07 100%) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.035),
-    inset 0 -10px 18px rgba(226,173,95,.055),
-    0 0 7px rgba(226,173,95,.08),
-    0 5px 9px rgba(0,0,0,.32) !important;
 }
 
 #chopper .pad:hover {
@@ -406,15 +380,6 @@
 #chopper .pad.active {
   color: #fff0d0 !important;
   border-color: #c6924e !important;
-  background:
-    radial-gradient(circle at 50% 105%,rgba(255,210,132,.38),transparent 58%),
-    linear-gradient(145deg,#9b6933 0%,#80552c 55%,#382111 100%) !important;
-  box-shadow:
-    inset 0 1px rgba(255,255,255,.09),
-    inset 0 -12px 22px rgba(240,180,95,.22),
-    0 0 10px rgba(240,180,95,.38),
-    0 0 24px rgba(226,173,95,.30),
-    0 6px 10px rgba(0,0,0,.34) !important;
 }
 
 #chopper .drumEditStep.active.kick,
@@ -452,14 +417,9 @@
   }
 
   #chopper .waveHeaderActions .btn,
-  #chopper .padTransport .btn,
   #chopper .sequenceActions .btn {
     padding-inline: 6px !important;
     font-size: 8px !important;
-  }
-
-  #chopper .padTransport {
-    width: min(100%,270px);
   }
 
   #chopper .chopperStatusStrip {
@@ -507,11 +467,6 @@
     align-items: stretch !important;
   }
 
-  #chopper .padTransport {
-    width: 100%;
-    margin: 5px 0 0;
-  }
-
   #chopper .sequenceActions {
     width: 100%;
     margin-left: 0;
@@ -523,7 +478,6 @@
 
   /* Two clean rows are preferable to overlapping four controls on a phone. */
   #chopper .drumQuickActions {
-    grid-template-columns: 76px 60px !important;
     column-gap: 18px !important;
     row-gap: 16px !important;
   }
@@ -582,43 +536,19 @@
 /* In SLICES mode, unused pads fall back to a dark hardware surface instead of
    all sixteen keys carrying the same amber halo. */
 #chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active) {
-  color: #b9aa92 !important;
   border-color: #474038 !important;
-  background: linear-gradient(180deg,#191713 0%,#11100d 52%,#090806 100%) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.026),
-    0 5px 9px rgba(0,0,0,.32) !important;
 }
 
 #chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active):hover {
-  color: #d4c3a7 !important;
   border-color: #6d5d49 !important;
-  background: linear-gradient(180deg,#211d17 0%,#15120e 52%,#0b0907 100%) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.035),
-    0 0 7px rgba(196,171,131,.06),
-    0 5px 9px rgba(0,0,0,.32) !important;
 }
 
 #chopper.screen .pad.slice-selected:not(.hit):not(.active) {
-  color: #ead9bc !important;
   border-color: #9a7038 !important;
-  background:
-    radial-gradient(circle at 50% 115%,rgba(226,173,95,.12),transparent 62%),
-    linear-gradient(180deg,#332416 0%,#21170f 52%,#100b08 100%) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.045),
-    inset 0 -8px 16px rgba(226,173,95,.045),
-    0 0 9px rgba(226,173,95,.12),
-    0 5px 9px rgba(0,0,0,.32) !important;
 }
 
 #chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad.unavailable:not(.hit):not(.active) {
-  color: #6f685d !important;
   border-color: #302c27 !important;
-  background: linear-gradient(180deg,#12110f,#090806) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.015),0 4px 7px rgba(0,0,0,.28) !important;
-  opacity: .58;
 }
 
 /* asset-ui-chopper: one neutral powered-off button is derived from the real
@@ -643,19 +573,12 @@
   margin-bottom: 0 !important;
 }
 
-#chopper .padTransport {
-  grid-template-columns: repeat(3,minmax(0,1fr));
-  gap: 7px;
-  width: min(100%,320px);
-}
-
 #chopper .padTransport .btn {
   --chopper-light-core: rgba(255,238,170,.18);
   --chopper-light-yellow: rgba(255,205,64,.06);
   --chopper-light-edge: rgba(244,169,20,.024);
   position: relative;
   isolation: isolate;
-  min-height: 50px !important;
   overflow: hidden;
   padding: 0 !important;
   border: 0 !important;
@@ -667,6 +590,7 @@
   filter: sepia(.08) saturate(.72) brightness(.88) !important;
   font-size: 0 !important;
   text-shadow: none !important;
+  white-space: nowrap;
 }
 
 /* Transport and pads now share one isolated Looper-derived physical button.
@@ -854,24 +778,12 @@
 }
 
 @media (max-width:760px) {
-  #chopper .padTransport .btn {
-    min-height: 48px !important;
-  }
-
   #chopper .pad {
     min-height: 62px !important;
   }
 }
 
 @media (max-width:430px) {
-  #chopper .padTransport {
-    gap: 5px;
-  }
-
-  #chopper .padTransport .btn {
-    min-height: 46px !important;
-  }
-
   #chopper .pad {
     min-height: 56px !important;
   }
@@ -918,9 +830,12 @@
 
 /* Keep transport controls on the same physical ratio as the isolated button. */
 #chopper .padTransport {
+  display: grid;
   grid-template-columns: repeat(3,88px) !important;
+  gap: 7px;
   width: auto !important;
   max-width: 100%;
+  margin-left: auto;
   justify-content: end;
 }
 
@@ -948,7 +863,9 @@
 @media (max-width:430px) {
   #chopper .padTransport {
     grid-template-columns: repeat(3,minmax(0,1fr)) !important;
+    gap: 5px;
     width: 100% !important;
+    margin: 5px 0 0;
   }
 
   #chopper .padTransport .btn {

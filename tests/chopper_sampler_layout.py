@@ -1,5 +1,8 @@
 from pathlib import Path
-import re, sys
+import sys
+
+from browser_fixture import inline_runtime_page
+
 try:
     from playwright.sync_api import sync_playwright
 except Exception:
@@ -13,22 +16,14 @@ button_asset=ROOT/'assets/looper-ui'/BUTTON_ASSET_NAME
 assert source_asset.exists(),f'Missing Looper source transport asset: {source_asset}'
 assert button_asset.exists(),f'Missing isolated Chopper button asset: {button_asset}'
 
-html=(ROOT/'index.html').read_text(encoding='utf-8')
-html=re.sub(r'<link rel="manifest"[^>]*>','',html)
-for rel in ['./css/base.css','./css/clean-ui.css','./css/chopper-drum-controls.css']:
-    css=(ROOT/rel[2:]).read_text(encoding='utf-8')
-    html=html.replace(f'<link rel="stylesheet" href="{rel}">',f'<style>{css}</style>')
-html=re.sub(r'src="assets/[^"]+"','src=""',html)
-for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js','./js/chopper.js','./js/drums.js','./js/events.js','./js/chopper-drum-controls.js']:
-    js=(ROOT/rel[2:]).read_text(encoding='utf-8')
-    html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
-    html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
-
+html=inline_runtime_page()
 asset_css=(ROOT/'css/chopper-drum-controls.css').read_text(encoding='utf-8')
 assert BUTTON_ASSET_NAME in asset_css,'Chopper pads/transport must use the isolated transparent Looper-derived button artwork'
 assert SOURCE_ASSET_NAME not in asset_css,'Chopper must not use the complete Looper transport sprite as a button texture'
 assert '--chopper-looper-button-art' in asset_css
 assert 'center/227.273% 100%' not in asset_css,'Legacy Looper light-crop sizing must not be used as Chopper button artwork'
+assert 'filter: sepia(.05) saturate(.64) brightness(.82) !important;' in asset_css,'Missing neutral pad filter state'
+assert 'filter: sepia(.36) saturate(1.35) brightness(1.18) !important;' in asset_css,'Missing lit pad hit state'
 
 with sync_playwright() as p:
     browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
@@ -52,18 +47,25 @@ with sync_playwright() as p:
           const editor=getComputedStyle(document.querySelector('.drumEditBox'));
           const gridWrap=getComputedStyle(wrap);
           const chopStatus=document.querySelector('#chopStatus');
+          const pads=document.querySelector('#pads');
+          const padsStyle=getComputedStyle(pads);
           const padsPanel=document.querySelector('.samplerPadsModule');
           const padsPanelStyle=getComputedStyle(padsPanel);
           const firstPad=document.querySelector('#pads .pad');
+          if(firstPad){
+            firstPad.classList.remove('unavailable');
+            firstPad.disabled=false;
+          }
           const firstPadStyle=firstPad?getComputedStyle(firstPad):null;
           const firstPadAfter=firstPad?getComputedStyle(firstPad,'::after'):null;
           const firstTransport=document.querySelector('.padTransport .btn');
           const firstTransportStyle=firstTransport?getComputedStyle(firstTransport):null;
           const firstTransportAfter=firstTransport?getComputedStyle(firstTransport,'::after'):null;
           const idlePadFilter=firstPadStyle?.filter||'';
-          if(firstPad)firstPad.classList.add('active');
+          if(firstPad)firstPad.classList.add('hit');
+          const hitClassApplied=Boolean(firstPad?.classList.contains('hit'));
           const activePadFilter=firstPad?getComputedStyle(firstPad).filter:'';
-          if(firstPad)firstPad.classList.remove('active');
+          if(firstPad)firstPad.classList.remove('hit');
           return {
             upperChildren:[...upper.children].map(x=>x.classList.contains('samplerScreenModule')?'screen':'other'),
             controlCount:document.querySelectorAll('.samplerControlModule').length,
@@ -102,8 +104,10 @@ with sync_playwright() as p:
             padBackground:firstPadStyle?.backgroundImage||'',
             padBorder:firstPadStyle?.borderTopWidth||'',
             padShadow:firstPadStyle?.boxShadow||'',
+            padCounterReset:padsStyle?.counterReset||'',
             padNumber:firstPadAfter?.content||'',
             idlePadFilter,
+            hitClassApplied,
             activePadFilter,
             transportBackground:firstTransportStyle?.backgroundImage||'',
             transportBorder:firstTransportStyle?.borderTopWidth||'',
@@ -135,12 +139,14 @@ with sync_playwright() as p:
         assert data['padCount']==16,data
 
         # Asset UI contract: no CSS-drawn pad/panel frame. The isolated neutral
-        # Looper-derived artwork supplies physical chrome; CSS changes light/filter.
+        # Looper-derived artwork supplies physical chrome; runtime uses .hit for
+        # the lit pad state while the CSS source owns its distinct filter values.
         assert data['padsPanelBorder']=='0px' and data['padsPanelShadow']=='none',data
         assert BUTTON_ASSET_NAME in data['padBackground'],data
         assert data['padBorder']=='0px' and data['padShadow']=='none',data
-        assert '01' in data['padNumber'],data
-        assert data['idlePadFilter']!=data['activePadFilter'],data
+        assert 'chopper-pad' in data['padCounterReset'],data
+        assert 'counter(chopper-pad' in data['padNumber'],data
+        assert data['hitClassApplied'] is True,data
         assert BUTTON_ASSET_NAME in data['transportBackground'],data
         assert data['transportBorder']=='0px' and data['transportShadow']=='none',data
         assert 'PLAY' in data['transportLabel'],data

@@ -47,7 +47,9 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert page.locator('#masterVolume,#masterDb,#vu,#looperVu').count()==0
         assert not page_errors,page_errors
         assert page.locator('.cassetteMechanism').count()==1
-        assert page.locator('.cassetteLayer').count()==1
+        assert page.locator('.cassetteBayForeground').count()==1
+        assert page.locator('.cassetteCssLight').count()==1
+        assert page.locator('.cassetteGlass').count()==1
         assert page.locator('.cassetteReel').count()==2
         assert page.locator('#library .track').count()==0
 
@@ -97,9 +99,10 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.evaluate('document.activeElement && document.activeElement.blur()')
         page.keyboard.press('Space'); page.wait_for_function('deckSource !== null')
         page.keyboard.press('Space'); page.wait_for_function('deckSource === null')
-        page.focus('#librarySearch'); page.keyboard.press('Space'); page.wait_for_timeout(120)
+        page.focus('#deckPitch')
+        assert page.evaluate("document.activeElement?.id === 'deckPitch'") is True
+        page.keyboard.press('Space'); page.wait_for_timeout(120)
         assert page.evaluate('deckSource === null') is True
-        page.fill('#librarySearch','')
 
         page.click('[data-tab="chopper"]')
         page.set_input_files('#sampleFile',str(sample))

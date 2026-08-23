@@ -1,7 +1,7 @@
 "use strict";
 
 // Long-sample Chopper banks. A bank owns its marker/slice pad layout and its
-// 16-step Chopper sequence. Windows are 30 seconds wide and advance by 25
+// four-bar Chopper sequence. Windows are 30 seconds wide and advance by 25
 // seconds, giving adjacent banks a 5-second overlap. ALL remains independent.
 (() => {
   const root=document.getElementById("chopper");
@@ -136,9 +136,9 @@
   }
 
   function normalizeGrid(values){
-    const result=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+    const result=new Array(CHOPPER_SEQUENCE_TOTAL_STEPS).fill(0);
     if(!Array.isArray(values))return result;
-    for(let i=0;i<Math.min(values.length,CHOPPER_SEQUENCE_STEPS);i++){
+    for(let i=0;i<Math.min(values.length,CHOPPER_SEQUENCE_TOTAL_STEPS);i++){
       const pad=Number(values[i])||0;
       result[i]=pad>=1 && pad<=16 ? pad : 0;
     }
@@ -285,7 +285,7 @@
     return {
       markers:autoMarkersForBank(bank,count),
       selectedMarker:0,
-      grid:new Array(CHOPPER_SEQUENCE_STEPS).fill(0),
+      grid:new Array(CHOPPER_SEQUENCE_TOTAL_STEPS).fill(0),
       mode:inheritedMode==="slices"?"slices":"markers",
       slices:defaultSliceRanges(bank),
       selectedSlice:0,
@@ -309,7 +309,7 @@
 
     // Restore private SLICES before the grid because adding slices can remap
     // grid pad numbers internally. The saved bank sequence wins afterwards.
-    loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+    loopGridEvents=new Array(CHOPPER_SEQUENCE_TOTAL_STEPS).fill(0);
     restoreSliceRanges(state.slices,state.selectedSlice,state.mode);
     loopGridEvents=normalizeGrid(state.grid);
 
@@ -495,33 +495,24 @@
     if(!sampleBuffer)return null;
 
     const bank=activeBank();
-    const bpm=Math.max(40,Number($("sampleBpm")?.value)||90);
-    const stepDur=(60/bpm)/2;
-    const targetDur=8*60/bpm;
     const pitchRate=samplePitchRate();
-    const events=gridEventsForRender();
-    const placed=[];
+    const plan=buildSequencePlan(
+      gridEventsForRender(),
+      $("sampleBpm")?.value,
+      Math.max(0,markers.length-1)
+    );
+    if(!plan.placed.length)return null;
 
-    for(let step=0;step<CHOPPER_SEQUENCE_STEPS;step++){
-      const chop=Number(events[step])||0;
-      if(chop>=1 && chop<markers.length)placed.push({step,chop});
-    }
-    if(!placed.length)return null;
-
-    const segments=[];
-    for(let i=0;i<placed.length;i++){
-      const event=placed[i];
-      const startTime=event.step*stepDur;
-      const nextTime=i+1<placed.length?placed[i+1].step*stepDur:targetDur;
+    const segments=plan.placed.map(event=>{
       const sampleStart=markers[event.chop-1];
-      const available=Math.max(0,bank.end-sampleStart);
-      const maxAudible=available/pitchRate;
-      const endTime=Math.min(targetDur,nextTime,startTime+maxAudible);
-      if(endTime>startTime){
-        segments.push({pad:event.chop-1,startTime,endTime,sampleStart});
-      }
-    }
-    return {duration:targetDur,pitchRate,segments};
+      const maxAudible=Math.max(0,bank.end-sampleStart)/pitchRate;
+      const endTime=Math.min(plan.targetDur,event.nextTime,event.startTime+maxAudible);
+      return endTime>event.startTime
+        ? {pad:event.chop-1,startTime:event.startTime,endTime,sampleStart}
+        : null;
+    }).filter(Boolean);
+
+    return {duration:plan.targetDur,pitchRate,segments};
   };
 
   function copyBankBuffer(sourceBuffer,bank){

@@ -1,13 +1,14 @@
 from pathlib import Path
 import os, sys, tempfile, wave, struct, math
 
+from browser_fixture import inline_runtime_page
+
 try:
     from playwright.sync_api import sync_playwright
 except Exception:
     print('SKIP: playwright is not installed')
     sys.exit(0)
 
-ROOT=Path(__file__).resolve().parents[1]
 
 def make_wav(path: Path, seconds=.35, hz=220, amp=.2):
     rate=44100
@@ -22,14 +23,13 @@ def make_wav(path: Path, seconds=.35, hz=220, amp=.2):
             out.append(struct.pack('<h',v))
         wf.writeframes(b''.join(out))
 
-html=(ROOT/'index.html').read_text(encoding='utf-8')
-for rel in ['./css/base.css','./css/clean-ui.css']:
-    css=(ROOT/rel[2:]).read_text(encoding='utf-8')
-    html=html.replace(f'<link rel="stylesheet" href="{rel}">',f'<style>{css}</style>')
-for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js','./js/chopper.js','./js/drums.js','./js/events.js']:
-    js=(ROOT/rel[2:]).read_text(encoding='utf-8')
-    html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
-    html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
+
+html=inline_runtime_page(
+    script_paths=(
+        'js/bootstrap.js','js/core.js','js/looper.js',
+        'js/chopper.js','js/drums.js','js/events.js',
+    )
+)
 
 with tempfile.TemporaryDirectory() as td:
     td=Path(td)
@@ -124,10 +124,11 @@ with tempfile.TemporaryDirectory() as td:
         page.set_input_files('#beatFiles',[str(beat_a),str(beat_b)])
         page.wait_for_function("document.querySelectorAll('#library .track .danger').length >= 2 && deckBuffer !== null",timeout=10000)
 
-        # 5) NEXT/PREV preserves transport state.
+        # 5) NEXT/PREV preserves transport state. This inline fixture owns the
+        # state contract; the served-page smoke test owns physical hit-testing.
         page.click('#stopBeat')
         before=page.evaluate('currentTrack.id')
-        page.click('#nextBeat')
+        page.evaluate("document.getElementById('nextBeat').click()")
         page.wait_for_function('(id) => currentTrack?.id !== id',arg=before)
         after=page.evaluate('currentTrack.id')
         assert after != before
@@ -136,26 +137,33 @@ with tempfile.TemporaryDirectory() as td:
         page.click('#playBeat')
         page.wait_for_function('deckSource !== null')
         before_playing=page.evaluate('currentTrack.id')
-        page.click('#prevBeat')
+        page.evaluate("document.getElementById('prevBeat').click()")
         page.wait_for_function('(id) => currentTrack?.id !== id && deckSource !== null',arg=before_playing)
         after_playing=page.evaluate('currentTrack.id')
         assert after_playing != before_playing
         assert page.evaluate('deckSource !== null') is True
         page.click('#stopBeat')
 
-        # 6) Closing PRACTICE must stop the hidden timer.
-        page.click('#practiceOverlayOpen')
-        page.click('#startPractice')
-        page.wait_for_function('practiceTimer !== null')
-        page.click('#practiceOverlayClose')
-        assert page.evaluate('practiceTimer === null') is True
-        assert page.locator('#practice.overlayOpen').count() == 0
+        # 6) PRACTICE is retired completely: no surface, script or runtime symbols.
+        assert page.locator('#practice').count() == 0
+        assert page.locator('script[src*="practice.js"]').count() == 0
+        practice_retired=page.evaluate('''() => ({
+          makePractice:typeof makePractice,
+          startPractice:typeof startPractice,
+          practiceTimer:typeof practiceTimer
+        })''')
+        assert practice_retired == {
+            'makePractice':'undefined',
+            'startPractice':'undefined',
+            'practiceTimer':'undefined',
+        }, practice_retired
         page.click('#stopBeat')
 
         # 7) Deleting the currently loaded imported beat fully unloads the deck.
-        # Ensure current row is visible/active, then delete its own X button.
+        # The inline fixture owns the unload behavior; served-page smoke/layout
+        # tests own the physical hit target.
         page.wait_for_function("document.querySelector('#library .track.active .danger') !== null")
-        page.locator('#library .track.active .danger').click()
+        page.evaluate("document.querySelector('#library .track.active .danger').click()")
         page.wait_for_function('currentTrack === null && deckBuffer === null')
         assert page.locator('#deckTrack').inner_text() == 'Aucun beat chargé'
         page.click('#playBeat')
@@ -267,4 +275,4 @@ with tempfile.TemporaryDirectory() as td:
         context.close()
         browser.close()
 
-print('OK: V63 regressions — loop edge, stereo conditioner, deterministic reverb, master dB, pitch rerender, delete unload, save validation, practice close, PREV/NEXT state, drum folders')
+print('OK: V63 regressions — loop edge, stereo conditioner, deterministic reverb, master dB, pitch rerender, delete unload, save validation, Practice retirement, PREV/NEXT state, drum folders')

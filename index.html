@@ -7,9 +7,13 @@
 <meta name="referrer" content="no-referrer">
 <title>Scratch Practice Station</title>
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="./css/tokens.css">
+<link rel="stylesheet" href="./css/shared.css">
 <link rel="stylesheet" href="./css/base.css?v=looper66-tabs-210826-5">
+<link rel="stylesheet" href="./css/looper.css">
 <link rel="stylesheet" href="./css/clean-ui.css">
 <link rel="stylesheet" href="./css/chopper-drum-controls.css">
+<link rel="stylesheet" href="./css/chopper-deck-texture.css" data-chopper-deck-texture="1">
 </head>
 <body>
 <div id="appBootError" role="alert" aria-live="assertive"></div>
@@ -117,42 +121,6 @@
     </div>
   </section>
 
-  <!-- PRACTICE -->
-  <section id="practice" class="screen">
-    <button id="practiceOverlayClose" class="practiceClose" type="button">CLOSE</button>
-    <div class="layout">
-      <div class="panel">
-        <div class="title"><span>01</span> TRAINING SETUP</div>
-        <div class="grid3">
-          <div><label>LEVEL</label><select id="practiceLevel"><option value="beginner">BEGINNER</option><option value="intermediate">INTERMEDIATE</option><option value="advanced">ADVANCED</option></select></div>
-          <div><label>SUBDIVISION</label><select id="practiceSub"><option value="8">8TH</option><option value="16">16TH</option></select></div>
-          <div><label>PRACTICE TEMPO</label><input id="practiceTempo" type="number" min="40" max="220" value="80"></div>
-        </div>
-        <select id="practiceBars" class="hidden"><option selected>2</option></select>
-        <div class="grid2">
-          <button id="newPattern" class="btn primary">NEW PATTERN</button>
-          <button id="startPractice" class="btn good">START PRACTICE</button>
-        </div>
-        <div class="grid2">
-          <div><label>AUTO PROGRESSION</label><select id="practiceAuto"><option value="off">OFF</option><option value="up">+ SPEED %</option></select></div>
-          <div><label>CHANGE EVERY</label><select id="patternCycles"><option value="2">2 CYCLES</option><option value="4" selected>4 CYCLES</option><option value="8">8 CYCLES</option></select></div>
-        </div>
-        <div class="help">Le moteur n'utilise pas une “notation standard” propriétaire : il affiche une notation pédagogique simple et explicite. → avant, ← arrière, X fermeture fader, O ouverture.</div>
-      </div>
-
-      <div class="panel">
-        <div class="title"><span>02</span> CURRENT DRILL</div>
-        <div class="practiceCard">
-          <div id="practiceName" class="practiceName">BABY FLOW</div>
-          <div id="practiceNotation" class="notation">→ ← · · | → ← · ·</div>
-          <div id="practiceGrid" class="beatgrid"></div>
-          <div id="practiceCount" class="status">READY</div>
-        </div>
-        <div class="legend">→ push / forward • ← pull / backward • X fader close • O fader open • C chirp • T transformer • S stab • · silence / hold</div>
-      </div>
-    </div>
-  </section>
-
   <!-- CHOPPER -->
   <section id="chopper" class="screen">
     <div class="chopperStack samplerDeck">
@@ -164,7 +132,7 @@
         </div>
         <div class="samplerRailMeta">
           <span>16 PADS</span>
-          <span>2 BARS</span>
+          <span>4 BARS</span>
           <span>LOCAL AUDIO</span>
         </div>
       </div>
@@ -263,18 +231,22 @@
 
         <div class="panel gridPanel samplerSequenceModule">
           <div class="samplerSequenceHead">
-            <div class="title compactTitle samplerSectionTitle">SEQUENCE <span class="titleMeta">2 BARS / 8TH</span></div>
-            <button id="clearGrid" class="btn">CLEAR GRID</button>
+            <div class="title compactTitle samplerSectionTitle">SEQUENCE <span class="titleMeta">4 BARS / 8TH</span></div>
+            <div class="sequenceActions" role="group" aria-label="Pages de mesures du séquenceur">
+              <button id="sequencePage12" class="btn sequencePageTab active" data-sequence-page="0" type="button" aria-pressed="true" aria-label="Afficher les mesures 1 et 2">1–2</button>
+              <button id="sequencePage34" class="btn sequencePageTab" data-sequence-page="1" type="button" aria-pressed="false" aria-label="Afficher les mesures 3 et 4">3–4</button>
+              <button id="clearGrid" class="btn">CLEAR GRID</button>
+            </div>
           </div>
           <div class="loopGridWrap">
             <div class="sampleTimelineStack">
-              <canvas id="sampleTimelineCanvas" width="830" height="86" aria-label="Timeline du sample alignée sur la séquence de deux mesures">Sample timeline</canvas>
+              <canvas id="sampleTimelineCanvas" width="830" height="86" aria-label="Timeline du sample, mesures 1 à 2">Sample timeline</canvas>
               <canvas id="sampleTimelinePlayheadCanvas" width="830" height="86" aria-hidden="true"></canvas>
             </div>
             <div id="loopGrid" class="matrixGrid"></div>
-            <div id="drumPatternPreview" class="drumPatternPreview" aria-label="Aperçu nominal de la batterie sur deux mesures"></div>
+            <div id="drumPatternPreview" class="drumPatternPreview" aria-label="Aperçu nominal de la batterie répétée sur les quatre mesures"></div>
           </div>
-          <div class="samplerModuleHint">Click = place • right click = clear • one chop per step.</div>
+          <div class="samplerModuleHint">1–2 / 3–4 = page • click = place • right click = clear • one chop per step.</div>
         </div>
       </div>
 
@@ -336,7 +308,6 @@
 <script src="./js/bootstrap.js"></script>
 <script src="./js/core.js" defer></script>
 <script src="./js/looper.js" defer></script>
-<script src="./js/practice.js" defer></script>
 <script src="./js/chopper.js" defer></script>
 <script src="./js/drums.js" defer></script>
 <script src="./js/events.js" defer></script>

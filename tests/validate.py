@@ -9,11 +9,11 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 HTML = (ROOT / "index.html").read_text(encoding="utf-8")
+BASE_CSS = (ROOT / "css" / "base.css").read_text(encoding="utf-8")
 RUNTIME_FILES = [
     ROOT / "js" / "bootstrap.js",
     ROOT / "js" / "core.js",
     ROOT / "js" / "looper.js",
-    ROOT / "js" / "practice.js",
     ROOT / "js" / "chopper.js",
     ROOT / "js" / "drums.js",
     ROOT / "js" / "events.js",
@@ -37,7 +37,6 @@ for rel in [
     "js/bootstrap.js",
     "js/core.js",
     "js/looper.js",
-    "js/practice.js",
     "js/chopper.js",
     "js/drums.js",
     "js/events.js",
@@ -50,6 +49,49 @@ for rel in [
     "assets/looper-ui/looper66-cassette-bay-b10ab679.png",
 ]:
     require(f"file {rel}", (ROOT / rel).is_file())
+
+# Practice was intentionally retired as a product domain. Keep the brand/cache
+# namespace independent from this contract, but reject any executable/UI residue
+# of the removed feature so it cannot silently become dead code again.
+require("retired Practice script deleted", not (ROOT / "js" / "practice.js").exists())
+require("retired Practice script absent from HTML", "./js/practice.js" not in HTML)
+for marker in [
+    'id="practice"',
+    'id="practiceOverlayClose"',
+    'id="practiceLevel"',
+    'id="practiceSub"',
+    'id="practiceTempo"',
+    'id="practiceBars"',
+    'id="newPattern"',
+    'id="startPractice"',
+    'id="practiceAuto"',
+    'id="patternCycles"',
+    'id="practiceName"',
+    'id="practiceNotation"',
+    'id="practiceGrid"',
+    'id="practiceCount"',
+]:
+    require(f"retired Practice DOM {marker}", marker not in HTML)
+for symbol in [
+    "makePractice",
+    "renderPracticeGrid",
+    "stopPractice",
+    "tickPractice",
+    "startPractice",
+    "practicePattern",
+    "practiceStep",
+    "practiceTimer",
+    "practiceCyclesDone",
+]:
+    require(f"retired Practice runtime symbol {symbol}", symbol not in JS)
+for selector in [
+    "#practice",
+    ".practiceCard",
+    ".practiceName",
+    ".practiceClose",
+    ".beatgrid",
+]:
+    require(f"retired Practice CSS selector {selector}", selector not in BASE_CSS)
 
 ids = re.findall(r'\bid="([^"]+)"', HTML)
 duplicates = sorted(name for name, count in Counter(ids).items() if count > 1)
@@ -105,5 +147,5 @@ if failures:
     sys.exit(1)
 
 print(
-    "OK: runtime contract — deployable files, DOM refs, JS syntax and generic security guards"
+    "OK: runtime contract — deployable files, retired Practice absent, DOM refs, JS syntax and generic security guards"
 )

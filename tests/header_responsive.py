@@ -1,19 +1,13 @@
-from pathlib import Path
-import re, sys
+import sys
+
+from browser_fixture import inline_runtime_page
+
 try:
     from playwright.sync_api import sync_playwright
 except Exception:
     print('SKIP: playwright is not installed'); sys.exit(0)
-ROOT=Path(__file__).resolve().parents[1]
-html=(ROOT/'index.html').read_text(encoding='utf-8')
-html=re.sub(r'<link rel="manifest"[^>]*>','',html)
-for rel in ['./css/base.css','./css/clean-ui.css']:
-    css=(ROOT/rel[2:]).read_text(encoding='utf-8')
-    html=html.replace(f'<link rel="stylesheet" href="{rel}">',f'<style>{css}</style>')
-html=re.sub(r'src="assets/[^"]+"','src=""',html)
-for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js','./js/chopper.js','./js/drums.js','./js/events.js']:
-    js=(ROOT/rel[2:]).read_text(encoding='utf-8')
-    html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>').replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
+
+html=inline_runtime_page()
 with sync_playwright() as p:
     browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
     page=browser.new_page(viewport={'width':1440,'height':900})

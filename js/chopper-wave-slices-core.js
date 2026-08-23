@@ -647,13 +647,15 @@
 
   const gridEventsForRenderBase=gridEventsForRender;
   gridEventsForRender=function(...args){
-    const events=gridEventsForRenderBase(...args);
-    if(editMode!==MODE_SLICES)return events;
-    const count=independentSlices.length;
-    return events.map(value=>{
-      const pad=Number(value)||0;
-      return pad>=1 && pad<=count?pad:0;
-    });
+    if(editMode!==MODE_SLICES)return gridEventsForRenderBase(...args);
+    ensureIndependentSlices();
+    const savedMarkers=markers;
+    try{
+      markers=independentCueMarkers();
+      return gridEventsForRenderBase(...args);
+    }finally{
+      markers=savedMarkers;
+    }
   };
 
   const renderLoopGridBase=renderLoopGrid;
@@ -749,33 +751,24 @@
     if(!sampleBuffer)return null;
     ensureIndependentSlices();
 
-    const bpm=Math.max(40,Number($("sampleBpm").value)||90);
-    const stepDur=(60/bpm)/2;
-    const targetDur=8*60/bpm;
     const pitchRate=samplePitchRate();
-    const events=gridEventsForRender();
-    const placed=[];
+    const plan=buildSequencePlan(
+      gridEventsForRender(),
+      $("sampleBpm").value,
+      independentSlices.length
+    );
+    if(!plan.placed.length)return null;
 
-    for(let step=0;step<CHOPPER_SEQUENCE_STEPS;step++){
-      const chop=Number(events[step])||0;
-      if(chop>=1 && chop<=independentSlices.length)placed.push({step,chop});
-    }
-    if(!placed.length)return null;
-
-    const segments=[];
-    for(let i=0;i<placed.length;i++){
-      const ev=placed[i];
-      const range=independentSlices[ev.chop-1];
-      const startTime=ev.step*stepDur;
-      const nextTime=i+1<placed.length?placed[i+1].step*stepDur:targetDur;
+    const segments=plan.placed.map(event=>{
+      const range=independentSlices[event.chop-1];
       const maxAudible=Math.max(0,range.end-range.start)/pitchRate;
-      const endTime=Math.min(targetDur,nextTime,startTime+maxAudible);
-      if(endTime>startTime){
-        segments.push({pad:ev.chop-1,startTime,endTime,sampleStart:range.start});
-      }
-    }
+      const endTime=Math.min(plan.targetDur,event.nextTime,event.startTime+maxAudible);
+      return endTime>event.startTime
+        ? {pad:event.chop-1,startTime:event.startTime,endTime,sampleStart:range.start}
+        : null;
+    }).filter(Boolean);
 
-    return {duration:targetDur,pitchRate,segments};
+    return {duration:plan.targetDur,pitchRate,segments};
   };
 
   const renderSequenceBase=renderSequence;
@@ -784,40 +777,29 @@
     if(!sourceBuffer)throw new Error("Charge un sample");
     ensureIndependentSlices();
 
-    const bpm=Math.max(40,Number($("sampleBpm").value)||90);
-    const stepDur=(60/bpm)/2;
-    const bars=2;
-    const targetDur=8*60/bpm;
+    const plan=buildSequencePlan(events,$("sampleBpm").value,independentSlices.length);
     const rate=44100;
-    const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
+    const offline=new OfflineAudioContext(2,Math.ceil(plan.targetDur*rate),rate);
     const master=makePunchMaster(offline);
     const sampleConditioner=makeSampleConditioner(offline,master.input,.72*sampleVolumeGain());
 
-    const placed=[];
-    for(let step=0;step<16;step++){
-      const chop=Number(events[step])||0;
-      if(chop>=1 && chop<=independentSlices.length)placed.push({step,chop});
-    }
-    if(!placed.length)throw new Error("Place au moins un PAD sur la grille");
+    if(!plan.placed.length)throw new Error("Place au moins un PAD sur la grille");
 
-    for(let e=0;e<placed.length;e++){
-      const ev=placed[e];
+    for(const ev of plan.placed){
       const range=independentSlices[ev.chop-1];
-      const startTime=ev.step*stepDur;
-      const nextTime=e+1<placed.length?placed[e+1].step*stepDur:targetDur;
       const available=Math.max(.005,range.end-range.start);
-      const wanted=Math.max(.005,nextTime-startTime);
+      const wanted=Math.max(.005,ev.nextTime-ev.startTime);
 
       const src=offline.createBufferSource();
       src.buffer=sourceBuffer;
       src.playbackRate.value=pitchRate;
       src.connect(sampleConditioner.input);
-      src.start(startTime,range.start);
-      src.stop(Math.min(targetDur,startTime+Math.min(wanted,available/pitchRate)));
+      src.start(ev.startTime,range.start);
+      src.stop(Math.min(plan.targetDur,ev.startTime+Math.min(wanted,available/pitchRate)));
     }
 
     const selection=await ensureDrumSelection();
-    renderSelectedDrums(offline,selection,bpm,bars,targetDur,master.input);
+    renderSelectedDrums(offline,selection,plan.bpm,plan.bars,plan.targetDur,master.input);
     let rendered=finalizeLoopBuffer(await offline.startRendering());
     if(globalThis.ChopperVinyl?.processRenderedBuffer){
       rendered=await globalThis.ChopperVinyl.processRenderedBuffer(rendered);

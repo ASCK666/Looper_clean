@@ -1,12 +1,13 @@
 from pathlib import Path
-import math,re,struct,sys,tempfile,wave
+import math,struct,sys,tempfile,wave
+
+from browser_fixture import inline_runtime_page
+
 try:
     from playwright.sync_api import sync_playwright
 except Exception:
     print('SKIP: playwright is not installed')
     sys.exit(0)
-
-ROOT=Path(__file__).resolve().parents[1]
 
 
 def make_wav(path,duration=.96,freq=180,sr=44100):
@@ -23,20 +24,13 @@ def make_wav(path,duration=.96,freq=180,sr=44100):
         w.writeframes(frames)
 
 
-def inline_project():
-    html=(ROOT/'index.html').read_text(encoding='utf-8')
-    html=re.sub(r'<link rel="manifest"[^>]*>','',html)
-    for rel in ['./css/base.css','./css/clean-ui.css','./css/chopper-drum-controls.css']:
-        css=(ROOT/rel[2:]).read_text(encoding='utf-8')
-        html=html.replace(f'<link rel="stylesheet" href="{rel}">',f'<style>{css}</style>')
-    html=re.sub(r'src="assets/[^"]+"','src=""',html)
-    for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js','./js/chopper.js','./js/drums.js','./js/events.js','./js/chopper-drum-controls.js']:
-        js=(ROOT/rel[2:]).read_text(encoding='utf-8')
-        html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
-        html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
-    feature=(ROOT/'js/chopper-wave-slices.js').read_text(encoding='utf-8')
-    html=html.replace('</body>',f'<script>{feature}</script></body>')
-    return html
+html=inline_runtime_page(
+    script_paths=(
+        'js/bootstrap.js','js/core.js','js/looper.js','js/chopper.js',
+        'js/drums.js','js/events.js','js/chopper-drum-controls.js',
+    ),
+    append_scripts=('js/chopper-wave-slices.js',),
+)
 
 
 def client_point_for_source(page,sec):
@@ -70,7 +64,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page=browser.new_page(viewport={'width':1280,'height':1100})
     errors=[]
     page.on('pageerror',lambda e:errors.append(str(e)))
-    page.set_content(inline_project(),wait_until='load',timeout=20000)
+    page.set_content(html,wait_until='load',timeout=20000)
     page.wait_for_function('window.__SP && window.__SP.ready === true',timeout=10000)
     page.wait_for_function('window.ChopperWaveSlices && document.getElementById("sliceEditModeBtn")',timeout=10000)
     page.click('[data-tab="chopper"]')
@@ -80,20 +74,21 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     mode_ui=page.evaluate('''() => {
       const button=document.getElementById('sliceEditModeBtn');
       const title=button.closest('.stableTitle');
-      const label=title.querySelector('span');
+      const actions=title?.querySelector('.waveHeaderActions');
       const br=button.getBoundingClientRect();
-      const lr=label.getBoundingClientRect();
+      const ar=actions?.getBoundingClientRect();
       return {
         text:button.textContent,
         mode:ChopperWaveSlices.mode,
-        inTitle:!!title && title.textContent.includes('SAMPLE DISPLAY'),
+        inTitle:!!title,
+        hasWaveActions:!!actions,
         buttonX:br.x,
-        labelRight:lr.right,
+        actionsRight:ar?.right ?? -1,
         height:document.getElementById('waveCanvas').getBoundingClientRect().height
       };
     }''')
     assert mode_ui['text']=='MARKERS' and mode_ui['mode']=='markers',mode_ui
-    assert mode_ui['inTitle'] and mode_ui['buttonX']>=mode_ui['labelRight']-1,mode_ui
+    assert mode_ui['inTitle'] and mode_ui['hasWaveActions'] and mode_ui['buttonX']>=mode_ui['actionsRight']-1,mode_ui
     assert abs(mode_ui['height']-240)<1,mode_ui
 
     page.evaluate('setMarkers(8)')

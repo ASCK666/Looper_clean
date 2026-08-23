@@ -1,11 +1,12 @@
 from pathlib import Path
-import math,re,struct,sys,tempfile,wave
+import math,struct,sys,tempfile,wave
+
+from browser_fixture import inline_runtime_page
+
 try:
     from playwright.sync_api import sync_playwright
 except Exception:
     print('SKIP: playwright is not installed');sys.exit(0)
-
-ROOT=Path(__file__).resolve().parents[1]
 
 
 def make_wav(path,duration=68.0,freq=137,sr=8000):
@@ -23,25 +24,6 @@ def make_wav(path,duration=68.0,freq=137,sr=8000):
         w.writeframes(frames)
 
 
-def inline_project():
-    html=(ROOT/'index.html').read_text(encoding='utf-8')
-    html=re.sub(r'<link rel="manifest"[^>]*>','',html)
-    for rel in ['./css/base.css','./css/clean-ui.css','./css/chopper-drum-controls.css']:
-        css=(ROOT/rel[2:]).read_text(encoding='utf-8')
-        html=html.replace(f'<link rel="stylesheet" href="{rel}">',f'<style>{css}</style>')
-    html=re.sub(r'src="assets/[^"]+"','src=""',html)
-    for rel in [
-        './js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js',
-        './js/chopper.js','./js/drums.js','./js/events.js','./js/chopper-drum-controls.js',
-        './js/chopper-wave-slices-core.js','./js/chopper-banks.js',
-        './js/chopper-folder-reconnect.js','./js/chopper-wave-slices.js'
-    ]:
-        js=(ROOT/rel[2:]).read_text(encoding='utf-8')
-        html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
-        html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
-    return html
-
-
 with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     sample=Path(td)/'banked-68s.wav'
     make_wav(sample)
@@ -53,7 +35,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page=browser.new_page(viewport={'width':1280,'height':1200})
     errors=[]
     page.on('pageerror',lambda e:errors.append(str(e)))
-    page.set_content(inline_project(),wait_until='load',timeout=20000)
+    page.set_content(inline_runtime_page(),wait_until='load',timeout=20000)
     page.wait_for_function('window.__SP && window.__SP.ready === true',timeout=10000)
     page.wait_for_function('window.ChopperWaveSlices && window.ChopperBanks',timeout=10000)
     page.click('[data-tab="chopper"]')

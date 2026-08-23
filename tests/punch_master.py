@@ -1,22 +1,19 @@
-from pathlib import Path
-import re, sys
+import sys
+
+from browser_fixture import inline_runtime_page
+
 try:
     from playwright.sync_api import sync_playwright
 except Exception:
     print("SKIP: playwright is not installed")
     sys.exit(0)
 
-ROOT=Path(__file__).resolve().parents[1]
-html=(ROOT/'index.html').read_text(encoding='utf-8')
-html=re.sub(r'<link rel="manifest"[^>]*>','',html)
-for rel in ['./css/base.css','./css/clean-ui.css','./css/chopper-drum-controls.css']:
-    css=(ROOT/rel[2:]).read_text(encoding='utf-8')
-    html=html.replace(f'<link rel="stylesheet" href="{rel}">',f'<style>{css}</style>')
-html=re.sub(r'src="assets/[^"]+"','src=""',html)
-for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js','./js/chopper.js','./js/drums.js','./js/events.js','./js/chopper-drum-controls.js']:
-    js=(ROOT/rel[2:]).read_text(encoding='utf-8')
-    html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
-    html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
+
+html=inline_runtime_page(
+    preload_before={
+        'js/chopper-wave-slices.js': ('js/sp1200.js', 'js/chopper-sp1200.js'),
+    }
+)
 
 chromium='/usr/bin/chromium'
 with sync_playwright() as p:

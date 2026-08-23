@@ -21,10 +21,9 @@ steps=[
   ['tests/punch_preview_race.py'],
   ['tests/drum_edit_invalidation.py'],
   ['tests/regression_v63.py'],
+  ['tests/chopper_runtime_css.py'],
   ['tests/css_health.py'],
   ['tests/css_redundancy.py'],
-  ['tests/css_layout.py'],
-  ['tests/header_responsive.py'],
   ['tests/chopper_ui.py'],
   ['tests/chopper_wave_slices.py'],
   ['tests/chopper_banks.py'],
@@ -36,6 +35,8 @@ steps=[
   ['tests/http_smoke.py'],
   ['tests/browser_smoke.py'],
   ['tests/asset_render.py'],
+  ['tests/css_layout.py'],
+  ['tests/header_responsive.py'],
 ]
 for args in steps:
     path=ROOT/args[0]

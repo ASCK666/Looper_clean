@@ -22,6 +22,9 @@ runtime_order=[
 positions=[html.index(f'src="{path}"') for path in runtime_order]
 assert positions==sorted(positions),'Chopper feature scripts must stay explicit and ordered in index.html'
 
+chopper=(ROOT/'js/chopper.js').read_text(encoding='utf-8')
+assert 'function buildSequencePlan(events,bpm,padCount)' in chopper
+
 core=(ROOT/'js/chopper-wave-slices-core.js').read_text(encoding='utf-8')
 for invariant in [
     'const visibleRatio=1/zoom;',
@@ -34,8 +37,22 @@ for invariant in [
     'waveScroll?.addEventListener("input",()=>{',
     'get viewportPinned(){return viewportPinned;}',
     'resumePlayheadFollow(){',
+    'const plan=buildSequencePlan(',
+    'const segments=plan.placed.map(event=>{',
+    'for(const ev of plan.placed){',
+    'renderSelectedDrums(offline,selection,plan.bpm,plan.bars,plan.targetDur,master.input);',
 ]:
-    assert invariant in core,f'Missing waveform viewport invariant: {invariant}'
+    assert invariant in core,f'Missing waveform/SLICES invariant: {invariant}'
+assert core.count('const plan=buildSequencePlan(')>=2,'SLICES playhead and renderer must share sequence planning'
+
+banks=(ROOT/'js/chopper-banks.js').read_text(encoding='utf-8')
+for invariant in [
+    'new Array(CHOPPER_SEQUENCE_TOTAL_STEPS).fill(0)',
+    'Math.min(values.length,CHOPPER_SEQUENCE_TOTAL_STEPS)',
+    'const plan=buildSequencePlan(',
+    'const segments=plan.placed.map(event=>{',
+]:
+    assert invariant in banks,f'Missing four-bar bank invariant: {invariant}'
 
 legacy=ROOT/'tests/chopper_wave_slices_legacy.py'
 source=legacy.read_text(encoding='utf-8')
