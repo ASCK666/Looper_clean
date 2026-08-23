@@ -21,6 +21,7 @@ steps=[
   ['tests/punch_preview_race.py'],
   ['tests/drum_edit_invalidation.py'],
   ['tests/regression_v63.py'],
+  ['tests/chopper_runtime_css.py'],
   ['tests/chopper_ui.py'],
   ['tests/chopper_wave_slices.py'],
   ['tests/chopper_banks.py'],
