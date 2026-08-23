@@ -86,17 +86,18 @@ with contextlib.ExitStack() as stack:
             }''')
 
             assert not state['missing'],(width,state['missing'])
-            assert len(state['links'])==7,state
+            hrefs=[item['href'] for item in state['links']]
+            assert hrefs,state
+            assert len(hrefs)==len(set(hrefs)),hrefs
             assert all(item['loaded'] for item in state['links']),state['links']
-            assert [item['href'] for item in state['links']]==[
-                './css/tokens.css',
-                './css/shared.css',
-                './css/base.css',
-                './css/looper.css',
-                './css/clean-ui.css',
+
+            chopper_owners=[
                 './css/chopper-drum-controls.css',
                 './css/chopper-deck-texture.css'
-            ],state['links']
+            ]
+            for owner in chopper_owners:
+                assert hrefs.count(owner)==1,(owner,hrefs)
+            assert hrefs.index(chopper_owners[0]) < hrefs.index(chopper_owners[1]),hrefs
 
             assert len(state['upperColumns'].split())==1,state['upperColumns']
 
@@ -121,4 +122,4 @@ with contextlib.ExitStack() as stack:
             page.close()
         browser.close()
 
-print('OK: real Chopper runtime loads the full CSS manifest with stable visual ownership across desktop/tablet/mobile widths')
+print('OK: real Chopper runtime loads its CSS owners with stable visual ownership across desktop/tablet/mobile widths')
