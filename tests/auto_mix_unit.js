@@ -53,7 +53,7 @@ if(peak(hot)>ceiling+1e-6)throw new Error(`Final peak guard failed: ${peak(hot)}
 
 for(const invariant of [
   'const norm=1/Math.sqrt(1+fx.mix*fx.mix)',
-  'edge.gain.linearRampToValueAtTime(1,startTime+edgeFade)',
+  'edge.gain.linearRampToValueAtTime(1,ev.startTime+edgeFade)',
   'edge.gain.linearRampToValueAtTime(0,stopTime)',
   'if(generation!==previewRenderGeneration)return false',
   'previewRenderGeneration++;'
