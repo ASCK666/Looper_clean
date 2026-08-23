@@ -1,41 +1,89 @@
-# CSS workflow — current runtime
+# CSS workflow — current runtime and migration discipline
 
-The browser loads **two maintained runtime stylesheets**, in this order:
+This document describes the **current browser reality** on branch `230826` and the
+safe workflow for moving toward `docs/CSS_TARGET_ARCHITECTURE.md`.
+
+The current state is transitional debt, not the target architecture.
+
+## Current runtime truth
+
+`index.html` currently loads these stylesheets in this order:
 
 ```text
 css/base.css
 css/clean-ui.css
+css/chopper-drum-controls.css
 ```
 
-There is **no CSS generator pipeline** and no hidden source directory. Edit the
-runtime stylesheet that owns the behavior directly.
+`js/bootstrap.js` also injects:
 
-## Ownership
+```text
+css/chopper-deck-texture.css
+```
 
-### `css/base.css`
+at runtime so that it loads late enough to win part of the cascade.
 
-Primary stylesheet for tokens, shared primitives, shell/layout and the Looper,
-Chopper, Drums and Practice component rules.
+That JavaScript-injected stylesheet and the current cross-file overrides are
+explicit migration targets. Do not add new rules to them merely because they are
+convenient late layers.
 
-### `css/clean-ui.css`
+There is no CSS generator pipeline and no hidden source directory. Runtime CSS is
+maintained directly.
 
-Existing late cascade for the intentional lean workstation presentation: compact
-header/workstation adjustments and a small set of deliberate visibility/layout
-overrides. It is part of the real production cascade, not generated output.
+## Target ownership
 
-Do not add a third override, compatibility, polish or theme stylesheet. If a rule
-is replaced, remove the retired declaration in the same change instead of leaving
-an inert earlier copy.
+The target is documented in `docs/CSS_TARGET_ARCHITECTURE.md`:
 
-## Safe edit loop
+```text
+css/tokens.css
+css/shared.css
+css/looper.css
+css/chopper-sampler.css
+css/chopper-sequence.css
+css/chopper-drums.css
+```
 
-1. Identify whether the rule belongs to the primary component/layout (`base.css`)
-   or the existing lean presentation layer (`clean-ui.css`).
-2. Make the smallest direct edit; remove declarations/selectors made obsolete by it.
-3. Run the focused component/layout test.
-4. Run `python3 tools/test_all.py` before merge.
+This is an ownership model, not a mandatory file-count goal. A stylesheet exists
+only when it has one clear responsibility.
 
-Useful focused checks:
+The governing rule is:
+
+> A component has one CSS owner. Another stylesheet must not correct it later in
+> the cascade.
+
+During migration, existing legacy files may temporarily remain, but their
+responsibility may only shrink. Do not add new product behavior to an override
+layer that is scheduled for retirement.
+
+## Safe micro-change loop
+
+Every runtime CSS/HTML change is one micro-change.
+
+1. State the single ownership/cascade problem being removed.
+2. Record the architecture score before the change using
+   `docs/CSS_TARGET_ARCHITECTURE.md`.
+3. Identify the component owner and the smallest focused regression test.
+4. Make the smallest direct edit.
+5. Delete declarations/selectors/files made obsolete by that edit in the **same
+   change**; do not leave a compatibility copy.
+6. Run the focused test first.
+7. Run CSS health/redundancy/ownership guards.
+8. Run affected desktop/tablet/mobile browser/layout checks.
+9. Run `git diff --check`.
+10. Run `python3 tools/test_all.py`.
+11. Self-audit the diff for dead code, duplicate ownership, new specificity
+    escalation, new `!important`, runtime stylesheet injection and unintended
+    visual/behavior changes.
+12. Rescore every category and record `before -> after`.
+13. Accept the change only if **no category and no total score decreased**.
+
+If any category decreases, fix or revert before starting the next micro-change.
+Do not stack a compensating patch on top.
+
+## Focused checks
+
+Use the narrowest relevant test before the full suite. Current useful checks
+include:
 
 ```bash
 python tests/css_layout.py
@@ -49,34 +97,111 @@ python tests/http_smoke.py
 python tests/browser_smoke.py
 ```
 
-## Full-cascade guards
+The target architecture also requires a dedicated ownership guard such as:
 
-`tests/css_health.py` and `tests/css_redundancy.py` analyze `base.css` followed by
-`clean-ui.css`, matching the browser order. They reject unreachable selectors,
-unused custom properties/keyframes and declarations that are fully shadowed by a
-later copy of the same selector.
+```text
+tests/css_ownership.py
+```
 
-`tests/css_health.py` treats physical source-line count as informational only.
-Formatting must not become a way to pass or fail maintenance. The growth guard is
-instead a structural budget on selector branches across the real two-file cascade,
-so readable multi-line rules cost exactly the same as minified one-line rules.
+That guard must prevent component selectors from drifting back into multiple
+owner files and must keep any temporary legacy `!important` whitelist shrinking.
 
-Browser/layout tests that inline CSS must inline **both** runtime stylesheets in the
-same order. `tests/css_health.py` enforces that contract.
+## Runtime-manifest rule
 
-`tests/dead_code.py` also rejects references to the retired CSS generator/source
-layout in current maintenance documentation, so the old workflow cannot silently
-become the documented source of truth again.
+`index.html` is the runtime CSS manifest.
 
-## Maintenance rules
+The migration must reach a state where:
+
+- every maintained runtime stylesheet is declared explicitly there;
+- application JavaScript injects no stylesheet;
+- tests discover/analyze the complete real runtime stylesheet set;
+- dead/orphan runtime CSS files are rejected;
+- documentation and tests agree with the browser about which CSS files exist.
+
+Until that target is reached, any change to the runtime CSS set must also update
+the tests that model it. A browser/test manifest mismatch is itself a failing
+architecture condition.
+
+## Ownership rules
+
+### Shared primitives
+
+Generic primitives such as `.btn`, `.panel`, form controls and tabs should have one
+shared implementation. Domain styling should prefer consumed custom properties
+when the primitive is truly shared rather than redefining the same primitive later
+with a more specific selector.
+
+### Domain files
+
+- Looper selectors belong to `looper.css`.
+- Chopper chassis/sample display/pads belong to `chopper-sampler.css`.
+- Sequence/chop-grid/bar-page selectors belong to `chopper-sequence.css`.
+- Drum editor/pattern/FX selectors belong to `chopper-drums.css`.
+- Responsive rules live beside their component in the same owner file.
+
+Do not create separate mobile, override, fix, polish, compatibility or versioned UI
+stylesheets.
+
+## Specificity discipline
+
+Do not solve a conflict by adding:
+
+- another parent ID;
+- another class to a selector chain;
+- another later stylesheet;
+- another duplicate media rule;
+- a new `!important`.
+
+Resolve the ownership problem instead: move or delete the losing declaration so
+only the intended owner remains.
+
+Existing `!important` declarations are migration debt. A temporary legacy
+whitelist may be used to make progress measurable, but it may only shrink and must
+never grow to make a change pass.
+
+## Dead-code discipline
 
 - Prefer deletion over another specificity layer.
 - Do not use `display:none` as a substitute for deleting a retired component path.
 - Do not keep responsive selectors for a component that no longer exists.
-- Do not introduce CSS ordering hacks when DOM order can express the intended structure.
-- Keep Practice frozen unless the requested change explicitly concerns Practice.
-- Treat `index.html` as the runtime manifest: every maintained runtime CSS file must
-  be loaded there, and dead runtime stylesheets must be deleted.
+- Do not keep a retired stylesheet as an empty/forwarding compatibility file.
+- Do not leave the old declaration behind when moving a rule to its owner.
+- Do not optimize physical line count; readable formatting is not debt.
 
-The goal is a truthful two-file cascade with no dormant compatibility layer, not a
-perfectly flat stylesheet or a new build system.
+`tests/dead_code.py`, CSS health and redundancy checks must remain hard gates.
+
+## Baseline and score
+
+The audited `230826` CSS architecture baseline is **41 / 100**. The six categories
+and their exact starting values are recorded in
+`docs/CSS_TARGET_ARCHITECTURE.md`.
+
+The score is a migration safety tool, not a visual-quality score. Every accepted
+micro-change must be monotonic:
+
+```text
+category_after >= category_before
+and
+total_after >= total_before
+```
+
+A responsive, accessibility, visual or product-behavior regression is considered
+a score decrease even if the CSS became shorter or selector count fell.
+
+## Current baseline failure
+
+At the audited baseline, the maintained GitHub Actions run passes the runtime,
+JavaScript, audio and SP1200 checks that precede CSS health, then fails in
+`tests/css_health.py` because `base.css` still contains unreachable selector paths,
+including `.stableTop`, `.utilityBtn` and `.headerActions` variants.
+
+The first runtime cleanup phase must make that baseline truthful and green before
+moving broad component ownership. Do not use migration work to hide or bypass the
+failure.
+
+## Maintenance goal
+
+The desired end state is not a perfectly flat stylesheet and not one giant file.
+It is a small set of human-editable component owners where a maintainer can answer
+"where do I change this?" without searching several later override layers, and
+where every accepted change proves it did not make any measured category worse.
