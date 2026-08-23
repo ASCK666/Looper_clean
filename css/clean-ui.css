@@ -2,8 +2,7 @@
 
 /* The compat header is out of flow/hidden, so the mode tabs are already the
    first visible machine child without an explicit flex order override. */
-.stableBrand,
-.headerDeckPill {
+:is(.stableBrand,.headerDeckPill) {
   display: none !important;
 }
 
