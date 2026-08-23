@@ -20,15 +20,39 @@ def make_wav(path,duration=.55,freq=220,sr=44100):
 
 def inline_project():
     html=(ROOT/'index.html').read_text(encoding='utf-8')
-    html=re.sub(r'<link rel="manifest"[^>]*>','',html)
-    for rel in ['./css/base.css','./css/clean-ui.css']:
-        css=(ROOT/rel[2:]).read_text(encoding='utf-8')
-        html=html.replace(f'<link rel="stylesheet" href="{rel}">',f'<style>{css}</style>')
+    html=re.sub(r'<link\b[^>]*\brel=["\']manifest["\'][^>]*>','',html,flags=re.I)
+
+    def inline_stylesheet(match):
+        tag=match.group(0)
+        rel=re.search(r'\brel=["\']([^"\']+)["\']',tag,flags=re.I)
+        href=re.search(r'\bhref=["\']([^"\']+)["\']',tag,flags=re.I)
+        if not rel or not href or 'stylesheet' not in rel.group(1).lower().split():
+            return tag
+        value=href.group(1)
+        if value.startswith(('http://','https://','data:')):
+            return tag
+        clean=value.split('?',1)[0].split('#',1)[0]
+        path=(ROOT/clean.lstrip('./')).resolve()
+        assert path.exists(),f'Runtime CSS missing from Chopper UI fixture: {value}'
+        return f'<style data-inline-from="{clean}">{path.read_text(encoding="utf-8")}</style>'
+
+    html=re.sub(r'<link\b[^>]*>',inline_stylesheet,html,flags=re.I)
     html=re.sub(r'src="assets/[^"]+"','src=""',html)
-    for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js','./js/chopper.js','./js/drums.js','./js/events.js']:
-        js=(ROOT/rel[2:]).read_text(encoding='utf-8')
-        html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
-        html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
+
+    def inline_script(match):
+        tag=match.group(0)
+        src=re.search(r'\bsrc=["\']([^"\']+)["\']',tag,flags=re.I)
+        if not src:
+            return tag
+        value=src.group(1)
+        if value.startswith(('http://','https://','data:')):
+            return tag
+        clean=value.split('?',1)[0].split('#',1)[0]
+        path=(ROOT/clean.lstrip('./')).resolve()
+        assert path.exists(),f'Runtime JS missing from Chopper UI fixture: {value}'
+        return f'<script data-inline-from="{clean}">{path.read_text(encoding="utf-8")}</script>'
+
+    html=re.sub(r'<script\b[^>]*\bsrc=["\'][^"\']+["\'][^>]*>\s*</script>',inline_script,html,flags=re.I)
     return html
 
 with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
