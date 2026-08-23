@@ -57,22 +57,6 @@
   background-blend-mode: normal,soft-light,normal !important;
 }
 
-/* Reuse the physical deck grain on the Chopper's metal work surfaces.
-   Screens, pads and interactive controls keep their own material treatment. */
-#chopper .samplerDeck .panel,
-#chopper .samplerDrumSection {
-  background:
-    linear-gradient(180deg,rgba(21,18,15,.78),rgba(9,7,5,.88)),
-    var(--deck-texture),
-    #090705 !important;
-  background-size: auto,256px 256px,auto !important;
-  background-blend-mode: normal,soft-light,normal !important;
-}
-
-#chopper .samplerUpperDeck {
-  grid-template-columns: minmax(0, 1fr) !important;
-}
-
 #chopper .samplerControlModule.chopTransportPanel {
   display: flex !important;
   flex-direction: column !important;
@@ -122,10 +106,6 @@
   grid-area: title;
   min-width: 0;
   margin: 0 !important;
-}
-
-#chopper .samplerScreenModule > .stableTitle .titleMeta {
-  display: none !important;
 }
 
 #chopper .samplerDisplayBody {
@@ -250,11 +230,6 @@
   margin-top: 9px;
 }
 
-#chopper .samplerSampleInfo {
-  grid-area: info;
-}
-
-#chopper .samplerSampleInfo,
 #chopper .saveBeatStatus {
   min-height: 0 !important;
   padding: 4px 6px !important;
@@ -306,16 +281,6 @@
   grid-template-columns: repeat(2,1fr);
   gap: 1px;
   min-height: 16px;
-}
-
-.drumPatternPreviewStep {
-  border: 1px solid #2f2a23;
-  background: #0e0c09;
-}
-
-.drumPatternPreviewStep.active {
-  border-color: #9a7038;
-  background: #80552c;
 }
 
 /* Pads should never sit in a narrow island once the layout stacks. */
@@ -433,11 +398,6 @@
 }
 
 @media (max-width: 430px) {
-  #chopper .samplerScreenModule {
-    grid-template-columns: minmax(0, 1fr) 40px 54px 40px !important;
-    column-gap: 4px !important;
-  }
-
   #chopper .sampleKnobControl {
     width: 38px;
     height: 38px;
