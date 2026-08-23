@@ -105,8 +105,11 @@
       scrubbed=false;
     };
 
+    // Chromium/iOS can expose a finger as Pointer Events, Touch Events or both.
+    // Both paths share the same gesture state, so a duplicated browser event is
+    // idempotent instead of producing two parameter changes.
     target.addEventListener("touchstart",event=>{
-      if(event.touches.length!==1 || !startGesture(event.touches[0].clientY))return;
+      if(event.touches.length===1)startGesture(event.touches[0].clientY);
     },{passive:true});
 
     target.addEventListener("touchmove",event=>{
@@ -118,22 +121,17 @@
     target.addEventListener("touchcancel",finishGesture);
 
     target.addEventListener("pointerdown",event=>{
-      if(event.pointerType==="touch" || event.isPrimary===false || (event.pointerType==="mouse" && event.button!==0))return;
+      if(event.isPrimary===false || (event.pointerType==="mouse" && event.button!==0))return;
       if(!startGesture(event.clientY))return;
       try{target.setPointerCapture(event.pointerId);}catch{}
     });
 
     target.addEventListener("pointermove",event=>{
-      if(event.pointerType==="touch")return;
       if(moveGesture(event.clientY) && event.cancelable)event.preventDefault();
     });
 
-    target.addEventListener("pointerup",event=>{
-      if(event.pointerType!=="touch")finishGesture();
-    });
-    target.addEventListener("pointercancel",event=>{
-      if(event.pointerType!=="touch")finishGesture();
-    });
+    target.addEventListener("pointerup",finishGesture);
+    target.addEventListener("pointercancel",finishGesture);
 
     target.addEventListener("click",event=>{
       if(!suppressClick)return;
