@@ -221,3 +221,113 @@ P1 must not hide these findings:
 P2 begins only after this state is accepted. It must remove real dead/redundant
 CSS and bring the truthful selector count back under the existing budget without
 raising that budget.
+
+## P2 — remove real redundancy and shadow debt
+
+P2 removed dead/reset/shadowed CSS rather than raising the structural budget.
+Representative accepted commits include:
+
+- `8e36aff8` — remove redundant Chopper surface resets;
+- `0592ecbd` — remove shadowed `clean-ui.css` Chopper branches;
+- `75345f69` — consolidate Chopper transport ownership;
+- `664b90eb` — remove duplicate mobile sampler-pad branch;
+- `87f1207b` and `738dcdb9` — delete the three unused custom properties exposed by P1;
+- `1114c415`, `0985969a`, `c390499f` — remove fully-shadowed presentation declarations;
+- `6ec10e44` — remove legacy `base.css` properties that still won against intended Chopper owners.
+
+P2 also repaired stale browser fixtures when truthful CSS loading exposed them,
+without restoring retired `practice.js` or weakening product assertions.
+
+Validation at P2 completion:
+
+```text
+selector branches: 749 / 750
+unreachable selector branches: 0
+unused custom properties: 0
+unused keyframes: 0
+fully-shadowed declarations: 0
+css_redundancy: PASS
+```
+
+Score: **54 -> 65 (+11)**
+
+| Category | P1 | P2 | Delta |
+| --- | ---: | ---: | ---: |
+| Runtime manifest truthfulness | 10 | 10 | 0 |
+| Dead code / redundancy | 9 | 15 | +6 |
+| Ownership / locality | 7 | 8 | +1 |
+| Cascade independence | 5 | 8 | +3 |
+| Human editability | 9 | 10 | +1 |
+| Regression safety | 14 | 14 | 0 |
+| **Total** | **54** | **65** | **+11** |
+
+No category decreased. `clean-ui.css` remained transitional debt and was not
+allowed to gain new product ownership.
+
+## P3 — establish stable foundations and the Looper owner
+
+P3 moved existing declarations to target owners without compatibility copies.
+The phase established:
+
+```text
+css/tokens.css
+css/shared.css
+css/looper.css
+```
+
+Key accepted changes:
+
+- `a3f09659` — extract global tokens to `tokens.css`;
+- `2441384e` — extract shared primitives/structure to `shared.css`;
+- `47872c75` — move Looper ownership to `looper.css`, removing the source rules
+  from `base.css` and shrinking `clean-ui.css`;
+- `8d941cd1` — make the Looper66 contract read CSS from the real runtime manifest;
+- `da353194` — decouple the Chopper runtime test from the global stylesheet count
+  and full ordered manifest while preserving its Chopper owner and visual gates.
+
+`clean-ui.css` received no new product behavior in P3. Its responsibility only
+shrunk.
+
+Final runtime manifest:
+
+```text
+css/tokens.css
+css/shared.css
+css/base.css
+css/looper.css
+css/clean-ui.css
+css/chopper-drum-controls.css
+css/chopper-deck-texture.css
+```
+
+Full validation:
+
+- run #186 on the P3 runtime extraction: **ALL PROJECT CHECKS PASSED**;
+- run #188 after manifest-test decoupling: **success**;
+- CSS health remains **749 / 750** selector branches;
+- zero unreachable selector branches;
+- zero unused keyframes;
+- zero fully-shadowed declarations;
+- Looper browser/render/layout and Chopper desktop/tablet/mobile runtime gates pass.
+
+Score: **65 -> 75 (+10)**
+
+| Category | P2 | P3 | Delta |
+| --- | ---: | ---: | ---: |
+| Runtime manifest truthfulness | 10 | 12 | +2 |
+| Dead code / redundancy | 15 | 15 | 0 |
+| Ownership / locality | 8 | 12 | +4 |
+| Cascade independence | 8 | 10 | +2 |
+| Human editability | 10 | 11 | +1 |
+| Regression safety | 14 | 15 | +1 |
+| **Total** | **65** | **75** | **+10** |
+
+No category decreased.
+
+### P3 completion state
+
+P3 is complete at **75 / 100**. Stable owners now exist for tokens, shared
+primitives and Looper. Remaining architecture debt is concentrated in the
+transitional Chopper/base layers and the eventual retirement of `clean-ui.css`.
+The next CSS phase should continue ownership extraction; it must not add new
+behavior to `clean-ui.css`.
