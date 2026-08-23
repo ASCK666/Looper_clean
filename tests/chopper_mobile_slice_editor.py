@@ -39,7 +39,29 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
         executable_path='/usr/bin/chromium',
         args=['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required']
     )
-    page=browser.new_page(viewport={'width':390,'height':900})
+    context=browser.new_context(
+        viewport={'width':390,'height':900},
+        is_mobile=True,
+        has_touch=True,
+        device_scale_factor=2,
+    )
+    page=context.new_page()
+    cdp=context.new_cdp_session(page)
+
+    def touch_point(locator):
+        box=locator.bounding_box();assert box,box
+        return box['x']+box['width']/2,box['y']+box['height']/2
+
+    def touch_start(locator):
+        x,y=touch_point(locator)
+        cdp.send('Input.dispatchTouchEvent',{
+            'type':'touchStart',
+            'touchPoints':[{'x':x,'y':y,'radiusX':8,'radiusY':8,'force':1}],
+        })
+
+    def touch_end():
+        cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
+
     errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     page.set_content(html,wait_until='load',timeout=20000)
     page.wait_for_function('window.ChopperWaveSlices && window.ChopperMobileSliceEditor',timeout=10000)
@@ -54,20 +76,21 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       markers:markers.length,
       pads:document.querySelectorAll('#pads .pad').length,
       enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,
-      mobile:matchMedia('(max-width:760px)').matches
+      mobile:matchMedia('(max-width:760px)').matches,
+      touch:navigator.maxTouchPoints>0
     })''')
-    assert auto_state=={'mode':'markers','markers':17,'pads':16,'enabled':16,'mobile':True},auto_state
+    assert auto_state=={'mode':'markers','markers':17,'pads':16,'enabled':16,'mobile':True,'touch':True},auto_state
 
-    # A short tap keeps the original audition behavior.
+    # A short real touch keeps the original audition behavior.
     pad=page.locator('#pads .pad').nth(5)
-    pad.click();page.wait_for_function('chopAuditionPad === 5',timeout=3000)
+    x,y=touch_point(pad)
+    page.touchscreen.tap(x,y)
+    page.wait_for_function('chopAuditionPad === 5',timeout=3000)
     page.evaluate('stopChopAudition()')
 
-    # A long press opens a dedicated CHOP view for PAD 06. The regular Chopper
-    # deck is hidden and a focused waveform is displayed above START / END.
-    box=pad.bounding_box();assert box,box
-    page.mouse.move(box['x']+box['width']/2,box['y']+box['height']/2)
-    page.mouse.down();page.wait_for_timeout(520)
+    # A real touch hold opens a dedicated CHOP view for PAD 06. The regular
+    # Chopper deck is hidden and a focused waveform is above START / END.
+    touch_start(pad);page.wait_for_timeout(520)
     page.wait_for_function('ChopperMobileSliceEditor.visible && ChopperMobileSliceEditor.activePad === 5',timeout=3000)
     held=page.evaluate('''() => {
       const workspace=document.getElementById('mobileChopWorkspace');
@@ -86,7 +109,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
         viewFlag:document.getElementById('chopper').dataset.mobileChopView
       };
     }''')
-    page.mouse.up();page.wait_for_timeout(40)
+    touch_end();page.wait_for_timeout(40)
     assert held['audition']==-1,held
     assert held['title']=='CHOP 06 / 16 • MARKERS',held
     assert held['workspaceDisplay']!='none' and held['viewFlag']=='1',held
@@ -126,18 +149,16 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert not done['visible'] and done['workspaceDisplay']=='none',done
     assert done['performanceDisplay']!='none' and done['enabled']==16 and done['viewFlag']=='',done
 
-    # The same dedicated view operates independent SLICES without mutating MARKERS.
+    # The same touch hold operates independent SLICES without mutating MARKERS.
     marker_snapshot=page.evaluate('markers.slice()')
     page.evaluate("ChopperWaveSlices.setEditMode('slices')")
     page.wait_for_function("ChopperWaveSlices.mode === 'slices' && ChopperWaveSlices.slices.length === 4",timeout=3000)
     slice_before=page.evaluate('ChopperWaveSlices.slices[1].start')
     slice_pad=page.locator('#pads .pad').nth(1)
-    slice_box=slice_pad.bounding_box();assert slice_box,slice_box
-    page.mouse.move(slice_box['x']+slice_box['width']/2,slice_box['y']+slice_box['height']/2)
-    page.mouse.down();page.wait_for_timeout(520)
+    touch_start(slice_pad);page.wait_for_timeout(520)
     page.wait_for_function('ChopperMobileSliceEditor.visible && ChopperMobileSliceEditor.activePad === 1',timeout=3000)
     slice_view=page.evaluate("document.getElementById('mobileChopEditorTitle').textContent")
-    page.mouse.up();page.wait_for_timeout(40)
+    touch_end();page.wait_for_timeout(40)
     assert slice_view=='CHOP 02 / 04 • SLICES',slice_view
     page.click('[data-mobile-boundary="start"][data-mobile-delta="0.005"]')
     slice_after=page.evaluate('ChopperWaveSlices.slices[1].start')
@@ -146,6 +167,6 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.click('#mobileChopDone')
 
     assert not errors,errors
-    page.close();browser.close()
+    page.close();context.close();browser.close()
 
-print('OK: Chopper mobile CHOP view — 16 AUTO CHOP pads, hold opens dedicated focused waveform editor, START/END, bounded preview, SLICES')
+print('OK: Chopper mobile CHOP view — real touch hold, 16 AUTO CHOP pads, focused waveform, START/END, bounded preview, SLICES')
