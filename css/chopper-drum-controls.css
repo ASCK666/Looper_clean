@@ -477,7 +477,6 @@
 
   /* Two clean rows are preferable to overlapping four controls on a phone. */
   #chopper .drumQuickActions {
-    grid-template-columns: 76px 60px !important;
     column-gap: 18px !important;
     row-gap: 16px !important;
   }
