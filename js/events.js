@@ -262,14 +262,10 @@ document.addEventListener("keydown",async ev=>{
   if(ev.code!=="Space" || ev.repeat)return;
 
   const target=ev.target;
-  const active=document.activeElement;
   const tag=target?.tagName?.toLowerCase();
-  const activeTag=active?.tagName?.toLowerCase();
   const interactive=
     tag==="input" || tag==="textarea" || tag==="select" || tag==="button" || tag==="a" ||
-    target?.isContentEditable || target?.closest?.('[role="button"],[role="slider"]') ||
-    activeTag==="input" || activeTag==="textarea" || activeTag==="select" || activeTag==="button" || activeTag==="a" ||
-    active?.isContentEditable || active?.closest?.('[role="button"],[role="slider"]');
+    target?.isContentEditable || target?.closest?.('[role="button"],[role="slider"]');
   if(interactive)return;
 
   ev.preventDefault();
