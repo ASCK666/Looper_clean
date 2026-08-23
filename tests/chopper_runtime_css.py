@@ -71,7 +71,7 @@ with contextlib.ExitStack() as stack:
               };
               return {
                 missing,
-                links:links.map(link=>({href:link.getAttribute('href'),loaded:Boolean(link.sheet)})),
+                links:links.map(link=>({href:link.getAttribute('href').split('?')[0].split('#')[0],loaded:Boolean(link.sheet)})),
                 upperColumns:style('#chopper .samplerUpperDeck').gridTemplateColumns,
                 hidden:{
                   sampleInfo:displayOrAbsent('#chopper .samplerSampleInfo'),
