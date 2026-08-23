@@ -17,6 +17,7 @@ steps=[
   ['tests/sp1200_level_dac_unit.js'],
   ['tests/sp1200_browser.py'],
   ['tests/sp1200_races.py'],
+  ['tests/sp1200_output_profiles.py'],
   ['tests/punch_preview_race.py'],
   ['tests/drum_edit_invalidation.py'],
   ['tests/regression_v63.py'],
