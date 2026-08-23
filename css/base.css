@@ -67,12 +67,6 @@ button {
   display: block;
 }
 
-.layout {
-  display: grid;
-  grid-template-columns: minmax(0,.9fr) minmax(0,1.1fr);
-  gap: 14px;
-}
-
 .panel {
   position: relative;
   min-width: 0;
@@ -110,7 +104,7 @@ button {
   display: none;
 }
 
-#looper .panel:nth-child(2):before, #practice .panel:nth-child(2):before, .chopperMainPanel:before {
+#looper .panel:nth-child(2):before, .chopperMainPanel:before {
   background: var(--accent-secondary);
 }
 
@@ -121,7 +115,7 @@ label {
   text-transform: uppercase;
 }
 
-.help, .legend, input, select {
+.help, input, select {
   width: 100%;
   min-height: 38px;
   border: 1px solid #343c41;
@@ -166,12 +160,6 @@ input[type=range] {
   gap: 9px;
 }
 
-.grid3 {
-  display: grid;
-  grid-template-columns: repeat(3,minmax(0,1fr));
-  gap: 9px;
-}
-
 .grid4 {
   display: grid;
   grid-template-columns: repeat(4,minmax(0,1fr));
@@ -205,7 +193,7 @@ input[type=range] {
   cursor: not-allowed;
 }
 
-.display, .practiceCard {
+.display {
   position: relative;
   overflow: hidden;
   border: 1px solid #24485a;
@@ -217,7 +205,7 @@ input[type=range] {
     0 12px 28px rgba(0,0,0,.18);
 }
 
-.display:after, .practiceCard:after {
+.display:after {
   content: "";
   position: absolute;
   inset: 0;
@@ -232,55 +220,11 @@ input[type=range] {
   font: 11px/1.5 var(--font-mono);
 }
 
-.practiceName {
-  position: relative;
-  z-index: 1;
-  color: #e8f7fd;
-  font: 900 34px/.95 var(--font-condensed);
-  letter-spacing: -1px;
-}
-
-.notation {
-  position: relative;
-  z-index: 1;
-  margin-top: 18px;
-  color: #c5a36d;
-  font: 700 25px/1.65 var(--font-mono);
-  letter-spacing: 4px;
-  word-break: break-word;
-}
-
-.beatgrid {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: repeat(8,1fr);
-  gap: 3px;
-  margin-top: 13px;
-}
-
-.beatgrid span {
-  border: 1px solid #254454;
-  padding: 8px 2px;
-  color: #78a7ba;
-  text-align: center;
-  font: 9px/1 var(--font-mono);
-}
-
-.beatgrid span.now {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #06131a;
-}
-
 .advancedInner {
   margin-top: 8px;
 }
 
 @media (max-width:760px) {
-  /* Generic form grids used by the legacy Practice surface. Component grids
-     with stronger contracts (Looper/Chopper/Drums) override this locally. */
-  .grid3,
   .grid4 {
     grid-template-columns: 1fr 1fr;
   }
@@ -461,44 +405,6 @@ input, select {
   float: right !important;
   margin-top: -31px !important;
   min-height: 28px !important;
-}
-
-#practice {
-  display: none !important;
-  position: fixed !important;
-  z-index: 5000 !important;
-  inset: 34px !important;
-  max-width: 1100px !important;
-  margin: auto !important;
-  overflow: auto !important;
-  padding: 42px 12px 12px !important;
-  border: 1px solid #29343d !important;
-  border-radius: 7px !important;
-  background: #070b0f !important;
-  box-shadow: 0 30px 90px rgba(0,0,0,.72) !important;
-}
-
-#practice.overlayOpen {
-  display: block !important;
-}
-
-#practice .layout {
-  grid-template-columns: 1fr 1fr !important;
-}
-
-.practiceClose {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  min-height: 28px;
-  padding: 0 12px;
-  border: 1px solid #28333c;
-  border-radius: 4px;
-  color: #d6dce0;
-  background: #0d1217;
-  font-size: 9px;
-  font-weight: 800;
-  cursor: pointer;
 }
 
 .compatHidden {
