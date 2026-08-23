@@ -306,20 +306,25 @@
   }
 
   #chopper .sampleKnobControl {
-    width: 42px;
-    height: 42px;
-  }
-
-  #chopper .sampleKnobFace:after {
-    top: 3px;
-    left: 16px;
-    height: 11px;
-    transform-origin: 50% 16px;
+    display: none;
   }
 
   #chopper .sampleKnobReadout {
+    display: flex;
     min-width: 40px;
-    font-size: 7px;
+    min-height: 30px;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 2px;
+    border: 1px solid #493722;
+    border-radius: 3px;
+    background: #0b0805;
+    font-size: 8px;
+    line-height: 1;
+    cursor: ns-resize;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   #chopper .sampleTempoControl > div {
@@ -329,6 +334,10 @@
   #chopper .sampleTempoControl input {
     min-height: 30px !important;
     font-size: 9px !important;
+    cursor: ns-resize;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   #chopper .samplerPerformanceDeck {
@@ -347,20 +356,9 @@
 }
 
 @media (max-width: 430px) {
-  #chopper .sampleKnobControl {
-    width: 38px;
-    height: 38px;
-  }
-
-  #chopper .sampleKnobFace:after {
-    left: 14px;
-    height: 10px;
-    transform-origin: 50% 14px;
-  }
-
   #chopper .sampleKnob > label,
   #chopper .sampleTempoControl label {
-    font-size: 6px !important;
+    font-size: 7px !important;
   }
 
   #chopper .sampleTempoControl > div {
