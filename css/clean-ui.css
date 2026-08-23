@@ -327,7 +327,6 @@
   #chopper .samplerDeck,
   #chopper .samplerUpperDeck,
   #chopper .samplerPerformanceDeck,
-  #chopper .samplerPadsModule,
   #chopper .samplerSequenceModule,
   #chopper .samplerDrumSection {
     width: 100% !important;
