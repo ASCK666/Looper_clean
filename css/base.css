@@ -258,17 +258,6 @@ label {
   display: none !important;
 }
 
-.stableTop {
-  position: relative;
-  z-index: 1;
-  justify-content: space-between;
-  grid-area: top !important;
-  display: grid !important;
-  align-items: center !important;
-  border: 1px solid var(--line) !important;
-  border-radius: 6px !important;
-}
-
 .stableBrand {
   align-items: center;
   gap: 16px;
@@ -330,17 +319,6 @@ label {
   text-align: right;
   cursor: pointer;
   transition: .12s ease;
-}
-
-.utilityBtn {
-  min-height: 34px;
-  border: 1px solid #26313a;
-  border-radius: 4px;
-  color: #cbd2d7;
-  background: #0d1217;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .8px;
 }
 
 .stableTitle, .compactTitle {
@@ -417,10 +395,6 @@ input, select {
 }
 
 @media (max-width:1240px) {
-  .stableTop {
-    grid-template-columns: 290px minmax(330px,1fr) 90px minmax(370px,430px) !important;
-  }
-
   .stableBrandName {
     letter-spacing: 3px;
   }
@@ -558,17 +532,6 @@ input, select {
   padding: 10px 18px 14px !important;
 }
 
-.headerActions .utilityBtn {
-  border-color: #443626 !important;
-  color: #aa9a82 !important;
-}
-
-.headerActions .utilityBtn:hover {
-  color: #ead9bb !important;
-  border-color: #765a34 !important;
-  background: #17110c !important;
-}
-
 .mainModeTabs .tab.active {
   color: #f0d5a7 !important;
   border-color: #a7651d !important;
@@ -667,7 +630,7 @@ a, .blue {
   color: #e7b969 !important;
 }
 
-.stableTop, .panel, .headerDeckPill, .beatCratePanel, .currentDrums, .wavewrap.largeWave, .loopGridWrap, .drumEditBox, .snareFx, .punchFx, .btn, input, select, .status {
+.panel, .headerDeckPill, .beatCratePanel, .currentDrums, .wavewrap.largeWave, .loopGridWrap, .drumEditBox, .snareFx, .punchFx, .btn, input, select, .status {
   background-image: linear-gradient(180deg,rgba(255,255,255,.02),rgba(0,0,0,.16)),
     var(--deck-texture) !important;
   background-size: auto,256px 256px !important;
@@ -676,7 +639,7 @@ a, .blue {
   background-blend-mode: normal,soft-light !important;
 }
 
-.stableTop, .panel, .headerDeckPill, .beatCratePanel {
+.panel, .headerDeckPill, .beatCratePanel {
   border-color: #3a3025 !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.018),
     0 10px 22px rgba(0,0,0,.18) !important;
@@ -1212,16 +1175,6 @@ a, .blue {
 
 /* Header reflow. This replaces the old post-build overrides stylesheet. */
 @media (max-width:1160px) {
-  .stableTop {
-    grid-template-columns: minmax(0,1fr) auto !important;
-    grid-template-areas:
-      "brand actions"
-      "deck deck" !important;
-    gap: 8px 12px !important;
-    min-height: 0 !important;
-    padding: 10px 12px !important;
-  }
-
   .stableBrand {
     grid-area: brand;
     min-width: 0;
@@ -1232,14 +1185,6 @@ a, .blue {
     min-width: 0;
     width: 100% !important;
   }
-
-  .headerActions {
-    grid-area: actions;
-    position: relative;
-    z-index: 2;
-    justify-self: end;
-  }
-
 }
 
 @media (max-width:620px) {
