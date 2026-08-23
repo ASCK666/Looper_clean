@@ -27,6 +27,7 @@
   let playheadRange=null;
   let playheadStartedAt=0;
   let playheadRate=1;
+  let mobilePadVisual=NaN;
 
   const workspace=document.createElement("section");
   workspace.id="mobileChopWorkspace";
@@ -39,8 +40,9 @@
       <div id="mobileChopEditorTitle" class="title compactTitle">CHOP --</div>
       <button id="mobileChopNext" class="btn" type="button" aria-label="Chop suivant">▶</button>
     </div>
-    <div class="wavewrap largeWave samplerScreen">
+    <div id="mobileChopWaveWrap" class="wavewrap largeWave samplerScreen">
       <canvas id="mobileChopWave" width="900" height="220" aria-label="Waveform du chop sélectionné"></canvas>
+      <canvas id="mobileChopPlayhead" width="900" height="220" aria-hidden="true"></canvas>
     </div>
     <div id="mobileChopEditorRange" class="status" aria-live="polite">START — • END —</div>
     <div>
@@ -69,17 +71,37 @@
 
   const title=document.getElementById("mobileChopEditorTitle");
   const rangeReadout=document.getElementById("mobileChopEditorRange");
+  const waveWrap=document.getElementById("mobileChopWaveWrap");
   const wave=document.getElementById("mobileChopWave");
   const wave2d=wave.getContext("2d");
+  const playhead=document.getElementById("mobileChopPlayhead");
+  const playhead2d=playhead.getContext("2d");
   const preview=document.getElementById("mobileChopPreview");
   const done=document.getElementById("mobileChopDone");
   const prev=document.getElementById("mobileChopPrev");
   const next=document.getElementById("mobileChopNext");
 
+  waveWrap.style.position="relative";
   wave.style.cssText="display:block;width:100%;height:190px;touch-action:none";
+  playhead.style.cssText="position:absolute;inset:0;width:100%;height:190px;pointer-events:none";
   workspace.style.width="100%";
 
   function isMobile(){return mobileMedia.matches;}
+
+  // The base playhead asks for the same pad class on every animation frame.
+  // On mobile that means 16 needless classList writes per frame. Keep the base
+  // owner/behavior, but skip the write when the DOM already shows that pad.
+  const setActivePadBase=setActivePad;
+  setActivePad=function(index){
+    if(isMobile() && index===mobilePadVisual){
+      const alreadyShown=index>=0
+        ? Boolean(pads.children[index]?.classList.contains("hit"))
+        : !pads.querySelector(".pad.hit");
+      if(alreadyShown)return;
+    }
+    mobilePadVisual=index;
+    return setActivePadBase(index);
+  };
 
   function currentRange(index=activePad){
     if(index<0)return null;
@@ -101,7 +123,11 @@
     return {start,end,dur:Math.max(.001,end-start)};
   }
 
-  function drawEditorWave(playheadSec=null){
+  function clearEditorPlayhead(){
+    playhead2d.clearRect(0,0,playhead.width,playhead.height);
+  }
+
+  function drawEditorWave(){
     const w=wave.width,h=wave.height;
     wave2d.clearRect(0,0,w,h);
     wave2d.fillStyle="#080604";wave2d.fillRect(0,0,w,h);
@@ -124,36 +150,42 @@
     wave2d.textAlign="left";wave2d.fillText("START",Math.min(w-52,left+8),20);
     wave2d.textAlign="right";wave2d.fillText("END",Math.max(38,right-8),20);
     wave2d.textAlign="left";
-
-    if(Number.isFinite(playheadSec) && playheadSec>=range.start && playheadSec<=range.end){
-      const x=clamp((playheadSec-view.start)/view.dur*w,0,w);
-      wave2d.save();
-      wave2d.strokeStyle="rgba(5,3,2,.88)";wave2d.lineWidth=6;
-      wave2d.beginPath();wave2d.moveTo(x,0);wave2d.lineTo(x,h);wave2d.stroke();
-      wave2d.strokeStyle="#ffd98e";wave2d.lineWidth=2.5;
-      wave2d.shadowColor="rgba(240,180,95,.9)";wave2d.shadowBlur=9;
-      wave2d.beginPath();wave2d.moveTo(x,0);wave2d.lineTo(x,h);wave2d.stroke();
-      wave2d.fillStyle="#ffe1a6";
-      wave2d.beginPath();wave2d.moveTo(x-6,0);wave2d.lineTo(x+6,0);wave2d.lineTo(x,9);wave2d.closePath();wave2d.fill();
-      wave2d.restore();
-    }
   }
 
-  function stopEditorPlayhead({redraw=true}={}){
+  function drawEditorPlayhead(sec){
+    clearEditorPlayhead();
+    const range=currentRange();
+    const view=editorWindow(range);
+    if(!range || !view || !Number.isFinite(sec) || sec<range.start || sec>range.end)return;
+
+    const w=playhead.width,h=playhead.height;
+    const x=clamp((sec-view.start)/view.dur*w,0,w);
+    playhead2d.save();
+    playhead2d.strokeStyle="rgba(5,3,2,.88)";playhead2d.lineWidth=6;
+    playhead2d.beginPath();playhead2d.moveTo(x,0);playhead2d.lineTo(x,h);playhead2d.stroke();
+    playhead2d.strokeStyle="#ffd98e";playhead2d.lineWidth=2.5;
+    playhead2d.shadowColor="rgba(240,180,95,.9)";playhead2d.shadowBlur=9;
+    playhead2d.beginPath();playhead2d.moveTo(x,0);playhead2d.lineTo(x,h);playhead2d.stroke();
+    playhead2d.fillStyle="#ffe1a6";
+    playhead2d.beginPath();playhead2d.moveTo(x-6,0);playhead2d.lineTo(x+6,0);playhead2d.lineTo(x,9);playhead2d.closePath();playhead2d.fill();
+    playhead2d.restore();
+  }
+
+  function stopEditorPlayhead(){
     if(playheadRAF)cancelAnimationFrame(playheadRAF);
     playheadRAF=0;playheadRange=null;
-    if(redraw && !workspace.hidden)drawEditorWave();
+    clearEditorPlayhead();
   }
 
   function runEditorPlayhead(){
-    if(!playheadRange || workspace.hidden)return stopEditorPlayhead({redraw:false});
+    if(!playheadRange || workspace.hidden)return stopEditorPlayhead();
     const sec=playheadRange.start+Math.max(0,ctx.currentTime-playheadStartedAt)*playheadRate;
     if(sec>=playheadRange.end || chopAuditionPad<0){
-      drawEditorWave(playheadRange.end);
-      playheadRAF=requestAnimationFrame(()=>stopEditorPlayhead());
+      drawEditorPlayhead(playheadRange.end);
+      playheadRAF=requestAnimationFrame(stopEditorPlayhead);
       return;
     }
-    drawEditorWave(sec);
+    drawEditorPlayhead(sec);
     playheadRAF=requestAnimationFrame(runEditorPlayhead);
   }
 
@@ -166,6 +198,7 @@
     wave.setAttribute("aria-label",`Waveform du chop ${number}, bornes START et END`);
     rangeReadout.textContent=`START ${Math.round(range.start*1000)} ms • END ${Math.round(range.end*1000)} ms • LEN ${Math.round((range.end-range.start)*1000)} ms`;
     drawEditorWave();
+    clearEditorPlayhead();
     return range;
   }
 
@@ -194,10 +227,10 @@
   function selectActiveChop(index){
     const count=currentCount();
     if(!count)return false;
-    stopChopAudition();stopEditorPlayhead({redraw:false});
+    stopChopAudition();stopEditorPlayhead();
     activePad=(Math.round(index)%count+count)%count;
-    if(ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices)ChopperWaveSlices.selectSlice(activePad);
-    else{selectedMarker=activePad;refreshMarkerEditor();drawWave();}
+    if(ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices)ChopperWaveSlices.selectSlice(activePad,{redraw:false});
+    else{selectedMarker=activePad;refreshMarkerEditor();}
     updateEditor();
     return true;
   }
@@ -209,10 +242,10 @@
 
   function openEditor(index){
     if(!isMobile() || !sampleBuffer || !currentRange(index))return false;
-    stopChopAudition();stopEditorPlayhead({redraw:false});
+    stopChopAudition();stopEditorPlayhead();
     activePad=index;
-    if(ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices)ChopperWaveSlices.selectSlice(index);
-    else{selectedMarker=index;refreshMarkerEditor();drawWave();}
+    if(ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices)ChopperWaveSlices.selectSlice(index,{redraw:false});
+    else{selectedMarker=index;refreshMarkerEditor();}
     showDedicatedView();
     updateEditor();
     $("chopStatus").textContent=`MOBILE CHOP ${String(index+1).padStart(2,"0")} • START / END`;
@@ -220,10 +253,11 @@
   }
 
   function closeEditor(){
-    stopEditorPlayhead({redraw:false});
+    stopEditorPlayhead();
     if(activePad>=0 || !workspace.hidden)stopChopAudition();
     activePad=-1;
     restoreDeckView();
+    drawWave();
     renderPads();
     $("chopStatus").textContent=ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices
       ? `CHOP MODE • SLICES • ${ChopperWaveSlices.slices.length}/${ChopperWaveSlices.maxSlices}`
@@ -234,17 +268,26 @@
   function adjustBoundary(boundary,delta){
     const range=currentRange();
     if(!range)return;
-    stopChopAudition();stopEditorPlayhead({redraw:false});
+    stopChopAudition();stopEditorPlayhead();
     const target=range[boundary]+Number(delta||0);
-    if(ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices)ChopperWaveSlices.setSliceBoundary(activePad,boundary,target);
-    else moveMarker(activePad+(boundary==="end"?1:0),target,false);
+    if(ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices){
+      ChopperWaveSlices.setSliceBoundary(activePad,boundary,target,{redraw:false});
+    }else{
+      const markerIndex=activePad+(boundary==="end"?1:0);
+      const [lo,hi]=markerBounds(markerIndex);
+      const next=clamp(target,lo,hi);
+      if(next!==markers[markerIndex])invalidatePreviewRender();
+      markers[markerIndex]=next;
+      selectedMarker=markerIndex;
+      refreshMarkerEditor();
+    }
     updateEditor();
   }
 
   async function previewCurrent(){
     const range=currentRange();
     if(!range)return;
-    stopEditorPlayhead({redraw:false});
+    stopEditorPlayhead();
     const button=document.querySelectorAll("#pads .pad")[activePad]||workspace;
     await previewSlice(activePad,button);
     if(ChopperWaveSlices.mode===ChopperWaveSlices.modes.markers && chopAuditionSource){
