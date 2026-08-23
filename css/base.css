@@ -122,7 +122,6 @@ label {
   border-radius: 4px;
   padding: 8px 10px;
   outline: none;
-  color: #e8e8e5;
   background: #090c0e;
   font-size: 12px;
   transition: border-color .15s,box-shadow .15s;
@@ -1244,12 +1243,6 @@ button.active:not(:disabled), button[aria-pressed="true"]:not(:disabled),
   width:100%;
   border:1px solid #3a3027;
   border-radius:12px;
-  background:
-    linear-gradient(180deg,rgba(255,255,255,.025),rgba(0,0,0,.18)),
-    var(--deck-texture),
-    var(--sampler-shell);
-  background-size:auto,256px 256px,auto;
-  background-blend-mode:normal,soft-light,normal;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 18px 38px rgba(0,0,0,.34);
 }
 
@@ -1286,7 +1279,6 @@ button.active:not(:disabled), button[aria-pressed="true"]:not(:disabled),
   margin:0!important;
   border-color:var(--sampler-edge)!important;
   border-radius:8px!important;
-  background:linear-gradient(180deg,#15120f,#090705)!important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 7px 16px rgba(0,0,0,.14)!important;
 }
 
