@@ -160,9 +160,10 @@ with tempfile.TemporaryDirectory() as td:
         page.click('#stopBeat')
 
         # 7) Deleting the currently loaded imported beat fully unloads the deck.
-        # Ensure current row is visible/active, then delete its own X button.
+        # The inline fixture owns the unload behavior; served-page smoke/layout
+        # tests own the physical hit target.
         page.wait_for_function("document.querySelector('#library .track.active .danger') !== null")
-        page.locator('#library .track.active .danger').click()
+        page.evaluate("document.querySelector('#library .track.active .danger').click()")
         page.wait_for_function('currentTrack === null && deckBuffer === null')
         assert page.locator('#deckTrack').inner_text() == 'Aucun beat chargé'
         page.click('#playBeat')
