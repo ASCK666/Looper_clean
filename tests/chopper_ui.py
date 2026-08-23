@@ -80,7 +80,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     }''')
     assert len(sparse_lines)==8,sparse_lines
     assert max(abs(line['y2']-line['y1']) for line in sparse_lines)<6,sparse_lines
-    # AUTO CHOP must still populate the sixteen-pad workstation.
+    # AUTO CHOP must still populate the sixteen-pad workstation while the sequence owns 32 total eighth-note steps.
     page.click('#autoMarkers');page.wait_for_timeout(50)
     state=page.evaluate('''() => ({
       markers:markers.length,
@@ -91,14 +91,40 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       playheadWidth:document.getElementById('sampleTimelinePlayheadCanvas').width,
       gridWidth:document.getElementById('loopGrid').scrollWidth,
       sequenceSteps:CHOPPER_SEQUENCE_STEPS,
+      totalSteps:CHOPPER_SEQUENCE_TOTAL_STEPS,
+      page:chopperSequencePage,
       labelWidth:SEQUENCE_LABEL_WIDTH,
       minWidth:SEQUENCE_MIN_WIDTH
     })''')
     assert state['markers']==17,state
-    assert state['sequenceSteps']==16,state
+    assert state['sequenceSteps']==16 and state['totalSteps']==32,state
     assert state['pads']==16 and state['rows']==16 and state['cells']==256,state
+    assert state['page']==0,state
     assert state['timelineWidth']==max(state['minWidth'],state['gridWidth']),state
     assert state['playheadWidth']==state['timelineWidth'],state
+
+    # Page 1-2 is explicit: measure starts are labeled and visually stronger than the off-beat "&" columns.
+    readability=page.evaluate('''() => {
+      const heads=[...document.querySelectorAll('#loopGrid .matrixHead')];
+      const cells=[...document.querySelectorAll('#loopGrid .matrixCell:not(.unavailable)')];
+      return {
+        labels:heads.map(x=>x.textContent),
+        classes:heads.map(x=>x.className),
+        beatOpacity:Number(getComputedStyle(heads[0]).opacity),
+        andOpacity:Number(getComputedStyle(heads[1]).opacity),
+        beatBorder:parseFloat(getComputedStyle(cells[2]).borderLeftWidth),
+        barBorder:parseFloat(getComputedStyle(cells[8]).borderLeftWidth),
+        page12Opacity:Number(getComputedStyle(document.getElementById('sequencePage12')).opacity),
+        page34Opacity:Number(getComputedStyle(document.getElementById('sequencePage34')).opacity)
+      };
+    }''')
+    assert readability['labels'][0]=='M1·1' and readability['labels'][8]=='M2·1',readability
+    assert readability['labels'][1]=='&' and readability['labels'][2]=='2',readability
+    assert 'barStart' in readability['classes'][0] and 'barStart' in readability['classes'][8],readability
+    assert readability['beatOpacity']>readability['andOpacity'],readability
+    assert readability['barBorder']>readability['beatBorder']>=1,readability
+    assert readability['page12Opacity']>readability['page34Opacity'],readability
+
     # The sequence timeline is visually partitioned by eighth-note cell while retaining the exact audible source range.
     page.evaluate('''() => {
       const original=drawBufferRange;
@@ -143,8 +169,37 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     span_120=bpm_ranges[0]['endSec']-bpm_ranges[0]['startSec']
     assert abs(span_120-(60/120/2)*pitch_rate)<1e-5,(span_120,pitch_rate)
     assert span_120<span_90,(span_90,span_120)
+
+    # Page 3-4 is a view onto steps 16-31; changing pages must never overwrite measures 1-2.
+    page.click('#sequencePage34');page.wait_for_timeout(20)
+    page34=page.evaluate('''() => ({
+      page:chopperSequencePage,
+      page12:document.getElementById('sequencePage12').getAttribute('aria-pressed'),
+      page34:document.getElementById('sequencePage34').getAttribute('aria-pressed'),
+      labels:[...document.querySelectorAll('#loopGrid .matrixHead')].map(x=>x.textContent),
+      timelineLabel:document.getElementById('sampleTimelineCanvas').getAttribute('aria-label')
+    })''')
+    assert page34['page']==1 and page34['page12']=='false' and page34['page34']=='true',page34
+    assert page34['labels'][0]=='M3·1' and page34['labels'][8]=='M4·1',page34
+    assert 'mesures 3 à 4' in page34['timelineLabel'],page34
+    page.locator('#loopGrid .matrixCell:not(.unavailable)').nth(0).click();page.wait_for_timeout(20)
+    assert page.evaluate('loopGridEvents[0]===1 && loopGridEvents[1]===2 && loopGridEvents[16]===1') is True
+    assert page.evaluate('gridEventsForRender().length===32') is True
+
+    # SAVE uses the same full 32-step render as PLAY: at 120 BPM, four bars are exactly eight seconds.
+    saved=page.evaluate('''async () => {
+      const events=validateCurrentBeatForSave();
+      const buffer=await renderCurrentBeatForSave(events);
+      return {eventCount:events.length,late:events[16],duration:buffer.duration};
+    }''')
+    assert saved['eventCount']==32 and saved['late']==1,saved
+    assert abs(saved['duration']-8)<.02,saved
+
+    page.click('#sequencePage12');page.wait_for_timeout(20)
+    assert page.evaluate('chopperSequencePage===0 && loopGridEvents[0]===1 && loopGridEvents[1]===2 && loopGridEvents[16]===1') is True
     page.click('#clearGrid');page.wait_for_timeout(20)
-    assert page.evaluate('loopGridEvents.every(v=>v===0)') is True
+    assert page.evaluate('loopGridEvents.length===32 && loopGridEvents.every(v=>v===0)') is True
+
     # The musical playhead uses the existing loop transport/RAF, keeps moving through silent sample gaps, and clears on STOP.
     first_pad_step0=page.locator('#loopGrid .matrixCell:not(.unavailable)').nth(0)
     first_pad_step0.click();page.wait_for_timeout(20)
@@ -164,7 +219,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     }'''
     assert page.evaluate(playhead_pixels)['count']==0
     page.click('#previewFlip')
-    page.wait_for_function('isLoopPlaying === true && loopPlayheadState !== null',timeout=5000)
+    page.wait_for_function('isLoopPlaying === true && loopPlayheadState !== null',timeout=10000)
     page.wait_for_function('''() => {
       const c=document.getElementById('sampleTimelinePlayheadCanvas');
       const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
@@ -191,8 +246,8 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       renderedFlip!==null &&
       renderedFlip!==window.__tempoBufferBefore &&
       loopPlayheadState!==window.__tempoStateBefore &&
-      Math.abs(loopPlayheadState.duration-4.8)<.01
-    ''',timeout=10000)
+      Math.abs(loopPlayheadState.duration-9.6)<.01
+    ''',timeout=15000)
     tempo=page.evaluate('''() => ({
       before:window.__tempoDurationBefore,
       stateDuration:loopPlayheadState.duration,
@@ -201,8 +256,8 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       playing:isLoopPlaying,
       status:document.getElementById('chopStatus').textContent
     })''')
-    assert abs(tempo['before']-4)<.01,tempo
-    assert abs(tempo['stateDuration']-4.8)<.01 and abs(tempo['bufferDuration']-4.8)<.02,tempo
+    assert abs(tempo['before']-8)<.01,tempo
+    assert abs(tempo['stateDuration']-9.6)<.01 and abs(tempo['bufferDuration']-9.6)<.02,tempo
     assert tempo['mode']=='full' and tempo['playing'],tempo
     assert 'TEMPO 100 BPM' in tempo['status'],tempo
     first_playhead=page.evaluate(playhead_pixels)
@@ -214,10 +269,10 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert page.evaluate('isLoopPlaying === false && loopPlayheadState === null') is True
     assert page.evaluate(playhead_pixels)['count']==0
     # Essential controls must remain physically clickable after CSS changes.
-    boxes=page.evaluate('''() => ['loadSampleBtn','autoMarkers','previewFlip','stopFlip','addFlipLibrary','clearGrid'].map(id=>{
+    boxes=page.evaluate('''() => ['loadSampleBtn','autoMarkers','previewFlip','stopFlip','addFlipLibrary','sequencePage12','sequencePage34','clearGrid'].map(id=>{
       const r=document.getElementById(id).getBoundingClientRect();return {id,w:r.width,h:r.height};
     })''')
     assert all(x['w']>20 and x['h']>20 for x in boxes),boxes
     assert not errors,errors
     page.close();browser.close()
-print('OK: Chopper UI — sparse waveform ranges, sample import/volume/pitch, BPM-remapped cell timeline/playhead, AUTO CHOP, 16 pads, 16x16 grid and place/clear')
+print('OK: Chopper UI — four-bar 32-step sequence with 1-2/3-4 paging, readable bar/beat grid, full PLAY/SAVE render and timeline/playhead')

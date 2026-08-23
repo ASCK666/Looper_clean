@@ -1125,8 +1125,8 @@ async function renderSequence(events,sourceBuffer,cueMarkers,pitchRate){
   if(!sourceBuffer)throw new Error("Charge un sample");
   const bpm=Math.max(40,Number($("sampleBpm")?.value)||90);
   const stepDur=(60/bpm)/2; // eighth note
-  const bars=2;
-  const targetDur=8*60/bpm; // 2 bars x 4 beats
+  const bars=Math.max(1,Math.ceil(events.length/8));
+  const targetDur=bars*4*60/bpm;
   const rate=44100;
   const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
   const master=makePunchMaster(offline);
@@ -1137,7 +1137,7 @@ async function renderSequence(events,sourceBuffer,cueMarkers,pitchRate){
   );
 
   const placed=[];
-  for(let step=0;step<16;step++){
+  for(let step=0;step<events.length;step++){
     const chop=Number(events[step])||0;
     if(chop>=1 && chop<cueMarkers.length)placed.push({step,chop});
   }

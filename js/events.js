@@ -171,6 +171,9 @@ $("samplePitch").onchange=async()=>{
     }
   }
 };
+document.querySelectorAll("[data-sequence-page]").forEach(button=>{
+  button.onclick=()=>setSequencePage(button.dataset.sequencePage);
+});
 $("clearGrid").onclick=clearLoopGrid;
 $("autoMarkers").onclick=()=>{
   stopChopAudition();

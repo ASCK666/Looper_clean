@@ -876,3 +876,44 @@
     aspect-ratio: 1 / 1;
   }
 }
+
+/* Four-bar sequence paging: keep sixteen visible columns, but make the two
+   measures and the on-beat/off-beat columns readable at a glance. */
+#chopper .sequencePageTab {
+  min-width: 54px;
+  opacity: .48;
+  font-weight: 700;
+}
+
+#chopper .sequencePageTab[aria-pressed="true"] {
+  opacity: 1;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+#chopper .matrixHead {
+  opacity: .46;
+  font-size: 8px;
+  font-weight: 500;
+}
+
+#chopper .matrixHead.beatStart {
+  opacity: 1;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+#chopper .matrixHead.beatStart:not(.barStart),
+#chopper .matrixCell.beatStart:not(.barStart) {
+  border-left-width: 2px;
+}
+
+#chopper .matrixHead.barStart,
+#chopper .matrixCell.barStart {
+  border-left-width: 4px;
+}
+
+#chopper .matrixCell:not(.beatStart):not(.active) {
+  opacity: .72;
+}
