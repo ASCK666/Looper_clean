@@ -1,16 +1,7 @@
 /* Lean UI overrides: keep the workstation focused on Looper / Chopper. */
 
-/* Put the two working modes first. Keep utility controls secondary. */
-.machine {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 7px !important;
-}
-
-.mainModeTabs {
-  order: -20 !important;
-}
-
+/* The compat header is out of flow/hidden, so the mode tabs are already the
+   first visible machine child without an explicit flex order override. */
 .stableBrand,
 .headerDeckPill {
   display: none !important;
