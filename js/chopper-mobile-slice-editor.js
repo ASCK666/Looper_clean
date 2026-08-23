@@ -150,7 +150,7 @@
     const sec=playheadRange.start+Math.max(0,ctx.currentTime-playheadStartedAt)*playheadRate;
     if(sec>=playheadRange.end || chopAuditionPad<0){
       drawEditorWave(playheadRange.end);
-      playheadRAF=setTimeout(()=>stopEditorPlayhead(),70);
+      playheadRAF=requestAnimationFrame(()=>stopEditorPlayhead());
       return;
     }
     drawEditorWave(sec);
