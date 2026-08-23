@@ -1,12 +1,13 @@
 from pathlib import Path
-import math,re,struct,sys,tempfile,wave
+import math,struct,sys,tempfile,wave
+
+from browser_fixture import inline_runtime_page
+
 try:
     from playwright.sync_api import sync_playwright
 except Exception:
     print('SKIP: playwright is not installed')
     sys.exit(0)
-
-ROOT=Path(__file__).resolve().parents[1]
 
 
 def make_wav(path,duration=.96,freq=180,sr=44100):
@@ -23,33 +24,13 @@ def make_wav(path,duration=.96,freq=180,sr=44100):
         w.writeframes(frames)
 
 
-def inline_project():
-    html=(ROOT/'index.html').read_text(encoding='utf-8')
-    html=re.sub(r'<link\b[^>]*\brel=["\']manifest["\'][^>]*>','',html,flags=re.I)
-
-    def inline_stylesheet(match):
-        tag=match.group(0)
-        rel=re.search(r'\brel=["\']([^"\']+)["\']',tag,flags=re.I)
-        href=re.search(r'\bhref=["\']([^"\']+)["\']',tag,flags=re.I)
-        if not rel or not href or 'stylesheet' not in rel.group(1).lower().split():
-            return tag
-        value=href.group(1)
-        if value.startswith(('http://','https://','data:')):
-            return tag
-        clean=value.split('?',1)[0].split('#',1)[0]
-        path=(ROOT/clean.lstrip('./')).resolve()
-        assert path.exists(),f'Runtime CSS missing from SLICES fixture: {value}'
-        return f'<style data-inline-from="{clean}">{path.read_text(encoding="utf-8")}</style>'
-
-    html=re.sub(r'<link\b[^>]*>',inline_stylesheet,html,flags=re.I)
-    html=re.sub(r'src="assets/[^"]+"','src=""',html)
-    for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/chopper.js','./js/drums.js','./js/events.js','./js/chopper-drum-controls.js']:
-        js=(ROOT/rel[2:]).read_text(encoding='utf-8')
-        html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
-        html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
-    feature=(ROOT/'js/chopper-wave-slices.js').read_text(encoding='utf-8')
-    html=html.replace('</body>',f'<script>{feature}</script></body>')
-    return html
+html=inline_runtime_page(
+    script_paths=(
+        'js/bootstrap.js','js/core.js','js/looper.js','js/chopper.js',
+        'js/drums.js','js/events.js','js/chopper-drum-controls.js',
+    ),
+    append_scripts=('js/chopper-wave-slices.js',),
+)
 
 
 def client_point_for_source(page,sec):
@@ -83,7 +64,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page=browser.new_page(viewport={'width':1280,'height':1100})
     errors=[]
     page.on('pageerror',lambda e:errors.append(str(e)))
-    page.set_content(inline_project(),wait_until='load',timeout=20000)
+    page.set_content(html,wait_until='load',timeout=20000)
     page.wait_for_function('window.__SP && window.__SP.ready === true',timeout=10000)
     page.wait_for_function('window.ChopperWaveSlices && document.getElementById("sliceEditModeBtn")',timeout=10000)
     page.click('[data-tab="chopper"]')
