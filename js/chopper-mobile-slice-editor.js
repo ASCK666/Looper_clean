@@ -4,8 +4,7 @@
 // MARKERS keeps the linked 1..16 chop boundaries; SLICES keeps independent ranges.
 (() => {
   const pads=document.getElementById("pads");
-  const host=pads?.parentElement;
-  if(!pads || !host || !globalThis.ChopperWaveSlices || globalThis.ChopperMobileSliceEditor)return;
+  if(!pads?.parentElement || !globalThis.ChopperWaveSlices || globalThis.ChopperMobileSliceEditor)return;
 
   const mobileMedia=window.matchMedia("(max-width:760px)");
   const HOLD_MS=450;
@@ -26,7 +25,7 @@
   editor.hidden=true;
   editor.setAttribute("aria-label","Éditeur mobile du chop");
   editor.innerHTML=`
-    <div class="title compactTitle">CHOP <span id="mobileChopEditorTitle">--</span></div>
+    <div id="mobileChopEditorTitle" class="title compactTitle">CHOP --</div>
     <div id="mobileChopEditorRange" class="status" aria-live="polite">START — • END —</div>
     <div>
       <label>START</label>
@@ -77,15 +76,13 @@
       return null;
     }
     const mode=ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices?"SLICES":"MARKERS";
-    title.textContent=`${String(activePad+1).padStart(2,"0")} • ${mode}`;
+    title.textContent=`CHOP ${String(activePad+1).padStart(2,"0")} • ${mode}`;
     rangeReadout.textContent=`START ${Math.round(range.start*1000)} ms • END ${Math.round(range.end*1000)} ms • LEN ${Math.round((range.end-range.start)*1000)} ms`;
     return range;
   }
 
   function openEditor(index){
-    if(!isMobile() || !sampleBuffer)return false;
-    const range=currentRange(index);
-    if(!range)return false;
+    if(!isMobile() || !sampleBuffer || !currentRange(index))return false;
 
     stopChopAudition();
     activePad=index;
@@ -104,33 +101,29 @@
     return true;
   }
 
-  function closeEditor({stop=true}={}){
-    if(stop)stopChopAudition();
+  function closeEditor(){
+    stopChopAudition();
     activePad=-1;
     editor.hidden=true;
     pads.hidden=false;
-    return true;
   }
 
   function adjustBoundary(boundary,delta){
     const range=currentRange();
-    if(!range)return false;
+    if(!range)return;
     const target=range[boundary]+Number(delta||0);
 
     if(ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices){
       ChopperWaveSlices.setSliceBoundary(activePad,boundary,target);
     }else{
-      const markerIndex=activePad+(boundary==="end"?1:0);
-      moveMarker(markerIndex,target,false);
+      moveMarker(activePad+(boundary==="end"?1:0),target,false);
     }
-
     updateEditor();
-    return true;
   }
 
   async function previewCurrent(){
     const range=currentRange();
-    if(!range)return false;
+    if(!range)return;
     const button=document.querySelectorAll("#pads .pad")[activePad]||editor;
     await previewSlice(activePad,button);
 
@@ -141,7 +134,6 @@
       const stopAt=Math.max(ctx.currentTime+.005,chopAuditionStartedAt+audible);
       try{chopAuditionSource.stop(stopAt);}catch{}
     }
-    return true;
   }
 
   function clearHold(){
@@ -209,21 +201,15 @@
     button.addEventListener("click",()=>adjustBoundary(button.dataset.mobileBoundary,button.dataset.mobileDelta));
   });
   preview.addEventListener("click",()=>{void previewCurrent();});
-  done.addEventListener("click",()=>closeEditor());
+  done.addEventListener("click",closeEditor);
 
-  document.getElementById("autoMarkers")?.addEventListener("click",()=>closeEditor(),true);
-  document.getElementById("sampleFile")?.addEventListener("change",()=>closeEditor(),true);
-  document.getElementById("sliceEditModeBtn")?.addEventListener("click",()=>closeEditor(),true);
+  document.getElementById("autoMarkers")?.addEventListener("click",closeEditor,true);
+  document.getElementById("sampleFile")?.addEventListener("change",closeEditor,true);
+  document.getElementById("sliceEditModeBtn")?.addEventListener("click",closeEditor,true);
   mobileMedia.addEventListener?.("change",event=>{if(!event.matches)closeEditor();});
 
   globalThis.ChopperMobileSliceEditor=Object.freeze({
     holdMs:HOLD_MS,
-    fineSec:FINE_SEC,
-    coarseSec:COARSE_SEC,
-    open:openEditor,
-    close:closeEditor,
-    adjust:adjustBoundary,
-    preview:previewCurrent,
     get activePad(){return activePad;},
     get visible(){return !editor.hidden;}
   });
