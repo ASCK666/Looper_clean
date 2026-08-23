@@ -76,6 +76,9 @@
     if(!globalThis.ChopperWaveSlices){
       await loadScript("./js/chopper-wave-slices-core.js","chopperWaveSlicesCore","CHOPPER WAVE SLICES CORE");
     }
+    if(!globalThis.ChopperMobileSliceEditor){
+      await loadScript("./js/chopper-mobile-slice-editor.js","chopperMobileSliceEditor","CHOPPER MOBILE SLICE EDITOR");
+    }
     if(!globalThis.ChopperBanks){
       await loadScript("./js/chopper-banks.js","chopperBanks","CHOPPER BANKS");
     }
