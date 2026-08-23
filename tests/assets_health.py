@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "assets"
 EXPECTED_VISUALS = {
     "deck-black-ui-texture.png",
+    "looper-ui/chopper-looper-button-off-alpha-6920266c.webp",
     "looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp",
     "looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp",
     "looper-ui/looper66-mobile-transport-fbd6a0d3.webp",
@@ -31,4 +32,4 @@ if missing or unexpected:
         print(f"FAIL: untracked top-level assets: {', '.join(unexpected)}")
     sys.exit(1)
 
-print("OK: asset health — 7 production visuals, no retired deck artwork")
+print("OK: asset health — 8 production visuals, no retired deck artwork")
