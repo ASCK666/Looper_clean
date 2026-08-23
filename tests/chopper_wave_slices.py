@@ -39,10 +39,11 @@ for invariant in [
     'resumePlayheadFollow(){',
     'const plan=buildSequencePlan(',
     'const segments=plan.placed.map(event=>{',
-    'const bars=Math.max(1,Math.ceil(events.length/8));',
-    'for(let step=0;step<events.length;step++){',
+    'for(const ev of plan.placed){',
+    'renderSelectedDrums(offline,selection,plan.bpm,plan.bars,plan.targetDur,master.input);',
 ]:
     assert invariant in core,f'Missing waveform/SLICES invariant: {invariant}'
+assert core.count('const plan=buildSequencePlan(')>=2,'SLICES playhead and renderer must share sequence planning'
 
 banks=(ROOT/'js/chopper-banks.js').read_text(encoding='utf-8')
 for invariant in [

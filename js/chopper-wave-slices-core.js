@@ -775,40 +775,29 @@
     if(!sourceBuffer)throw new Error("Charge un sample");
     ensureIndependentSlices();
 
-    const bpm=Math.max(40,Number($("sampleBpm").value)||90);
-    const stepDur=(60/bpm)/2;
-    const bars=Math.max(1,Math.ceil(events.length/8));
-    const targetDur=bars*4*60/bpm;
+    const plan=buildSequencePlan(events,$("sampleBpm").value,independentSlices.length);
     const rate=44100;
-    const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
+    const offline=new OfflineAudioContext(2,Math.ceil(plan.targetDur*rate),rate);
     const master=makePunchMaster(offline);
     const sampleConditioner=makeSampleConditioner(offline,master.input,.72*sampleVolumeGain());
 
-    const placed=[];
-    for(let step=0;step<events.length;step++){
-      const chop=Number(events[step])||0;
-      if(chop>=1 && chop<=independentSlices.length)placed.push({step,chop});
-    }
-    if(!placed.length)throw new Error("Place au moins un PAD sur la grille");
+    if(!plan.placed.length)throw new Error("Place au moins un PAD sur la grille");
 
-    for(let e=0;e<placed.length;e++){
-      const ev=placed[e];
+    for(const ev of plan.placed){
       const range=independentSlices[ev.chop-1];
-      const startTime=ev.step*stepDur;
-      const nextTime=e+1<placed.length?placed[e+1].step*stepDur:targetDur;
       const available=Math.max(.005,range.end-range.start);
-      const wanted=Math.max(.005,nextTime-startTime);
+      const wanted=Math.max(.005,ev.nextTime-ev.startTime);
 
       const src=offline.createBufferSource();
       src.buffer=sourceBuffer;
       src.playbackRate.value=pitchRate;
       src.connect(sampleConditioner.input);
-      src.start(startTime,range.start);
-      src.stop(Math.min(targetDur,startTime+Math.min(wanted,available/pitchRate)));
+      src.start(ev.startTime,range.start);
+      src.stop(Math.min(plan.targetDur,ev.startTime+Math.min(wanted,available/pitchRate)));
     }
 
     const selection=await ensureDrumSelection();
-    renderSelectedDrums(offline,selection,bpm,bars,targetDur,master.input);
+    renderSelectedDrums(offline,selection,plan.bpm,plan.bars,plan.targetDur,master.input);
     let rendered=finalizeLoopBuffer(await offline.startRendering());
     if(globalThis.ChopperVinyl?.processRenderedBuffer){
       rendered=await globalThis.ChopperVinyl.processRenderedBuffer(rendered);
