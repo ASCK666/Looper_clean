@@ -85,9 +85,15 @@ with sync_playwright() as p:
           const editor=getComputedStyle(document.querySelector('.drumEditBox'));
           const gridWrap=getComputedStyle(wrap);
           const chopStatus=document.querySelector('#chopStatus');
+          const pads=document.querySelector('#pads');
+          const padsStyle=getComputedStyle(pads);
           const padsPanel=document.querySelector('.samplerPadsModule');
           const padsPanelStyle=getComputedStyle(padsPanel);
           const firstPad=document.querySelector('#pads .pad');
+          if(firstPad){
+            firstPad.classList.remove('unavailable');
+            firstPad.disabled=false;
+          }
           const firstPadStyle=firstPad?getComputedStyle(firstPad):null;
           const firstPadAfter=firstPad?getComputedStyle(firstPad,'::after'):null;
           const firstTransport=document.querySelector('.padTransport .btn');
@@ -135,6 +141,7 @@ with sync_playwright() as p:
             padBackground:firstPadStyle?.backgroundImage||'',
             padBorder:firstPadStyle?.borderTopWidth||'',
             padShadow:firstPadStyle?.boxShadow||'',
+            padCounterReset:padsStyle?.counterReset||'',
             padNumber:firstPadAfter?.content||'',
             idlePadFilter,
             activePadFilter,
@@ -172,7 +179,8 @@ with sync_playwright() as p:
         assert data['padsPanelBorder']=='0px' and data['padsPanelShadow']=='none',data
         assert BUTTON_ASSET_NAME in data['padBackground'],data
         assert data['padBorder']=='0px' and data['padShadow']=='none',data
-        assert '01' in data['padNumber'],data
+        assert 'chopper-pad' in data['padCounterReset'],data
+        assert 'counter(chopper-pad' in data['padNumber'],data
         assert data['idlePadFilter']!=data['activePadFilter'],data
         assert BUTTON_ASSET_NAME in data['transportBackground'],data
         assert data['transportBorder']=='0px' and data['transportShadow']=='none',data
