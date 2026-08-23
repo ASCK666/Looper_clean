@@ -162,11 +162,12 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       performanceDisplay:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,
       padsDisplay:getComputedStyle(document.getElementById('pads')).display,
       enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,
-      viewFlag:document.getElementById('chopper').dataset.mobileChopView || ''
+      viewFlag:document.getElementById('chopper').dataset.mobileChopView || '',
+      status:document.getElementById('chopStatus').textContent
     })''')
     assert not done['visible'] and done['workspaceDisplay']=='none',done
     assert done['performanceDisplay']!='none' and done['padsDisplay']!='none',done
-    assert done['enabled']==16 and done['viewFlag']=='',done
+    assert done['enabled']==16 and done['viewFlag']=='' and done['status']=='CHOP MODE • MARKERS',done
 
     pad=page.locator('#pads .pad').nth(5)
     touch_start(pad);page.wait_for_timeout(520)
