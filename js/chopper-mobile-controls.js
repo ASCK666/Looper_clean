@@ -1,19 +1,75 @@
 "use strict";
 
-// Mobile Chopper parameter interaction. Keep the existing inputs as the only
-// product state owners; compact readouts only translate touch/pen scrubs into
-// their existing input/change events.
+// Mobile Chopper navigation and parameter interaction. The four workspaces only
+// reveal existing Chopper surfaces; they never duplicate waveform, pads, grid or
+// drum state. PITCH/BPM/VOL rotary gestures drive the existing form inputs.
 (() => {
   const root=document.getElementById("chopper");
   if(!root || globalThis.ChopperMobileControls)return;
 
   const mobileMedia=window.matchMedia("(max-width:760px)");
-  const bindings=[
-    {inputId:"samplePitch",targetId:"samplePitchReadout",pixelsPerStep:20,step:1},
-    {inputId:"sampleBpm",targetId:"sampleBpm",pixelsPerStep:3,step:1},
-    {inputId:"sampleVolume",targetId:"sampleVolumeReadout",pixelsPerStep:2,step:1},
-    {inputId:"punchMode",targetId:"punchDesc",pixelsPerStep:28,step:1,cycleTap:true}
-  ];
+  const deck=root.querySelector(".samplerDeck");
+  const upper=root.querySelector(".samplerUpperDeck");
+  const screen=root.querySelector(".samplerScreenModule");
+  const performance=root.querySelector(".samplerPerformanceDeck");
+  const pads=root.querySelector(".samplerPadsModule");
+  const sequence=root.querySelector(".samplerSequenceModule");
+  const drums=root.querySelector(".samplerDrumSection");
+  if(!deck || !upper || !screen || !performance || !pads || !sequence || !drums)return;
+
+  const HIDDEN_CLASS="mobileWorkspaceHidden";
+  const workspaceNames=["chopper","sequence","pads","drums"];
+  let workspace="chopper";
+
+  const tabBar=document.createElement("div");
+  tabBar.className="chopperMobileTabs";
+  tabBar.setAttribute("role","tablist");
+  tabBar.setAttribute("aria-label","Vues du Chopper mobile");
+  const tabLabels={chopper:"CHOPPER",sequence:"SEQ",pads:"PADS",drums:"DRUMS"};
+  const tabAria={
+    chopper:"Waveform et paramètres du Chopper",
+    sequence:"Séquenceur",
+    pads:"Pads et waveform",
+    drums:"Batterie"
+  };
+  const tabs=new Map();
+  for(const name of workspaceNames){
+    const button=document.createElement("button");
+    button.type="button";
+    button.className="btn chopperMobileTab";
+    button.dataset.mobileWorkspace=name;
+    button.textContent=tabLabels[name];
+    button.setAttribute("role","tab");
+    button.setAttribute("aria-label",tabAria[name]);
+    button.addEventListener("click",()=>setWorkspace(name));
+    tabBar.appendChild(button);
+    tabs.set(name,button);
+  }
+  deck.prepend(tabBar);
+
+  const bpmInput=document.getElementById("sampleBpm");
+  const tempoBody=root.querySelector(".sampleTempoControl > div");
+  const tempoKnob=document.createElement("div");
+  tempoKnob.id="mobileTempoKnob";
+  tempoKnob.className="sampleKnobControl mobileTempoKnobControl";
+  tempoKnob.innerHTML='<span class="sampleKnobFace" aria-hidden="true"></span>';
+  const bpmReadout=document.createElement("span");
+  bpmReadout.id="sampleBpmReadout";
+  bpmReadout.className="sampleKnobReadout mobileTempoReadout";
+  if(tempoBody && bpmInput){
+    tempoBody.append(tempoKnob,bpmReadout);
+  }
+
+  const chopperControls=[
+    screen.querySelector(":scope > .stableTitle"),
+    screen.querySelector(":scope > .advancedBox"),
+    root.querySelector(".samplePitchKnob"),
+    root.querySelector(".sampleTempoControl"),
+    root.querySelector(".sampleVolumeKnob"),
+    root.querySelector(".punchKnob"),
+    screen.querySelector(":scope > .chopperStatusStrip"),
+    screen.querySelector(":scope > .samplerSampleInfo")
+  ].filter(Boolean);
 
   function numeric(value,fallback=0){
     const number=Number(value);
@@ -34,132 +90,207 @@
     return true;
   }
 
-  function syncAccessibleValue(input,target){
-    if(target===input)return;
-    target.setAttribute("aria-valuenow",input.value);
-    target.setAttribute("aria-valuetext",target.textContent.trim());
+  function syncKnob(input,target,owner,readout,format){
+    const min=numeric(input.min,0);
+    const max=numeric(input.max,min+1);
+    const value=clampInputValue(input,numeric(input.value,min));
+    const pct=max===min?0:(value-min)/(max-min)*100;
+    owner?.style.setProperty("--knob-pct",String(pct));
+    target.setAttribute("aria-valuenow",String(value));
+    target.setAttribute("aria-valuetext",format(value));
+    if(readout)readout.textContent=format(value);
   }
 
-  function bindScrub({inputId,targetId,pixelsPerStep,step,cycleTap=false}){
+  function bindRotary({inputId,target,owner,readout=null,pixelsPerStep,step,format}){
     const input=document.getElementById(inputId);
-    const target=document.getElementById(targetId);
     if(!input || !target)return;
 
-    if(target!==input){
-      target.tabIndex=0;
-      target.setAttribute("role","slider");
-      target.setAttribute("aria-label",input.getAttribute("aria-label") || target.previousElementSibling?.textContent?.trim() || inputId);
-      target.setAttribute("aria-valuemin",input.min);
-      target.setAttribute("aria-valuemax",input.max);
-    }
-    target.title=cycleTap
-      ? "Glisser verticalement pour régler • toucher pour changer"
-      : "Glisser verticalement pour régler";
-    syncAccessibleValue(input,target);
-    input.addEventListener("input",()=>syncAccessibleValue(input,target));
+    target.tabIndex=0;
+    target.setAttribute("role","slider");
+    target.setAttribute("aria-label",input.getAttribute("aria-label") || inputId);
+    target.setAttribute("aria-valuemin",input.min);
+    target.setAttribute("aria-valuemax",input.max);
+    target.title="Glisser verticalement pour régler";
 
-    let active=false;
+    let activeSource=null;
     let startY=0;
     let startValue=0;
     let changed=false;
-    let scrubbed=false;
-    let suppressClick=false;
+    let moved=false;
 
-    const applyStep=value=>{
-      if(setInputValue(input,value))changed=true;
-      syncAccessibleValue(input,target);
-    };
-
-    const startGesture=y=>{
+    const sync=()=>syncKnob(input,target,owner,readout,format);
+    const startGesture=(y,source)=>{
       if(!mobileMedia.matches)return false;
-      active=true;
+      if(activeSource)return activeSource===source;
+      activeSource=source;
       startY=y;
       startValue=numeric(input.value);
       changed=false;
-      scrubbed=false;
+      moved=false;
       return true;
     };
-
-    const moveGesture=y=>{
-      if(!active)return false;
+    const moveGesture=(y,source)=>{
+      if(activeSource!==source)return false;
       const delta=startY-y;
-      if(!scrubbed && Math.abs(delta)<6)return false;
-      scrubbed=true;
+      if(!moved && Math.abs(delta)<5)return false;
+      moved=true;
       const steps=Math.round(delta/Math.max(1,pixelsPerStep));
-      applyStep(startValue+steps*step);
+      if(setInputValue(input,startValue+steps*step))changed=true;
+      sync();
       return true;
     };
-
-    const finishGesture=()=>{
-      if(!active)return;
-      if(cycleTap && !scrubbed){
-        const min=numeric(input.min,0);
-        const max=numeric(input.max,min);
-        const current=numeric(input.value,min);
-        applyStep(current>=max?min:current+step);
-      }
+    const finishGesture=source=>{
+      if(activeSource!==source)return;
       if(changed)input.dispatchEvent(new Event("change",{bubbles:true}));
-      suppressClick=scrubbed;
-      active=false;
+      activeSource=null;
       changed=false;
-      scrubbed=false;
+      moved=false;
     };
 
-    // Chromium/iOS can expose a finger as Pointer Events, Touch Events or both.
-    // Both paths share the same gesture state, so a duplicated browser event is
-    // idempotent instead of producing two parameter changes.
     target.addEventListener("touchstart",event=>{
-      if(event.touches.length===1)startGesture(event.touches[0].clientY);
+      if(event.touches.length===1)startGesture(event.touches[0].clientY,"touch");
     },{passive:true});
-
     target.addEventListener("touchmove",event=>{
       if(event.touches.length!==1)return;
-      if(moveGesture(event.touches[0].clientY) && event.cancelable)event.preventDefault();
+      if(moveGesture(event.touches[0].clientY,"touch") && event.cancelable)event.preventDefault();
     },{passive:false});
-
-    target.addEventListener("touchend",finishGesture);
-    target.addEventListener("touchcancel",finishGesture);
+    target.addEventListener("touchend",()=>finishGesture("touch"));
+    target.addEventListener("touchcancel",()=>finishGesture("touch"));
 
     target.addEventListener("pointerdown",event=>{
-      if(event.isPrimary===false || (event.pointerType==="mouse" && event.button!==0))return;
-      if(!startGesture(event.clientY))return;
+      if(event.isPrimary===false || event.pointerType==="touch" || (event.pointerType==="mouse" && event.button!==0))return;
+      if(!startGesture(event.clientY,"pointer"))return;
       try{target.setPointerCapture(event.pointerId);}catch{}
     });
-
     target.addEventListener("pointermove",event=>{
-      if(moveGesture(event.clientY) && event.cancelable)event.preventDefault();
+      if(moveGesture(event.clientY,"pointer") && event.cancelable)event.preventDefault();
+    });
+    target.addEventListener("pointerup",()=>finishGesture("pointer"));
+    target.addEventListener("pointercancel",()=>finishGesture("pointer"));
+
+    target.addEventListener("keydown",event=>{
+      if(!mobileMedia.matches)return;
+      const current=numeric(input.value);
+      let next=null;
+      if(event.key==="ArrowUp" || event.key==="ArrowRight")next=current+step;
+      else if(event.key==="ArrowDown" || event.key==="ArrowLeft")next=current-step;
+      else if(event.key==="Home")next=numeric(input.min,current);
+      else if(event.key==="End")next=numeric(input.max,current);
+      else return;
+      event.preventDefault();
+      if(setInputValue(input,next))input.dispatchEvent(new Event("change",{bubbles:true}));
+      sync();
     });
 
-    target.addEventListener("pointerup",finishGesture);
-    target.addEventListener("pointercancel",finishGesture);
-
-    target.addEventListener("click",event=>{
-      if(!suppressClick)return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      suppressClick=false;
-    },true);
-
-    if(target!==input){
-      target.addEventListener("keydown",event=>{
-        if(!mobileMedia.matches)return;
-        const current=numeric(input.value);
-        let next=null;
-        if(event.key==="ArrowUp" || event.key==="ArrowRight")next=current+step;
-        else if(event.key==="ArrowDown" || event.key==="ArrowLeft")next=current-step;
-        else if(event.key==="Home")next=numeric(input.min,current);
-        else if(event.key==="End")next=numeric(input.max,current);
-        else return;
-        event.preventDefault();
-        if(setInputValue(input,next))input.dispatchEvent(new Event("change",{bubbles:true}));
-        syncAccessibleValue(input,target);
-      });
-    }
+    input.addEventListener("input",sync);
+    sync();
   }
 
-  bindings.forEach(bindScrub);
+  bindRotary({
+    inputId:"samplePitch",
+    target:root.querySelector(".samplePitchKnob .sampleKnobControl"),
+    owner:root.querySelector(".samplePitchKnob"),
+    readout:document.getElementById("samplePitchReadout"),
+    pixelsPerStep:18,
+    step:1,
+    format:value=>`${value>0?"+":""}${Math.round(value)} st`
+  });
+  bindRotary({
+    inputId:"sampleBpm",
+    target:tempoKnob,
+    owner:tempoBody,
+    readout:bpmReadout,
+    pixelsPerStep:3,
+    step:1,
+    format:value=>`${Math.round(value)} BPM`
+  });
+  bindRotary({
+    inputId:"sampleVolume",
+    target:root.querySelector(".sampleVolumeKnob .sampleKnobControl"),
+    owner:root.querySelector(".sampleVolumeKnob"),
+    readout:document.getElementById("sampleVolumeReadout"),
+    pixelsPerStep:2,
+    step:1,
+    format:value=>`${Math.round(value)}%`
+  });
+
+  const punchInput=document.getElementById("punchMode");
+  const punchTarget=document.getElementById("punchDesc");
+  const punchLabels=["OFF","WARM","KNOCK","HARD"];
+  if(punchInput && punchTarget){
+    punchTarget.tabIndex=0;
+    punchTarget.setAttribute("role","button");
+    punchTarget.setAttribute("aria-label","Changer le mode PUNCH");
+    const cyclePunch=()=>{
+      if(!mobileMedia.matches)return;
+      const min=numeric(punchInput.min,0);
+      const max=numeric(punchInput.max,3);
+      const current=numeric(punchInput.value,min);
+      const next=current>=max?min:current+1;
+      punchInput.value=String(next);
+      punchInput.dispatchEvent(new Event("input",{bubbles:true}));
+      punchInput.dispatchEvent(new Event("change",{bubbles:true}));
+      punchTarget.textContent=punchLabels[next]||String(next);
+    };
+    punchTarget.addEventListener("click",cyclePunch);
+    punchTarget.addEventListener("keydown",event=>{
+      if(event.key!=="Enter" && event.key!==" ")return;
+      event.preventDefault();
+      cyclePunch();
+    });
+  }
+
+  function hide(node,value){
+    node?.classList.toggle(HIDDEN_CLASS,Boolean(value));
+  }
+
+  function applyWorkspace(){
+    const mobile=mobileMedia.matches;
+    tabBar.hidden=!mobile;
+    tempoKnob.hidden=!mobile;
+    bpmReadout.hidden=!mobile;
+    if(bpmInput)bpmInput.style.display=mobile?"none":"";
+
+    if(!mobile){
+      root.removeAttribute("data-mobile-workspace");
+      for(const node of [upper,performance,pads,sequence,drums,...chopperControls])hide(node,false);
+      return;
+    }
+
+    root.dataset.mobileWorkspace=workspace;
+    for(const [name,button] of tabs){
+      const selected=name===workspace;
+      button.setAttribute("aria-selected",selected?"true":"false");
+      button.classList.toggle("active",selected);
+    }
+
+    hide(upper,workspace!=="chopper" && workspace!=="pads");
+    hide(performance,workspace!=="pads" && workspace!=="sequence");
+    hide(drums,workspace!=="drums");
+    hide(pads,workspace!=="pads");
+    hide(sequence,workspace!=="sequence");
+    for(const node of chopperControls)hide(node,workspace!=="chopper");
+
+    requestAnimationFrame(()=>{
+      if((workspace==="chopper" || workspace==="pads") && typeof drawWave==="function")drawWave();
+      if(workspace==="sequence" && typeof renderSampleTimeline==="function")renderSampleTimeline();
+    });
+  }
+
+  function setWorkspace(name){
+    const next=workspaceNames.includes(name)?name:"chopper";
+    workspace=next;
+    applyWorkspace();
+    return workspace;
+  }
+
+  if(typeof mobileMedia.addEventListener==="function")mobileMedia.addEventListener("change",applyWorkspace);
+  else mobileMedia.addListener(applyWorkspace);
+  applyWorkspace();
 
   globalThis.ChopperMobileControls=Object.freeze({
-    get active(){return mobileMedia.matches;}
+    get active(){return mobileMedia.matches;},
+    get workspace(){return workspace;},
+    setWorkspace
   });
 })();
