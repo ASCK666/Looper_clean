@@ -73,7 +73,7 @@
   const chopperActionRow=document.createElement("div");
   chopperActionRow.id="mobileChopperActionRow";
   chopperActionRow.className="mobileChopperRow mobileChopperActionRow";
-  chopperActionRow.style.cssText="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;grid-column:1/-1;min-width:0;width:100%";
+  chopperActionRow.style.cssText="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;grid-column:1/-1;min-width:0;width:100%";
 
   const spCell=document.createElement("div");
   spCell.id="mobileChopperSpCell";
@@ -114,7 +114,6 @@
   sequence.appendChild(sequenceFooter);
 
   const loadButton=document.getElementById("loadSampleBtn");
-  const autoButton=document.getElementById("autoMarkers");
   const previewButton=document.getElementById("previewFlip");
   const stopButton=document.getElementById("stopFlip");
   const saveButton=document.getElementById("addFlipLibrary");
@@ -124,7 +123,7 @@
   const punchControl=root.querySelector(".punchKnob");
   const modeButton=document.getElementById("sliceEditModeBtn");
 
-  for(const element of [loadButton,autoButton,previewButton,stopButton,saveButton,pitchControl,tempoControl,volumeControl,punchControl,modeButton])rememberHome(element);
+  for(const element of [loadButton,previewButton,stopButton,saveButton,pitchControl,tempoControl,volumeControl,punchControl,modeButton])rememberHome(element);
 
   const bpmInput=document.getElementById("sampleBpm");
   const tempoBody=root.querySelector(".sampleTempoControl > div");
@@ -320,7 +319,6 @@
   function syncChopperRows(){
     if(!mobileMedia.matches)return;
     if(loadButton){chopperActionRow.insertBefore(loadButton,spCell);loadButton.style.width="100%";loadButton.style.minWidth="0";}
-    if(autoButton){chopperActionRow.insertBefore(autoButton,spCell);autoButton.style.width="100%";autoButton.style.minWidth="0";}
     const spButton=document.getElementById("sp1200Toggle"),filterButton=document.getElementById("sp1200FilterToggle");
     if(spButton){spCell.appendChild(spButton);spButton.style.flex="1 1 auto";spButton.style.minWidth="0";}
     if(filterButton){spCell.appendChild(filterButton);filterButton.style.flex="0 0 auto";}
@@ -333,7 +331,7 @@
   }
 
   function resetMovedStyles(){
-    for(const element of [loadButton,autoButton]){element?.style.removeProperty("width");element?.style.removeProperty("min-width");}
+    loadButton?.style.removeProperty("width");loadButton?.style.removeProperty("min-width");
     for(const control of [tempoControl,pitchControl,volumeControl,punchControl])setControlItemStyle(control,false);
     modeButton?.style.removeProperty("flex");
     const bankTabs=document.getElementById("chopperBankTabs");
@@ -343,7 +341,7 @@
 
   function restoreDesktopLayout(){
     restoreWave();
-    for(const element of [loadButton,autoButton,pitchControl,tempoControl,volumeControl,punchControl,modeButton,previewButton,stopButton,saveButton])restoreHome(element);
+    for(const element of [loadButton,pitchControl,tempoControl,volumeControl,punchControl,modeButton,previewButton,stopButton,saveButton])restoreHome(element);
     resetMovedStyles();
     const bankTabs=document.getElementById("chopperBankTabs"),spButton=document.getElementById("sp1200Toggle"),filterButton=document.getElementById("sp1200FilterToggle");
     if(bankTabs && waveActions)waveActions.insertBefore(bankTabs,spButton||filterButton||null);
