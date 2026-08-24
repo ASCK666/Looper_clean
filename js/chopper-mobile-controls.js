@@ -126,15 +126,19 @@
   for(const element of [loadButton,previewButton,stopButton,saveButton,pitchControl,tempoControl,volumeControl,punchControl,modeButton])rememberHome(element);
 
   const bpmInput=document.getElementById("sampleBpm");
-  const tempoBody=root.querySelector(".sampleTempoControl > div");
-  const tempoKnob=document.createElement("div");
-  tempoKnob.id="mobileTempoKnob";
-  tempoKnob.className="sampleKnobControl mobileTempoKnobControl";
-  tempoKnob.innerHTML='<span class="sampleKnobFace" aria-hidden="true"></span>';
-  const bpmReadout=document.createElement("span");
-  bpmReadout.id="sampleBpmReadout";
-  bpmReadout.className="sampleKnobReadout mobileTempoReadout";
-  if(tempoBody && bpmInput)tempoBody.append(tempoKnob,bpmReadout);
+  if(bpmInput){
+    bpmInput.max="200";
+    const clampBpm=()=>{
+      const value=Number(bpmInput.value);
+      if(!Number.isFinite(value))return;
+      const min=Number(bpmInput.min)||40;
+      const next=Math.max(min,Math.min(200,value));
+      if(next!==value)bpmInput.value=String(next);
+    };
+    bpmInput.addEventListener("input",clampBpm,{capture:true});
+    bpmInput.addEventListener("change",clampBpm,{capture:true});
+    clampBpm();
+  }
 
   function numeric(value,fallback=0){
     const number=Number(value);
@@ -261,7 +265,6 @@
   }
 
   bindRotary({inputId:"samplePitch",target:root.querySelector(".samplePitchKnob .sampleKnobControl"),owner:pitchControl,readout:document.getElementById("samplePitchReadout"),pixelsPerStep:18,step:1,format:value=>`${value>0?"+":""}${Math.round(value)} st`});
-  bindRotary({inputId:"sampleBpm",target:tempoKnob,owner:tempoBody,readout:bpmReadout,pixelsPerStep:3,step:1,format:value=>`${Math.round(value)} BPM`});
   bindRotary({inputId:"sampleVolume",target:root.querySelector(".sampleVolumeKnob .sampleKnobControl"),owner:volumeControl,readout:document.getElementById("sampleVolumeReadout"),pixelsPerStep:2,step:1,format:value=>`${Math.round(value)}%`});
 
   const punchInput=document.getElementById("punchMode");
@@ -390,8 +393,6 @@
     if(mobile)tabBar.style.setProperty("display","grid","important");
     else tabBar.style.removeProperty("display");
     chopperActionRow.hidden=!mobile;chopperBankRow.hidden=!mobile;chopperParamRow.hidden=!mobile;
-    tempoKnob.hidden=!mobile;bpmReadout.hidden=!mobile;
-    if(bpmInput)bpmInput.style.display=mobile?"none":"";
     accessibilitySyncers.forEach(sync=>sync());
 
     if(!mobile){
