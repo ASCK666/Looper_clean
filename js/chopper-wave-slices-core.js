@@ -298,7 +298,6 @@
     const display=sourceToDisplayTime(sec);
     return r.left+(display-vw.start)/Math.max(.000001,vw.dur)*r.width;
   }
-
   function sliceCanvasBounds(index,target=waveCanvas){
     const range=currentSliceRange(index);
     if(!range)return null;
@@ -800,11 +799,7 @@
 
     const selection=await ensureDrumSelection();
     renderSelectedDrums(offline,selection,plan.bpm,plan.bars,plan.targetDur,master.input);
-    let rendered=finalizeLoopBuffer(await offline.startRendering());
-    if(globalThis.ChopperVinyl?.processRenderedBuffer){
-      rendered=await globalThis.ChopperVinyl.processRenderedBuffer(rendered);
-    }
-    return rendered;
+    return finalizeLoopBuffer(await offline.startRendering());
   };
 
   function drawPinnedPlayheadFrame(){

@@ -274,11 +274,7 @@
   }
 
   #chopper,
-  #chopper .samplerDeck,
-  #chopper .samplerUpperDeck,
-  #chopper .samplerPerformanceDeck,
-  #chopper .samplerSequenceModule,
-  #chopper .samplerDrumSection {
+  #chopper :is(.samplerDeck,.samplerUpperDeck,.samplerPerformanceDeck,.samplerSequenceModule,.samplerDrumSection) {
     width: 100% !important;
     max-width: none !important;
   }
@@ -296,7 +292,7 @@
   }
 
   #chopper .samplerScreenModule {
-    grid-template-columns: minmax(0, 1fr) 44px 60px 44px !important;
+    grid-template-columns: minmax(0,1fr) 52px 52px 52px 52px !important;
     column-gap: 5px !important;
     row-gap: 6px !important;
   }
@@ -306,29 +302,60 @@
   }
 
   #chopper .sampleKnobControl {
-    width: 42px;
-    height: 42px;
+    width: 52px;
+    height: 52px;
+    cursor: ns-resize;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   #chopper .sampleKnobFace:after {
-    top: 3px;
-    left: 16px;
-    height: 11px;
-    transform-origin: 50% 16px;
+    left: 21px;
+    transform-origin: 50% 20px;
+  }
+
+  #chopper .sampleKnobInput {
+    pointer-events: none;
   }
 
   #chopper .sampleKnobReadout {
-    min-width: 40px;
-    font-size: 7px;
+    display: flex;
+    min-width: 42px;
+    min-height: 18px;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    line-height: 1;
   }
 
   #chopper .sampleTempoControl > div {
-    padding: 5px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 0 !important;
+    --knob-pct: 28;
   }
 
-  #chopper .sampleTempoControl input {
-    min-height: 30px !important;
-    font-size: 9px !important;
+  #chopper .sampleTempoControl label {
+    margin: 0 !important;
+  }
+
+  #chopper .punchKnob .sampleKnobControl {
+    display: none;
+  }
+
+  #chopper .punchKnob .sampleKnobReadout {
+    min-width: 52px;
+    min-height: 52px;
+    padding: 5px;
+    border: 1px solid #5c452b;
+    border-radius: 4px;
+    background: linear-gradient(180deg,#22180f,#0e0a07);
+    color: #d9bf91;
+    cursor: pointer;
+    touch-action: manipulation;
   }
 
   #chopper .samplerPerformanceDeck {
@@ -347,30 +374,27 @@
 }
 
 @media (max-width: 430px) {
-  #chopper .sampleKnobControl {
-    width: 38px;
-    height: 38px;
+  #chopper .sampleKnob > label,
+  #chopper .sampleTempoControl label {
+    font-size: 7px !important;
+  }
+
+  #chopper .sampleKnobControl,
+  #chopper .punchKnob .sampleKnobReadout {
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+    min-height: 46px;
   }
 
   #chopper .sampleKnobFace:after {
-    left: 14px;
-    height: 10px;
-    transform-origin: 50% 14px;
+    left: 18px;
+    transform-origin: 50% 17px;
   }
 
-  #chopper .sampleKnob > label,
-  #chopper .sampleTempoControl label {
-    font-size: 6px !important;
-  }
-
-  #chopper .sampleTempoControl > div {
-    padding: 4px !important;
-  }
-
-  #chopper .sampleTempoControl input {
-    min-height: 28px !important;
-    padding: 2px !important;
-    font-size: 8px !important;
+  #chopper .samplerScreenModule {
+    grid-template-columns: minmax(0,1fr) 46px 46px 46px 46px !important;
+    column-gap: 4px !important;
   }
 }
 

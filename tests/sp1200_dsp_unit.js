@@ -269,7 +269,7 @@ async function main(){
   assert(integrationSource.includes("DSP.resolveTune(samplePitchSemitones)"),"Chopper adapter must resolve UI semitones before SP playback");
   assert(!integrationSource.includes("DSP.pitchRatio"),"Chopper adapter must not derive pitch ratios directly");
   assert(integrationSource.includes("globalThis.ChopperWaveSlices") && integrationSource.includes("globalThis.ChopperBanks"),"Chopper-only feature dependencies must remain in the Chopper adapter");
-  assert(integrationSource.includes("globalThis.ChopperVinyl"),"VINYL post-processing must remain a Chopper adapter concern");
+  assert(!integrationSource.includes("ChopperVinyl"),"retired VINYL integration must stay removed from the Chopper SP adapter");
   assert(integrationSource.includes("function sessionOutputRate()"),"Chopper SP adapter must define one session reconstruction rate");
   assert(integrationSource.includes("const rate=sessionOutputRate();"),"offline SP render must use the live-session reconstruction rate");
   assert(integrationSource.includes("reconstructionRate:sessionOutputRate()"),"SP settings must expose the active reconstruction rate");

@@ -164,9 +164,6 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.evaluate('''() => {
           document.getElementById('punchMode').value='0';
           document.getElementById('sampleBpm').value='120';
-          const vinyl=document.getElementById('vinylAmount');
-          vinyl.value='0';
-          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
           currentDrumSelection={
             mode:'off',patternId:'OFF',patternName:'OFF',
             kicks:[],snares:[],ghosts:[],hats:[],hatSteps:[],
@@ -334,40 +331,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert slice_invalidation['mode'] == 'slices', slice_invalidation
         page.evaluate("ChopperWaveSlices.setEditMode('markers')")
 
-        # Regression 6: VINYL changes invalidate on input, not only on release,
-        # so a pending render using an older effect amount cannot start later.
-        page.evaluate('''() => {
-          const vinyl=document.getElementById('vinylAmount');
-          vinyl.value='0';
-          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
-          SP1200DSP.clearCache(sampleBuffer);
-          window.__spLiveStarts=0;
-        }''')
-        page.click('#previewFlip')
-        page.wait_for_timeout(5)
-        page.evaluate('''() => {
-          const vinyl=document.getElementById('vinylAmount');
-          vinyl.value='35';
-          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
-        }''')
-        page.wait_for_timeout(1200)
-        vinyl_invalidation = page.evaluate('''() => ({
-          playing:isLoopPlaying,
-          source:flipSource,
-          starts:window.__spLiveStarts,
-          amount:document.getElementById('vinylAmount').value
-        })''')
-        assert vinyl_invalidation['playing'] is False, vinyl_invalidation
-        assert vinyl_invalidation['source'] is None, vinyl_invalidation
-        assert vinyl_invalidation['starts'] == 0, vinyl_invalidation
-        assert vinyl_invalidation['amount'] == '35', vinyl_invalidation
-        page.evaluate('''() => {
-          const vinyl=document.getElementById('vinylAmount');
-          vinyl.value='0';
-          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
-        }''')
-
-        # Regression 7: replacing the sample while a combined preview is already
+        # Regression 6: replacing the sample while a combined preview is already
         # audible must stop that source before the new sample context is published.
         page.evaluate('''() => {
           SP1200DSP.clearCache(sampleBuffer);
@@ -400,7 +364,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert active_load['starts'] == active_starts, active_load
         assert active_load['name'] == 'sp-replacement-48k.wav', active_load
 
-        # Regression 8: replacing the sample while PLAY is still rendering must
+        # Regression 7: replacing the sample while PLAY is still rendering must
         # invalidate the old generation so it cannot become audible afterward.
         page.set_input_files('#sampleFile', str(sample))
         page.wait_for_function(
@@ -442,7 +406,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert pending_load['starts'] == 0, pending_load
         assert pending_load['name'] == 'sp-replacement-48k.wav', pending_load
 
-        # Regression 9: overlapping decodes are last-request-wins. The stale
+        # Regression 8: overlapping decodes are last-request-wins. The stale
         # first decode may finish later, but it cannot overwrite sample state.
         overlapping_loads = page.evaluate('''async () => {
           const decodeBase=decodeFile;

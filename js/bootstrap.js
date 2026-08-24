@@ -55,3 +55,16 @@ window.addEventListener("DOMContentLoaded",()=>{
   script.onerror=()=>window.__SP.report("CHOPPER WAVE SLICES",new Error("Slice editor failed to load"));
   document.body.appendChild(script);
 },{once:true});
+
+// Keep the user's persisted KICK / SNARE / HAT folders authoritative. The
+// embedded boom-bap kit is installed only as the engine fallback once all defer
+// scripts (including the IndexedDB drum-library restore wrapper) are ready.
+window.addEventListener("DOMContentLoaded",()=>{
+  if(location.protocol==="about:" || location.protocol==="data:")return;
+  if(globalThis.LooperDefaultDrumKit?.installed || document.querySelector('script[data-default-drum-kit="1"]'))return;
+  const script=document.createElement("script");
+  script.src="./js/default-drum-kit.js";
+  script.dataset.defaultDrumKit="1";
+  script.onerror=()=>window.__SP.report("DEFAULT DRUM KIT",new Error("Default drum kit failed to load"));
+  document.body.appendChild(script);
+},{once:true});

@@ -175,10 +175,6 @@ document.querySelectorAll("[data-sequence-page]").forEach(button=>{
   button.onclick=()=>setSequencePage(button.dataset.sequencePage);
 });
 $("clearGrid").onclick=clearLoopGrid;
-$("autoMarkers").onclick=()=>{
-  stopChopAudition();
-  autoPlaceMarkers();
-};
 
 $("waveZoom").oninput=drawWave;
 $("waveScroll").oninput=drawWave;

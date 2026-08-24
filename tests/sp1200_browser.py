@@ -77,7 +77,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.wait_for_function('window.__SP && window.__SP.ready === true', timeout=10000)
         page.wait_for_function(
             'window.ChopperWaveSlices && window.ChopperBanks && '
-            'window.SP1200DSP && window.ChopperSP1200 && window.ChopperVinyl',
+            'window.SP1200DSP && window.ChopperSP1200',
             timeout=15000,
         )
 
@@ -93,9 +93,6 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.evaluate('''() => {
           document.getElementById('punchMode').value='0';
           document.getElementById('sampleBpm').value='120';
-          const vinyl=document.getElementById('vinylAmount');
-          vinyl.value='0';
-          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
           currentDrumSelection={
             mode:'off',patternId:'OFF',patternName:'OFF',
             kicks:[],snares:[],ghosts:[],hats:[],hatSteps:[],
@@ -256,30 +253,6 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert 1.20 < all_tail['duration'] < 1.50, all_tail
         page.click('#stopFlip')
 
-        # SP + VINYL: instrument the public post-process hook and verify the SP
-        # pad path actually invokes it when the vinyl macro is active.
-        page.evaluate('''() => {
-          window.__spVinylCalls=0;
-          window.__spVinylOriginal=ChopperVinyl.processRenderedBuffer;
-          ChopperVinyl.processRenderedBuffer=async buffer=>{
-            window.__spVinylCalls++;
-            return await window.__spVinylOriginal(buffer);
-          };
-          const vinyl=document.getElementById('vinylAmount');
-          vinyl.value='35';
-          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
-        }''')
-        page.locator('#pads .pad').nth(15).click()
-        page.wait_for_function('window.__spVinylCalls > 0 && chopAuditionSource !== null', timeout=20000)
-        assert abs(page.evaluate('ChopperVinyl.settings().amount') - .35) < .001
-        page.click('#stopFlip')
-        page.evaluate('''() => {
-          ChopperVinyl.processRenderedBuffer=window.__spVinylOriginal;
-          const vinyl=document.getElementById('vinylAmount');
-          vinyl.value='0';
-          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
-        }''')
-
         # PLAY must render all four bars through the SP wrapper at the same
         # reconstruction rate as PAD audition. A trigger at step 16 proves bars
         # 3-4 are not truncated by the SP adapter.
@@ -387,4 +360,4 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         context.close()
         browser.close()
 
-print('OK: SP1200 browser — PAD/PLAY audio parity, four-bar PLAY/SAVE, shared reconstruction rate, ON/OFF, BANK/SLICES, VINYL and STOP')
+print('OK: SP1200 browser — PAD/PLAY audio parity, four-bar PLAY/SAVE, shared reconstruction rate, ON/OFF, BANK/SLICES and STOP')

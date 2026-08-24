@@ -12,10 +12,12 @@
 
   const SP_SAMPLE_RATE=DSP.sampleRate;
   const ALL_ENCODE_PAGE_SECONDS=30;
-  const MAX_PAD_PREVIEW_SECONDS=30;
+  const MAX_PAD_PREVIEW_SECONDS=6;
+  const MAX_PREVIEW_RENDER_CACHE_ENTRIES=3;
   let enabled=false;
   let outputMode="raw";
   let previewGeneration=0;
+  const previewRenderedCache=new WeakMap();
 
   function currentMode(){
     return globalThis.ChopperWaveSlices?.mode||"markers";
@@ -96,13 +98,6 @@
     return markerRange(index,sourceBuffer,cueMarkers,bank);
   }
 
-  async function maybeVinyl(buffer){
-    if(globalThis.ChopperVinyl?.processRenderedBuffer){
-      return await globalThis.ChopperVinyl.processRenderedBuffer(buffer);
-    }
-    return buffer;
-  }
-
   // SP reconstruction must use one output grid per live session. PAD audition
   // already renders against ctx; offline PLAY/SAVE must use that same rate so
   // zero-order hold does not change character between audition and export.
@@ -123,8 +118,8 @@
 
   // One operation owns the complete SP chop transition shared by PAD and
   // PLAY/SAVE: source range -> audible duration -> encoded PCM page -> playback
-  // reconstruction. Product routing (edge fade, PUNCH/master, VINYL/finalize)
-  // stays outside this boundary.
+  // reconstruction. Product routing (edge fade, PUNCH/master, finalize) stays
+  // outside this boundary.
   async function renderSpChop(audioContext,{
     sourceBuffer,
     range,
@@ -133,7 +128,9 @@
     outputMode:outputProfile,
     durationLimit,
     bank=null,
+    exactEncodeRange=false,
     encodedCache=null,
+    renderedCache=null,
     shouldContinue=null
   }){
     if(!sourceBuffer || !range || range.end<=range.start){
@@ -149,7 +146,9 @@
       range.end,
       range.start+audible*tune.ratio+1/SP_SAMPLE_RATE
     );
-    const encodeRange=workingEncodeRange(sourceBuffer,range.start,sourceEnd,bank);
+    const encodeRange=exactEncodeRange
+      ? {start:range.start,end:sourceEnd}
+      : workingEncodeRange(sourceBuffer,range.start,sourceEnd,bank);
     const cacheKey=`${encodeRange.start}:${encodeRange.end}`;
     let encoded=encodedCache?.get(cacheKey)||null;
     if(!encoded){
@@ -160,19 +159,36 @@
       encodedCache?.set(cacheKey,encoded);
     }
 
-    // PAD requests can become stale while an encode is pending. Preserve the
-    // previous early-cancellation behavior so a stale 30 s request never spends
-    // time reconstructing a buffer that cannot be played.
+    // PAD requests can become stale while an encode is pending. Preserve early
+    // cancellation so stale preview work never reaches reconstruction/playback.
     if(typeof shouldContinue==="function" && !shouldContinue())return null;
 
-    const buffer=DSP.renderEncodedSegment(audioContext,encoded,{
-      startSec:range.start,
-      endSec:sourceEnd,
-      tune,
-      levelCode,
-      outputMode:outputProfile,
-      maxDuration:audible
-    });
+    const renderKey=`${range.start}:${sourceEnd}:t${tune.code}:l${levelCode}:o${outputProfile}:r${audioContext.sampleRate}:d${audible}`;
+    let cachedRenders=renderedCache?.get(encoded)||null;
+    let buffer=cachedRenders?.get(renderKey)||null;
+    if(buffer && cachedRenders){
+      cachedRenders.delete(renderKey);
+      cachedRenders.set(renderKey,buffer);
+    }else{
+      buffer=DSP.renderEncodedSegment(audioContext,encoded,{
+        startSec:range.start,
+        endSec:sourceEnd,
+        tune,
+        levelCode,
+        outputMode:outputProfile,
+        maxDuration:audible
+      });
+      if(renderedCache){
+        if(!cachedRenders){
+          cachedRenders=new Map();
+          renderedCache.set(encoded,cachedRenders);
+        }
+        cachedRenders.set(renderKey,buffer);
+        while(cachedRenders.size>MAX_PREVIEW_RENDER_CACHE_ENTRIES){
+          cachedRenders.delete(cachedRenders.keys().next().value);
+        }
+      }
+    }
     return {buffer,audible,sourceEnd};
   }
 
@@ -217,7 +233,6 @@
       const index=event.chop-1;
       const range=rangeForPad(index,sourceBuffer,renderCueMarkers,renderMode,renderBank,renderSlices);
       if(!range || range.end<=range.start)continue;
-
       const durationLimit=Math.max(.001,Math.min(event.nextTime-event.startTime,plan.targetDur-event.startTime));
       const renderedChop=await renderSpChop(offline,{
         sourceBuffer,
@@ -250,8 +265,7 @@
 
     const selection=await ensureDrumSelection();
     renderSelectedDrums(offline,selection,plan.bpm,plan.bars,plan.targetDur,master.input);
-    const rendered=finalizeLoopBuffer(await offline.startRendering());
-    return await maybeVinyl(rendered);
+    return finalizeLoopBuffer(await offline.startRendering());
   }
 
   async function previewSpSlice(index){
@@ -275,7 +289,7 @@
     if(generation!==previewGeneration || !enabled || sampleBuffer!==sourceBuffer)return;
     setActivePad(index);
 
-    let renderedChop=await renderSpChop(ctx,{
+    const renderedChop=await renderSpChop(ctx,{
       sourceBuffer,
       range,
       tune:requestTune,
@@ -283,11 +297,13 @@
       outputMode:requestOutputMode,
       durationLimit:MAX_PAD_PREVIEW_SECONDS,
       bank:requestBank,
+      exactEncodeRange:true,
+      renderedCache:previewRenderedCache,
       shouldContinue:()=>generation===previewGeneration && enabled && sampleBuffer===sourceBuffer
     });
     if(!renderedChop)return;
 
-    let buffer=await maybeVinyl(renderedChop.buffer);
+    const buffer=renderedChop.buffer;
     if(generation!==previewGeneration || !enabled || sampleBuffer!==sourceBuffer)return;
 
     const source=ctx.createBufferSource();
@@ -495,9 +511,9 @@
     style.textContent=`
       #chopper .samplerScreenModule {
         grid-template-areas:
-          "fine fine fine fine fine fine"
-          "title pitch tempo volume punch vinyl"
-          "wave wave wave wave wave wave" !important;
+          "fine fine fine fine fine"
+          "title pitch tempo volume punch"
+          "wave wave wave wave wave" !important;
       }
       #chopper .chopperStatusStrip,
       #chopper .samplerSampleInfo {

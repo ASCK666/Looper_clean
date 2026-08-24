@@ -26,6 +26,7 @@ steps=[
   ['tests/css_redundancy.py'],
   ['tests/chopper_ui.py'],
   ['tests/chopper_wave_slices.py'],
+  ['tests/chopper_mobile_slice_editor.py'],
   ['tests/chopper_banks.py'],
   ['tests/chopper_slicer_css.py'],
   ['tests/chopper_drum_cache.py'],
