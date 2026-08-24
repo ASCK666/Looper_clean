@@ -25,7 +25,6 @@
 
   const waveHome=waveWrap.parentNode;
   const waveNext=waveWrap.nextSibling;
-  const HIDDEN_CLASS="mobileWorkspaceHidden";
   const workspaceNames=["chopper","sequence","pads","drums"];
   const accessibilitySyncers=[];
   const homes=new Map();
@@ -47,6 +46,7 @@
   tabBar.className="chopperMobileTabs";
   tabBar.setAttribute("role","tablist");
   tabBar.setAttribute("aria-label","Vues du Chopper mobile");
+  tabBar.style.cssText="grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;width:100%";
   const tabLabels={chopper:"CHOPPER",sequence:"SEQ",pads:"PADS",drums:"DRUMS"};
   const tabAria={
     chopper:"Waveform et paramètres du Chopper",
@@ -63,6 +63,7 @@
     button.textContent=tabLabels[name];
     button.setAttribute("role","tab");
     button.setAttribute("aria-label",tabAria[name]);
+    button.style.cssText="min-width:0;min-height:38px;padding:6px 3px;font-size:8px;letter-spacing:.45px";
     button.addEventListener("click",()=>setWorkspace(name));
     tabBar.appendChild(button);
     tabs.set(name,button);
@@ -230,27 +231,18 @@
       moved=false;
     };
 
-    target.addEventListener("touchstart",event=>{
-      if(event.touches.length===1)startGesture(event.touches[0].clientY,"touch");
-    },{passive:true});
-    target.addEventListener("touchmove",event=>{
-      if(event.touches.length!==1)return;
-      if(moveGesture(event.touches[0].clientY,"touch") && event.cancelable)event.preventDefault();
-    },{passive:false});
+    target.addEventListener("touchstart",event=>{if(event.touches.length===1)startGesture(event.touches[0].clientY,"touch");},{passive:true});
+    target.addEventListener("touchmove",event=>{if(event.touches.length===1 && moveGesture(event.touches[0].clientY,"touch") && event.cancelable)event.preventDefault();},{passive:false});
     target.addEventListener("touchend",()=>finishGesture("touch"));
     target.addEventListener("touchcancel",()=>finishGesture("touch"));
-
     target.addEventListener("pointerdown",event=>{
       if(event.isPrimary===false || event.pointerType==="touch" || (event.pointerType==="mouse" && event.button!==0))return;
       if(!startGesture(event.clientY,"pointer"))return;
       try{target.setPointerCapture(event.pointerId);}catch{}
     });
-    target.addEventListener("pointermove",event=>{
-      if(moveGesture(event.clientY,"pointer") && event.cancelable)event.preventDefault();
-    });
+    target.addEventListener("pointermove",event=>{if(moveGesture(event.clientY,"pointer") && event.cancelable)event.preventDefault();});
     target.addEventListener("pointerup",()=>finishGesture("pointer"));
     target.addEventListener("pointercancel",()=>finishGesture("pointer"));
-
     target.addEventListener("keydown",event=>{
       if(!mobileMedia.matches)return;
       const current=numeric(input.value);
@@ -264,7 +256,6 @@
       if(setInputValue(input,next))input.dispatchEvent(new Event("change",{bubbles:true}));
       sync();
     });
-
     input.addEventListener("input",sync);
     syncAccessibility();
     sync();
@@ -293,12 +284,9 @@
     };
     accessibilitySyncers.push(syncPunchAccessibility);
     syncPunchAccessibility();
-
     const cyclePunch=()=>{
       if(!mobileMedia.matches)return;
-      const min=numeric(punchInput.min,0);
-      const max=numeric(punchInput.max,3);
-      const current=numeric(punchInput.value,min);
+      const min=numeric(punchInput.min,0),max=numeric(punchInput.max,3),current=numeric(punchInput.value,min);
       const next=current>=max?min:current+1;
       punchInput.value=String(next);
       punchInput.dispatchEvent(new Event("input",{bubbles:true}));
@@ -306,14 +294,14 @@
       punchTarget.textContent=punchLabels[next]||String(next);
     };
     punchTarget.addEventListener("click",cyclePunch);
-    punchTarget.addEventListener("keydown",event=>{
-      if(event.key!=="Enter" && event.key!==" ")return;
-      event.preventDefault();
-      cyclePunch();
-    });
+    punchTarget.addEventListener("keydown",event=>{if(event.key==="Enter" || event.key===" "){event.preventDefault();cyclePunch();}});
   }
 
-  function hide(node,value){node?.classList.toggle(HIDDEN_CLASS,Boolean(value));}
+  function hide(node,value){
+    if(!node)return;
+    if(value)node.style.setProperty("display","none","important");
+    else node.style.removeProperty("display");
+  }
 
   function restoreWave(){
     if(waveWrap.parentNode===waveHome)return;
@@ -325,33 +313,22 @@
 
   function setControlItemStyle(element,active){
     if(!element)return;
-    if(active){
-      element.style.setProperty("grid-area","auto","important");
-      element.style.minWidth="0";
-    }else{
-      element.style.removeProperty("grid-area");
-      element.style.removeProperty("min-width");
-    }
+    if(active){element.style.setProperty("grid-area","auto","important");element.style.minWidth="0";}
+    else{element.style.removeProperty("grid-area");element.style.removeProperty("min-width");}
   }
 
   function syncChopperRows(){
     if(!mobileMedia.matches)return;
     if(loadButton){chopperActionRow.insertBefore(loadButton,spCell);loadButton.style.width="100%";loadButton.style.minWidth="0";}
     if(autoButton){chopperActionRow.insertBefore(autoButton,spCell);autoButton.style.width="100%";autoButton.style.minWidth="0";}
-
-    const spButton=document.getElementById("sp1200Toggle");
-    const filterButton=document.getElementById("sp1200FilterToggle");
+    const spButton=document.getElementById("sp1200Toggle"),filterButton=document.getElementById("sp1200FilterToggle");
     if(spButton){spCell.appendChild(spButton);spButton.style.flex="1 1 auto";spButton.style.minWidth="0";}
     if(filterButton){spCell.appendChild(filterButton);filterButton.style.flex="0 0 auto";}
-
     const bankTabs=document.getElementById("chopperBankTabs");
     if(bankTabs){chopperBankRow.appendChild(bankTabs);bankTabs.style.flex="1 1 auto";bankTabs.style.minWidth="0";}
     if(modeButton){chopperBankRow.appendChild(modeButton);modeButton.style.flex="0 0 auto";}
-
     for(const control of [tempoControl,pitchControl,volumeControl,punchControl]){
-      if(!control)continue;
-      chopperParamRow.appendChild(control);
-      setControlItemStyle(control,true);
+      if(control){chopperParamRow.appendChild(control);setControlItemStyle(control,true);}
     }
   }
 
@@ -368,20 +345,15 @@
     restoreWave();
     for(const element of [loadButton,autoButton,pitchControl,tempoControl,volumeControl,punchControl,modeButton,previewButton,stopButton,saveButton])restoreHome(element);
     resetMovedStyles();
-
-    const bankTabs=document.getElementById("chopperBankTabs");
-    const spButton=document.getElementById("sp1200Toggle");
-    const filterButton=document.getElementById("sp1200FilterToggle");
+    const bankTabs=document.getElementById("chopperBankTabs"),spButton=document.getElementById("sp1200Toggle"),filterButton=document.getElementById("sp1200FilterToggle");
     if(bankTabs && waveActions)waveActions.insertBefore(bankTabs,spButton||filterButton||null);
     if(spButton && waveActions)waveActions.appendChild(spButton);
     if(filterButton && waveActions)waveActions.appendChild(filterButton);
-
     screen.style.removeProperty("grid-template-columns");
     screen.style.removeProperty("grid-template-areas");
     waveWrap.style.removeProperty("grid-area");
     waveWrap.style.removeProperty("grid-column");
-    hide(screenTitle,false);
-    hide(advanced,false);
+    hide(screenTitle,false);hide(advanced,false);
   }
 
   function syncSequenceFooter(){
@@ -397,51 +369,53 @@
     }
   }
 
+  function syncTabState(){
+    for(const [name,button] of tabs){
+      const selected=name===workspace;
+      button.setAttribute("aria-selected",selected?"true":"false");
+      button.classList.toggle("active",selected);
+      if(selected){
+        button.style.setProperty("color","#ffe1a8","important");
+        button.style.setProperty("border-color","#9a7038","important");
+        button.style.setProperty("background","linear-gradient(180deg,#4a301b,#21150d)","important");
+      }else{
+        button.style.removeProperty("color");
+        button.style.removeProperty("border-color");
+        button.style.removeProperty("background");
+      }
+    }
+  }
+
   function applyWorkspace(){
     const mobile=mobileMedia.matches;
     tabBar.hidden=!mobile;
     if(mobile)tabBar.style.setProperty("display","grid","important");
     else tabBar.style.removeProperty("display");
-    chopperActionRow.hidden=!mobile;
-    chopperBankRow.hidden=!mobile;
-    chopperParamRow.hidden=!mobile;
-    tempoKnob.hidden=!mobile;
-    bpmReadout.hidden=!mobile;
+    chopperActionRow.hidden=!mobile;chopperBankRow.hidden=!mobile;chopperParamRow.hidden=!mobile;
+    tempoKnob.hidden=!mobile;bpmReadout.hidden=!mobile;
     if(bpmInput)bpmInput.style.display=mobile?"none":"";
     accessibilitySyncers.forEach(sync=>sync());
 
     if(!mobile){
       root.removeAttribute("data-mobile-workspace");
       for(const node of [upper,performance,pads,sequence,drums])hide(node,false);
-      syncSequenceFooter();
-      restoreDesktopLayout();
+      syncSequenceFooter();restoreDesktopLayout();
       return;
     }
 
     root.dataset.mobileWorkspace=workspace;
-    for(const [name,button] of tabs){
-      const selected=name===workspace;
-      button.setAttribute("aria-selected",selected?"true":"false");
-      button.classList.toggle("active",selected);
-    }
-
+    syncTabState();
     screen.style.setProperty("grid-template-columns","minmax(0,1fr)","important");
     screen.style.setProperty("grid-template-areas","none","important");
-    hide(screenTitle,true);
-    hide(advanced,true);
+    hide(screenTitle,true);hide(advanced,true);
 
     if(workspace==="pads"){
-      waveWrap.style.removeProperty("grid-area");
-      waveWrap.style.removeProperty("grid-column");
-      moveWaveToPads();
+      waveWrap.style.removeProperty("grid-area");waveWrap.style.removeProperty("grid-column");moveWaveToPads();
     }else{
-      restoreWave();
-      waveWrap.style.setProperty("grid-area","auto","important");
-      waveWrap.style.setProperty("grid-column","1 / -1","important");
+      restoreWave();waveWrap.style.setProperty("grid-area","auto","important");waveWrap.style.setProperty("grid-column","1 / -1","important");
     }
 
-    syncChopperRows();
-    syncSequenceFooter();
+    syncChopperRows();syncSequenceFooter();
     hide(upper,workspace!=="chopper");
     hide(performance,workspace!=="pads" && workspace!=="sequence");
     hide(drums,workspace!=="drums");
@@ -454,16 +428,11 @@
     });
   }
 
-  function setWorkspace(name){
-    workspace=workspaceNames.includes(name)?name:"chopper";
-    applyWorkspace();
-    return workspace;
-  }
+  function setWorkspace(name){workspace=workspaceNames.includes(name)?name:"chopper";applyWorkspace();return workspace;}
 
   const lateControls=new MutationObserver(()=>{
     if(!document.getElementById("sp1200Toggle") || !document.getElementById("sp1200FilterToggle"))return;
-    if(mobileMedia.matches)syncChopperRows();
-    else restoreDesktopLayout();
+    if(mobileMedia.matches)syncChopperRows();else restoreDesktopLayout();
     lateControls.disconnect();
   });
   lateControls.observe(root,{childList:true,subtree:true});
