@@ -128,11 +128,15 @@
   const bpmInput=document.getElementById("sampleBpm");
   if(bpmInput){
     bpmInput.inputMode="decimal";
-    const clampBpm=()=>{
+    const clampBpm=event=>{
       const value=Number(bpmInput.value);
       if(!Number.isFinite(value))return;
       const min=Number(bpmInput.min)||40;
       const max=Number(bpmInput.max)||min;
+      if(event?.type==="input"){
+        if(value>max)bpmInput.value=String(max);
+        return;
+      }
       const next=Math.max(min,Math.min(max,value));
       if(next!==value)bpmInput.value=String(next);
     };
