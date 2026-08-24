@@ -105,6 +105,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       performance:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,
       drums:getComputedStyle(document.querySelector('.samplerDrumSection')).display,
       wave:getComputedStyle(document.querySelector('.wavewrap')).display,
+      waveParent:document.querySelector('.wavewrap').parentElement.className,
       pitchKnob:getComputedStyle(document.querySelector('.samplePitchKnob .sampleKnobControl')).display,
       tempoKnob:getComputedStyle(document.getElementById('mobileTempoKnob')).display,
       volumeKnob:getComputedStyle(document.querySelector('.sampleVolumeKnob .sampleKnobControl')).display,
@@ -117,7 +118,8 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       selected:[...document.querySelectorAll('.chopperMobileTab')].filter(button=>button.getAttribute('aria-selected')==='true').map(button=>button.dataset.mobileWorkspace)
     })''')
     assert chopper_view['upper']!='none' and chopper_view['performance']=='none' and chopper_view['drums']=='none',chopper_view
-    assert chopper_view['wave']!='none' and chopper_view['pitchKnob']!='none' and chopper_view['tempoKnob']!='none' and chopper_view['volumeKnob']!='none',chopper_view
+    assert chopper_view['wave']!='none' and 'samplerDisplayBody' in chopper_view['waveParent'],chopper_view
+    assert chopper_view['pitchKnob']!='none' and chopper_view['tempoKnob']!='none' and chopper_view['volumeKnob']!='none',chopper_view
     assert chopper_view['punchKnob']=='none' and chopper_view['bpmInput']=='none',chopper_view
     assert chopper_view['pitchRole']=='slider' and chopper_view['bpmRole']=='slider' and chopper_view['volumeRole']=='slider' and chopper_view['punchRole']=='button',chopper_view
     assert chopper_view['selected']==['chopper'],chopper_view
@@ -161,7 +163,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       performance:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,
       drums:getComputedStyle(document.querySelector('.samplerDrumSection')).display
     })''')
-    assert drums_view=={'workspace':'drums','upper':'none','performance':'none','drums':drums_view['drums']},drums_view
+    assert drums_view['workspace']=='drums' and drums_view['upper']=='none' and drums_view['performance']=='none',drums_view
     assert drums_view['drums']!='none',drums_view
 
     page.click('[data-mobile-workspace="pads"]');page.wait_for_timeout(50)
@@ -173,12 +175,12 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       sequence:getComputedStyle(document.querySelector('.samplerSequenceModule')).display,
       drums:getComputedStyle(document.querySelector('.samplerDrumSection')).display,
       wave:getComputedStyle(document.querySelector('.wavewrap')).display,
-      title:getComputedStyle(document.querySelector('.samplerScreenModule > .stableTitle')).display,
+      waveParent:document.querySelector('.wavewrap').parentElement.className,
       waves:document.querySelectorAll('#waveCanvas').length
     })''')
-    assert pads_view['workspace']=='pads' and pads_view['upper']!='none' and pads_view['performance']!='none',pads_view
+    assert pads_view['workspace']=='pads' and pads_view['upper']=='none' and pads_view['performance']!='none',pads_view
     assert pads_view['pads']!='none' and pads_view['sequence']=='none' and pads_view['drums']=='none',pads_view
-    assert pads_view['wave']!='none' and pads_view['title']=='none' and pads_view['waves']==1,pads_view
+    assert pads_view['wave']!='none' and 'samplerPadsModule' in pads_view['waveParent'] and pads_view['waves']==1,pads_view
 
     pad=page.locator('#pads .pad').nth(5);x,y=touch_point(pad);page.touchscreen.tap(x,y)
     page.wait_for_function('chopAuditionPad === 5',timeout=3000)
