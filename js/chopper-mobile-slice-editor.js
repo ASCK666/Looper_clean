@@ -10,6 +10,7 @@
   if(!root || !pads || !deck || !globalThis.ChopperWaveSlices || globalThis.ChopperMobileSliceEditor)return;
 
   const mobileMedia=window.matchMedia("(max-width:760px)");
+  const mobileTabs=deck.querySelector(".chopperMobileTabs");
   const HOLD_MS=450;
   const MOVE_CANCEL_PX=12;
   const FINE_SEC=.005;
@@ -38,7 +39,6 @@
   workspace.innerHTML=`
     <div id="mobileChopContext" class="samplerSequenceHead">
       <div id="mobileChopBankHost"></div>
-      <div id="mobileChopActionHost"></div>
     </div>
     <div class="samplerSequenceHead">
       <button id="mobileChopPrev" class="btn" type="button" aria-label="Chop précédent">◀</button>
@@ -76,7 +76,6 @@
 
   const contextRow=document.getElementById("mobileChopContext");
   const bankHost=document.getElementById("mobileChopBankHost");
-  const actionHost=document.getElementById("mobileChopActionHost");
   const title=document.getElementById("mobileChopEditorTitle");
   const rangeReadout=document.getElementById("mobileChopEditorRange");
   const waveWrap=document.getElementById("mobileChopWaveWrap");
@@ -91,7 +90,6 @@
 
   contextRow.style.cssText="display:flex;align-items:center;gap:6px;min-width:0";
   bankHost.style.cssText="min-width:0;flex:1 1 auto;overflow:hidden";
-  actionHost.style.cssText="display:flex;flex:0 0 auto;gap:6px";
   waveWrap.style.position="relative";
   wave.style.cssText="display:block;width:100%;height:190px;touch-action:none";
   playhead.style.cssText="position:absolute;inset:0;width:100%;height:190px;pointer-events:none";
@@ -221,12 +219,9 @@
 
   function moveGlobalControlsIntoWorkspace(){
     const bankTabs=document.getElementById("chopperBankTabs");
-    const save=document.getElementById("addFlipLibrary");
     moveWorkspaceControl(bankTabs,bankHost);
-    moveWorkspaceControl(save,actionHost);
     bankHost.hidden=!bankTabs || bankTabs.hidden;
-    actionHost.hidden=!save;
-    contextRow.hidden=bankHost.hidden && actionHost.hidden;
+    contextRow.hidden=bankHost.hidden;
   }
 
   function restoreWorkspaceControls(){
@@ -241,11 +236,13 @@
 
   function showDedicatedView(){
     moveGlobalControlsIntoWorkspace();
-    hiddenDeckChildren=[...deck.children].filter(child=>child!==workspace).map(element=>({
-      element,
-      display:element.style.getPropertyValue("display"),
-      priority:element.style.getPropertyPriority("display")
-    }));
+    hiddenDeckChildren=[...deck.children]
+      .filter(child=>child!==workspace && child!==mobileTabs)
+      .map(element=>({
+        element,
+        display:element.style.getPropertyValue("display"),
+        priority:element.style.getPropertyPriority("display")
+      }));
     hiddenDeckChildren.forEach(({element})=>element.style.setProperty("display","none","important"));
     workspace.hidden=false;
     root.dataset.mobileChopView="1";
@@ -291,7 +288,7 @@
     return true;
   }
 
-  function closeEditor(){
+  function closeEditor({scrollToPads=true}={}){
     stopEditorPlayhead();
     if(activePad>=0 || !workspace.hidden)stopChopAudition();
     activePad=-1;
@@ -301,7 +298,9 @@
     $("chopStatus").textContent=ChopperWaveSlices.mode===ChopperWaveSlices.modes.slices
       ? `CHOP MODE • SLICES • ${ChopperWaveSlices.slices.length}/${ChopperWaveSlices.maxSlices}`
       : "CHOP MODE • MARKERS";
-    try{pads.scrollIntoView({block:"center",behavior:"auto"});}catch{}
+    if(scrollToPads){
+      try{pads.scrollIntoView({block:"center",behavior:"auto"});}catch{}
+    }
   }
 
   function adjustBoundary(boundary,delta){
@@ -394,19 +393,24 @@
       selectActiveChop(clamp(activePad,0,count-1));
     });
   });
+  mobileTabs?.addEventListener("click",event=>{
+    if(!event.target.closest?.("[data-mobile-workspace]") || workspace.hidden)return;
+    closeEditor({scrollToPads:false});
+  },true);
   prev.addEventListener("click",()=>navigateChop(-1));
   next.addEventListener("click",()=>navigateChop(1));
   preview.addEventListener("click",()=>{void previewCurrent();});
-  done.addEventListener("click",closeEditor);
+  done.addEventListener("click",()=>closeEditor());
 
-  document.getElementById("autoMarkers")?.addEventListener("click",closeEditor,true);
-  document.getElementById("sampleFile")?.addEventListener("change",closeEditor,true);
-  document.getElementById("sliceEditModeBtn")?.addEventListener("click",closeEditor,true);
-  mobileMedia.addEventListener?.("change",event=>{if(!event.matches)closeEditor();});
+  document.getElementById("autoMarkers")?.addEventListener("click",()=>closeEditor(),true);
+  document.getElementById("sampleFile")?.addEventListener("change",()=>closeEditor(),true);
+  document.getElementById("sliceEditModeBtn")?.addEventListener("click",()=>closeEditor(),true);
+  mobileMedia.addEventListener?.("change",event=>{if(!event.matches)closeEditor({scrollToPads:false});});
 
   globalThis.ChopperMobileSliceEditor=Object.freeze({
     holdMs:HOLD_MS,
     get activePad(){return activePad;},
-    get visible(){return !workspace.hidden;}
+    get visible(){return !workspace.hidden;},
+    close(){closeEditor({scrollToPads:false});}
   });
 })();
