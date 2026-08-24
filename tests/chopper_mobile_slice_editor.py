@@ -76,6 +76,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.click('[data-tab="chopper"]');page.set_input_files('#sampleFile',str(sample))
     page.wait_for_function('sampleBuffer !== null && markers.length === 17 && ChopperBanks.banks.length === 3',timeout=10000)
     page.click('#autoMarkers');page.wait_for_timeout(80)
+
     state=page.evaluate('''() => ({
       mode:ChopperWaveSlices.mode,
       markers:markers.length,
@@ -83,51 +84,101 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,
       mobile:matchMedia('(max-width:760px)').matches,
       touch:navigator.maxTouchPoints>0,
-      scrubActive:ChopperMobileControls.active,
-      banks:ChopperBanks.banks.map(bank=>bank.label),
-      bankTabsVisible:getComputedStyle(document.getElementById('chopperBankTabs')).display!=='none',
-      saveVisible:getComputedStyle(document.getElementById('addFlipLibrary')).display!=='none'
+      controls:ChopperMobileControls.active,
+      workspace:ChopperMobileControls.workspace,
+      tabs:[...document.querySelectorAll('.chopperMobileTab')].map(button=>button.textContent),
+      waves:document.querySelectorAll('#waveCanvas').length,
+      padGrids:document.querySelectorAll('#pads').length,
+      sequences:document.querySelectorAll('#loopGrid').length,
+      drumEditors:document.querySelectorAll('#drumEditor').length,
+      banks:ChopperBanks.banks.map(bank=>bank.label)
     })''')
     assert state=={
-      'mode':'markers','markers':17,'pads':16,'enabled':16,'mobile':True,'touch':True,'scrubActive':True,
-      'banks':['ALL','0–30','25–36'],'bankTabsVisible':True,'saveVisible':True
+      'mode':'markers','markers':17,'pads':16,'enabled':16,'mobile':True,'touch':True,'controls':True,
+      'workspace':'chopper','tabs':['CHOPPER','SEQ','PADS','DRUMS'],
+      'waves':1,'padGrids':1,'sequences':1,'drumEditors':1,
+      'banks':['ALL','0–30','25–36']
     },state
 
-    scrub_layout=page.evaluate('''() => ({
+    chopper_view=page.evaluate('''() => ({
+      upper:getComputedStyle(document.querySelector('.samplerUpperDeck')).display,
+      performance:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,
+      drums:getComputedStyle(document.querySelector('.samplerDrumSection')).display,
+      wave:getComputedStyle(document.querySelector('.wavewrap')).display,
       pitchKnob:getComputedStyle(document.querySelector('.samplePitchKnob .sampleKnobControl')).display,
+      tempoKnob:getComputedStyle(document.getElementById('mobileTempoKnob')).display,
       volumeKnob:getComputedStyle(document.querySelector('.sampleVolumeKnob .sampleKnobControl')).display,
       punchKnob:getComputedStyle(document.querySelector('.punchKnob .sampleKnobControl')).display,
-      pitchReadout:getComputedStyle(document.getElementById('samplePitchReadout')).display,
-      volumeReadout:getComputedStyle(document.getElementById('sampleVolumeReadout')).display,
-      punchReadout:getComputedStyle(document.getElementById('punchDesc')).display,
-      pitchTouch:getComputedStyle(document.getElementById('samplePitchReadout')).touchAction,
-      bpmTouch:getComputedStyle(document.getElementById('sampleBpm')).touchAction,
-      pitchRole:document.getElementById('samplePitchReadout').getAttribute('role'),
-      volumeRole:document.getElementById('sampleVolumeReadout').getAttribute('role'),
-      punchRole:document.getElementById('punchDesc').getAttribute('role')
+      bpmInput:getComputedStyle(document.getElementById('sampleBpm')).display,
+      pitchRole:document.querySelector('.samplePitchKnob .sampleKnobControl').getAttribute('role'),
+      bpmRole:document.getElementById('mobileTempoKnob').getAttribute('role'),
+      volumeRole:document.querySelector('.sampleVolumeKnob .sampleKnobControl').getAttribute('role'),
+      punchRole:document.getElementById('punchDesc').getAttribute('role'),
+      selected:[...document.querySelectorAll('.chopperMobileTab')].filter(button=>button.getAttribute('aria-selected')==='true').map(button=>button.dataset.mobileWorkspace)
     })''')
-    assert scrub_layout['pitchKnob']=='none' and scrub_layout['volumeKnob']=='none' and scrub_layout['punchKnob']=='none',scrub_layout
-    assert scrub_layout['pitchReadout']!='none' and scrub_layout['volumeReadout']!='none' and scrub_layout['punchReadout']!='none',scrub_layout
-    assert scrub_layout['pitchTouch']=='none' and scrub_layout['bpmTouch']=='none',scrub_layout
-    assert scrub_layout['pitchRole']=='slider' and scrub_layout['volumeRole']=='slider' and scrub_layout['punchRole']=='slider',scrub_layout
+    assert chopper_view['upper']!='none' and chopper_view['performance']=='none' and chopper_view['drums']=='none',chopper_view
+    assert chopper_view['wave']!='none' and chopper_view['pitchKnob']!='none' and chopper_view['tempoKnob']!='none' and chopper_view['volumeKnob']!='none',chopper_view
+    assert chopper_view['punchKnob']=='none' and chopper_view['bpmInput']=='none',chopper_view
+    assert chopper_view['pitchRole']=='slider' and chopper_view['bpmRole']=='slider' and chopper_view['volumeRole']=='slider' and chopper_view['punchRole']=='button',chopper_view
+    assert chopper_view['selected']==['chopper'],chopper_view
 
-    touch_drag(page.locator('#samplePitchReadout'),-45)
-    touch_drag(page.locator('#sampleBpm'),-30)
-    touch_drag(page.locator('#sampleVolumeReadout'),20)
+    touch_drag(page.locator('.samplePitchKnob .sampleKnobControl'),-36)
+    touch_drag(page.locator('#mobileTempoKnob'),-30)
+    touch_drag(page.locator('.sampleVolumeKnob .sampleKnobControl'),20)
     punch_target=page.locator('#punchDesc');px,py=touch_point(punch_target);page.touchscreen.tap(px,py);page.wait_for_timeout(60)
-    scrub_values=page.evaluate('''() => ({
+    rotary_values=page.evaluate('''() => ({
       pitch:document.getElementById('samplePitch').value,
       pitchText:document.getElementById('samplePitchReadout').textContent,
       bpm:document.getElementById('sampleBpm').value,
+      bpmText:document.getElementById('sampleBpmReadout').textContent,
       volume:document.getElementById('sampleVolume').value,
       volumeText:document.getElementById('sampleVolumeReadout').textContent,
       punch:document.getElementById('punchMode').value,
       punchText:document.getElementById('punchDesc').textContent
     })''')
-    assert scrub_values['pitch']=='2' and scrub_values['pitchText']=='+2 st',scrub_values
-    assert scrub_values['bpm']=='100',scrub_values
-    assert scrub_values['volume']=='70' and scrub_values['volumeText']=='70%',scrub_values
-    assert scrub_values['punch']=='2' and scrub_values['punchText']=='KNOCK',scrub_values
+    assert rotary_values['pitch']=='2' and rotary_values['pitchText']=='+2 st',rotary_values
+    assert rotary_values['bpm']=='100' and rotary_values['bpmText']=='100 BPM',rotary_values
+    assert rotary_values['volume']=='70' and rotary_values['volumeText']=='70%',rotary_values
+    assert rotary_values['punch']=='2' and rotary_values['punchText']=='KNOCK',rotary_values
+
+    page.click('[data-mobile-workspace="sequence"]');page.wait_for_timeout(50)
+    sequence_view=page.evaluate('''() => ({
+      workspace:ChopperMobileControls.workspace,
+      upper:getComputedStyle(document.querySelector('.samplerUpperDeck')).display,
+      performance:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,
+      pads:getComputedStyle(document.querySelector('.samplerPadsModule')).display,
+      sequence:getComputedStyle(document.querySelector('.samplerSequenceModule')).display,
+      drums:getComputedStyle(document.querySelector('.samplerDrumSection')).display,
+      save:getComputedStyle(document.getElementById('addFlipLibrary')).display
+    })''')
+    assert sequence_view['workspace']=='sequence' and sequence_view['upper']=='none' and sequence_view['performance']!='none',sequence_view
+    assert sequence_view['pads']=='none' and sequence_view['sequence']!='none' and sequence_view['drums']=='none' and sequence_view['save']!='none',sequence_view
+
+    page.click('[data-mobile-workspace="drums"]');page.wait_for_timeout(50)
+    drums_view=page.evaluate('''() => ({
+      workspace:ChopperMobileControls.workspace,
+      upper:getComputedStyle(document.querySelector('.samplerUpperDeck')).display,
+      performance:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,
+      drums:getComputedStyle(document.querySelector('.samplerDrumSection')).display
+    })''')
+    assert drums_view=={'workspace':'drums','upper':'none','performance':'none','drums':drums_view['drums']},drums_view
+    assert drums_view['drums']!='none',drums_view
+
+    page.click('[data-mobile-workspace="pads"]');page.wait_for_timeout(50)
+    pads_view=page.evaluate('''() => ({
+      workspace:ChopperMobileControls.workspace,
+      upper:getComputedStyle(document.querySelector('.samplerUpperDeck')).display,
+      performance:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,
+      pads:getComputedStyle(document.querySelector('.samplerPadsModule')).display,
+      sequence:getComputedStyle(document.querySelector('.samplerSequenceModule')).display,
+      drums:getComputedStyle(document.querySelector('.samplerDrumSection')).display,
+      wave:getComputedStyle(document.querySelector('.wavewrap')).display,
+      title:getComputedStyle(document.querySelector('.samplerScreenModule > .stableTitle')).display,
+      waves:document.querySelectorAll('#waveCanvas').length
+    })''')
+    assert pads_view['workspace']=='pads' and pads_view['upper']!='none' and pads_view['performance']!='none',pads_view
+    assert pads_view['pads']!='none' and pads_view['sequence']=='none' and pads_view['drums']=='none',pads_view
+    assert pads_view['wave']!='none' and pads_view['title']=='none' and pads_view['waves']==1,pads_view
 
     pad=page.locator('#pads .pad').nth(5);x,y=touch_point(pad);page.touchscreen.tap(x,y)
     page.wait_for_function('chopAuditionPad === 5',timeout=3000)
@@ -145,6 +196,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
         upper:getComputedStyle(document.querySelector('.samplerUpperDeck')).display,
         performance:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,
         drums:getComputedStyle(document.querySelector('.samplerDrumSection')).display,
+        mobileTabs:getComputedStyle(document.querySelector('.chopperMobileTabs')).display,
         w:w.width,h:w.height,playheadOverlay:p.width===w.width && p.height===w.height,above:w.bottom<=r.top+1,
         flag:document.getElementById('chopper').dataset.mobileChopView,audition:chopAuditionPad,
         saveParent:save.parentElement.id,saveVisible:getComputedStyle(save).display!=='none',
@@ -154,7 +206,8 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     }''')
     touch_end();page.wait_for_timeout(40)
     assert held['title']=='CHOP 06 / 16 • MARKERS' and held['workspace']!='none' and held['flag']=='1',held
-    assert held['upper']=='none' and held['performance']=='none' and held['drums']=='none' and held['w']>340 and held['h']>=180 and held['playheadOverlay'] and held['above'],held
+    assert held['upper']=='none' and held['performance']=='none' and held['drums']=='none' and held['mobileTabs']=='none',held
+    assert held['w']>340 and held['h']>=180 and held['playheadOverlay'] and held['above'],held
     assert held['audition']==-1 and page.evaluate('chopAuditionPad')==-1
     assert held['saveParent']=='mobileChopActionHost' and held['saveVisible'],held
     assert held['bankParent']=='mobileChopBankHost' and held['bankVisible'] and held['bankButtons']==['ALL','0–30','25–36'],held
@@ -194,8 +247,10 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     done=page.evaluate('''() => ({
       visible:ChopperMobileSliceEditor.visible,
       workspace:getComputedStyle(document.getElementById('mobileChopWorkspace')).display,
+      activeWorkspace:ChopperMobileControls.workspace,
       performance:getComputedStyle(document.querySelector('.samplerPerformanceDeck')).display,
       pads:getComputedStyle(document.getElementById('pads')).display,
+      tabs:getComputedStyle(document.querySelector('.chopperMobileTabs')).display,
       enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,
       flag:document.getElementById('chopper').dataset.mobileChopView||'',
       status:document.getElementById('chopStatus').textContent,
@@ -203,8 +258,9 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       bankParent:document.getElementById('chopperBankTabs').parentElement.className,
       bankVisible:getComputedStyle(document.getElementById('chopperBankTabs')).display!=='none'
     })''')
-    assert not done['visible'] and done['workspace']=='none' and done['performance']!='none' and done['pads']!='none' and done['enabled']==16 and done['flag']=='' and done['status']=='CHOP MODE • MARKERS',done
-    assert done['saveParent']!='mobileChopActionHost' and done['bankParent']!='mobileChopBankHost' and done['bankVisible'],done
+    assert not done['visible'] and done['workspace']=='none' and done['activeWorkspace']=='pads',done
+    assert done['performance']!='none' and done['pads']!='none' and done['tabs']!='none' and done['enabled']==16 and done['flag']=='' and done['status']=='CHOP MODE • MARKERS',done
+    assert done['saveParent']!='mobileChopActionHost' and done['bankParent']!='mobileChopBankHost',done
 
     pad=page.locator('#pads .pad').nth(5);touch_start(pad);page.wait_for_timeout(520)
     page.wait_for_function('ChopperMobileSliceEditor.visible && ChopperMobileSliceEditor.activePad === 5',timeout=3000);touch_end();page.wait_for_timeout(40);page.click('#mobileChopDone')
@@ -219,4 +275,4 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.click('#mobileChopDone');assert not errors,errors
     page.close();context.close();browser.close()
 
-print('OK: Chopper mobile — scrub PITCH/BPM/VOL/PUNCH plus touch CHOP editor, SAVE/banks, PREV/NEXT and SLICES')
+print('OK: Chopper mobile — four shared workspaces, PITCH/BPM/VOL rotary controls, PUNCH button and touch CHOP editor')
