@@ -1,8 +1,7 @@
 "use strict";
 
-// Mobile Chopper navigation and parameter interaction. The four workspaces only
-// reveal or move existing Chopper surfaces; waveform, transports and controls
-// keep their original DOM nodes/handlers instead of being duplicated per view.
+// Mobile Chopper navigation and parameter interaction. Workspaces move the
+// maintained controls instead of cloning waveform, transport or parameter state.
 (() => {
   const root=document.getElementById("chopper");
   if(!root || globalThis.ChopperMobileControls)return;
@@ -20,6 +19,8 @@
   const waveActions=root.querySelector(".waveHeaderActions");
   const padTransport=root.querySelector(".padTransport");
   const sequenceActions=root.querySelector(".sequenceActions");
+  const screenTitle=screen?.querySelector(":scope > .stableTitle");
+  const advanced=screen?.querySelector(":scope > .advancedBox");
   if(!deck || !upper || !screen || !performance || !pads || !padGrid || !sequence || !drums || !waveWrap || !waveActions || !padTransport || !sequenceActions)return;
 
   const waveHome=waveWrap.parentNode;
@@ -68,38 +69,50 @@
   }
   deck.prepend(tabBar);
 
-  // CHOPPER mobile owns three compact rows, but every control in them is the
-  // maintained control already used by desktop.
+  // Three mobile CHOPPER rows. Geometry stays on these owned nodes so the
+  // responsive feature does not add another stylesheet/selector layer.
   const chopperActionRow=document.createElement("div");
   chopperActionRow.id="mobileChopperActionRow";
   chopperActionRow.className="mobileChopperRow mobileChopperActionRow";
+  chopperActionRow.style.cssText="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;grid-column:1/-1;min-width:0;width:100%";
+
   const spCell=document.createElement("div");
   spCell.id="mobileChopperSpCell";
   spCell.className="mobileChopperSpCell";
+  spCell.style.cssText="display:flex;gap:3px;min-width:0";
   chopperActionRow.appendChild(spCell);
 
   const chopperBankRow=document.createElement("div");
   chopperBankRow.id="mobileChopperBankRow";
   chopperBankRow.className="mobileChopperRow mobileChopperBankRow";
+  chopperBankRow.style.cssText="display:flex;align-items:center;gap:5px;grid-column:1/-1;min-width:0;width:100%";
 
   const chopperParamRow=document.createElement("div");
   chopperParamRow.id="mobileChopperParamRow";
   chopperParamRow.className="mobileChopperRow mobileChopperParamRow";
+  chopperParamRow.style.cssText="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:start;gap:5px;grid-column:1/-1;min-width:0;width:100%";
 
   screen.prepend(chopperParamRow);
   screen.prepend(chopperBankRow);
   screen.prepend(chopperActionRow);
 
-  // SEQ reuses the exact PLAY / STOP controls from PADS. SAVE is the existing
-  // SAVE BEAT button and belongs only to this sequence footer on mobile.
+  // SEQ owns no duplicate transport. These hosts temporarily receive the exact
+  // PLAY / STOP / SAVE nodes already maintained by the normal Chopper layout.
   const sequenceFooter=document.createElement("div");
   sequenceFooter.id="mobileSequenceFooter";
   sequenceFooter.className="mobileSequenceFooter";
+  sequenceFooter.hidden=true;
+  sequenceFooter.style.cssText="display:flex;flex-direction:column;align-items:stretch;gap:7px;margin-top:10px";
+
   const sequenceTransport=document.createElement("div");
   sequenceTransport.id="mobileSequenceTransport";
   sequenceTransport.className="padTransport mobileSequenceTransport";
   sequenceTransport.setAttribute("role","group");
   sequenceTransport.setAttribute("aria-label","Transport du séquenceur");
+  sequenceTransport.style.setProperty("grid-template-columns","repeat(2,76px)","important");
+  sequenceTransport.style.setProperty("width","100%","important");
+  sequenceTransport.style.setProperty("margin","0","important");
+  sequenceTransport.style.setProperty("justify-content","center","important");
   sequenceFooter.appendChild(sequenceTransport);
   sequence.appendChild(sequenceFooter);
 
@@ -126,104 +139,6 @@
   bpmReadout.id="sampleBpmReadout";
   bpmReadout.className="sampleKnobReadout mobileTempoReadout";
   if(tempoBody && bpmInput)tempoBody.append(tempoKnob,bpmReadout);
-
-  const style=document.createElement("style");
-  style.dataset.chopperMobileControls="1";
-  style.textContent=`
-    @media (max-width:760px) {
-      #chopper[data-mobile-chop-view="1"] .chopperMobileTabs:not([hidden]) {
-        display:grid !important;
-      }
-      #chopper[data-mobile-workspace="chopper"] .samplerScreenModule {
-        grid-template-columns:minmax(0,1fr) !important;
-        grid-template-areas:none !important;
-      }
-      #chopper[data-mobile-workspace="chopper"] .samplerScreenModule > .stableTitle,
-      #chopper[data-mobile-workspace="chopper"] .samplerScreenModule > .advancedBox {
-        display:none !important;
-      }
-      #chopper .mobileChopperRow {
-        grid-column:1 / -1;
-        min-width:0;
-        width:100%;
-      }
-      #chopper .mobileChopperActionRow {
-        display:grid;
-        grid-template-columns:repeat(3,minmax(0,1fr));
-        gap:5px;
-      }
-      #chopper .mobileChopperActionRow > .btn,
-      #chopper .mobileChopperSpCell > .btn {
-        width:100%;
-        min-width:0 !important;
-        min-height:38px !important;
-        margin:0 !important;
-        padding:6px 4px !important;
-        font-size:8px !important;
-      }
-      #chopper .mobileChopperSpCell {
-        display:flex;
-        min-width:0;
-        gap:3px;
-      }
-      #chopper .mobileChopperSpCell > .sp1200Toggle {
-        flex:1 1 auto;
-      }
-      #chopper .mobileChopperSpCell > .sp1200FilterToggle:not([hidden]) {
-        flex:0 0 auto;
-        width:auto !important;
-      }
-      #chopper .mobileChopperBankRow {
-        display:flex;
-        align-items:center;
-        gap:5px;
-      }
-      #chopper .mobileChopperBankRow > .chopperBankTabs {
-        flex:1 1 auto;
-        min-width:0;
-      }
-      #chopper .mobileChopperBankRow > .chopModeToggle {
-        flex:0 0 auto;
-      }
-      #chopper .mobileChopperParamRow {
-        display:grid;
-        grid-template-columns:repeat(4,minmax(0,1fr));
-        align-items:start;
-        gap:5px;
-      }
-      #chopper .mobileChopperParamRow > * {
-        grid-area:auto !important;
-        min-width:0;
-      }
-      #chopper[data-mobile-workspace="chopper"] .samplerDisplayBody .wavewrap.largeWave {
-        grid-area:auto !important;
-        grid-column:1 / -1 !important;
-      }
-      #chopper .mobileSequenceFooter {
-        display:flex;
-        flex-direction:column;
-        align-items:stretch;
-        gap:7px;
-        margin-top:10px;
-      }
-      #chopper .mobileSequenceTransport {
-        grid-template-columns:repeat(2,76px) !important;
-        margin:0 auto !important;
-      }
-      #chopper .mobileSequenceFooter > #addFlipLibrary {
-        width:100%;
-        min-height:38px !important;
-        margin:0 !important;
-      }
-    }
-    @media (max-width:430px) {
-      #chopper .mobileSequenceTransport {
-        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-        width:100% !important;
-      }
-    }
-  `;
-  document.head.appendChild(style);
 
   function numeric(value,fallback=0){
     const number=Number(value);
@@ -362,7 +277,7 @@
   bindRotary({
     inputId:"samplePitch",
     target:root.querySelector(".samplePitchKnob .sampleKnobControl"),
-    owner:root.querySelector(".samplePitchKnob"),
+    owner:pitchControl,
     readout:document.getElementById("samplePitchReadout"),
     pixelsPerStep:18,
     step:1,
@@ -380,7 +295,7 @@
   bindRotary({
     inputId:"sampleVolume",
     target:root.querySelector(".sampleVolumeKnob .sampleKnobControl"),
-    owner:root.querySelector(".sampleVolumeKnob"),
+    owner:volumeControl,
     readout:document.getElementById("sampleVolumeReadout"),
     pixelsPerStep:2,
     step:1,
@@ -437,32 +352,86 @@
   }
 
   function moveWaveToPads(){
-    if(waveWrap.parentNode===pads)return;
-    pads.insertBefore(waveWrap,padGrid);
+    if(waveWrap.parentNode!==pads)pads.insertBefore(waveWrap,padGrid);
+  }
+
+  function setControlItemStyle(element,active){
+    if(!element)return;
+    if(active){
+      element.style.setProperty("grid-area","auto","important");
+      element.style.minWidth="0";
+    }else{
+      element.style.removeProperty("grid-area");
+      element.style.removeProperty("min-width");
+    }
   }
 
   function syncChopperRows(){
     if(!mobileMedia.matches)return;
-    if(loadButton)chopperActionRow.insertBefore(loadButton,spCell);
-    if(autoButton)chopperActionRow.insertBefore(autoButton,spCell);
+    if(loadButton){
+      chopperActionRow.insertBefore(loadButton,spCell);
+      loadButton.style.width="100%";
+      loadButton.style.minWidth="0";
+    }
+    if(autoButton){
+      chopperActionRow.insertBefore(autoButton,spCell);
+      autoButton.style.width="100%";
+      autoButton.style.minWidth="0";
+    }
 
     const spButton=document.getElementById("sp1200Toggle");
     const filterButton=document.getElementById("sp1200FilterToggle");
-    if(spButton)spCell.appendChild(spButton);
-    if(filterButton)spCell.appendChild(filterButton);
+    if(spButton){
+      spCell.appendChild(spButton);
+      spButton.style.flex="1 1 auto";
+      spButton.style.minWidth="0";
+    }
+    if(filterButton){
+      spCell.appendChild(filterButton);
+      filterButton.style.flex="0 0 auto";
+    }
 
     const bankTabs=document.getElementById("chopperBankTabs");
-    if(bankTabs)chopperBankRow.appendChild(bankTabs);
-    if(modeButton)chopperBankRow.appendChild(modeButton);
+    if(bankTabs){
+      chopperBankRow.appendChild(bankTabs);
+      bankTabs.style.flex="1 1 auto";
+      bankTabs.style.minWidth="0";
+    }
+    if(modeButton){
+      chopperBankRow.appendChild(modeButton);
+      modeButton.style.flex="0 0 auto";
+    }
 
     for(const control of [tempoControl,pitchControl,volumeControl,punchControl]){
-      if(control)chopperParamRow.appendChild(control);
+      if(!control)continue;
+      chopperParamRow.appendChild(control);
+      setControlItemStyle(control,true);
+    }
+  }
+
+  function resetMovedStyles(){
+    for(const element of [loadButton,autoButton]){
+      element?.style.removeProperty("width");
+      element?.style.removeProperty("min-width");
+    }
+    for(const control of [tempoControl,pitchControl,volumeControl,punchControl])setControlItemStyle(control,false);
+    modeButton?.style.removeProperty("flex");
+
+    const bankTabs=document.getElementById("chopperBankTabs");
+    if(bankTabs){
+      bankTabs.style.removeProperty("flex");
+      bankTabs.style.removeProperty("min-width");
+    }
+    for(const button of [document.getElementById("sp1200Toggle"),document.getElementById("sp1200FilterToggle")]){
+      button?.style.removeProperty("flex");
+      button?.style.removeProperty("min-width");
     }
   }
 
   function restoreDesktopLayout(){
     restoreWave();
     for(const element of [loadButton,autoButton,pitchControl,tempoControl,volumeControl,punchControl,modeButton,previewButton,stopButton,saveButton])restoreHome(element);
+    resetMovedStyles();
 
     const bankTabs=document.getElementById("chopperBankTabs");
     const spButton=document.getElementById("sp1200Toggle");
@@ -470,20 +439,32 @@
     if(bankTabs && waveActions)waveActions.insertBefore(bankTabs,spButton||filterButton||null);
     if(spButton && waveActions)waveActions.appendChild(spButton);
     if(filterButton && waveActions)waveActions.appendChild(filterButton);
+
+    screen.style.removeProperty("grid-template-columns");
+    screen.style.removeProperty("grid-template-areas");
+    waveWrap.style.removeProperty("grid-area");
+    waveWrap.style.removeProperty("grid-column");
+    hide(screenTitle,false);
+    hide(advanced,false);
   }
 
   function syncSequenceFooter(){
-    const mobile=mobileMedia.matches;
-    const active=mobile && workspace==="sequence";
+    const active=mobileMedia.matches && workspace==="sequence";
     sequenceFooter.hidden=!active;
     if(active){
       if(previewButton)sequenceTransport.appendChild(previewButton);
       if(stopButton)sequenceTransport.appendChild(stopButton);
-      if(saveButton)sequenceFooter.appendChild(saveButton);
+      if(saveButton){
+        sequenceFooter.appendChild(saveButton);
+        saveButton.style.width="100%";
+        saveButton.style.margin="0";
+      }
     }else{
       restoreHome(previewButton);
       restoreHome(stopButton);
       restoreHome(saveButton);
+      saveButton?.style.removeProperty("width");
+      saveButton?.style.removeProperty("margin");
     }
   }
 
@@ -501,8 +482,8 @@
     if(!mobile){
       root.removeAttribute("data-mobile-workspace");
       for(const node of [upper,performance,pads,sequence,drums])hide(node,false);
-      restoreDesktopLayout();
       syncSequenceFooter();
+      restoreDesktopLayout();
       return;
     }
 
@@ -513,8 +494,21 @@
       button.classList.toggle("active",selected);
     }
 
-    if(workspace==="pads")moveWaveToPads();
-    else restoreWave();
+    screen.style.setProperty("grid-template-columns","minmax(0,1fr)","important");
+    screen.style.setProperty("grid-template-areas","none","important");
+    hide(screenTitle,true);
+    hide(advanced,true);
+
+    if(workspace==="pads"){
+      waveWrap.style.removeProperty("grid-area");
+      waveWrap.style.removeProperty("grid-column");
+      moveWaveToPads();
+    }else{
+      restoreWave();
+      waveWrap.style.setProperty("grid-area","auto","important");
+      waveWrap.style.setProperty("grid-column","1 / -1","important");
+    }
+
     syncChopperRows();
     syncSequenceFooter();
 
@@ -537,7 +531,7 @@
   }
 
   // SP is dynamically loaded after this controller. Observe only until its two
-  // controls exist, then place them once in the CHOPPER row and disconnect.
+  // controls exist, then move those maintained nodes into the first CHOPPER row.
   const lateControls=new MutationObserver(()=>{
     if(!document.getElementById("sp1200Toggle") || !document.getElementById("sp1200FilterToggle"))return;
     if(mobileMedia.matches)syncChopperRows();
