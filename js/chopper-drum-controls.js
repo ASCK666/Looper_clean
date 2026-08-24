@@ -11,15 +11,14 @@
   const sequenceHead=root?.querySelector(".samplerSequenceHead");
   if(!root || !screen || !controls || !waveTitle || !padsTitle || !sequenceHead)return;
 
-  // Waveform actions: loading and automatic chopping belong where the sample is edited.
+  // The waveform keeps only the direct sample-load action. Automatic marker
+  // placement remains an internal load/settings behavior, not a standalone UI command.
   const waveActions=document.createElement("span");
   waveActions.className="waveHeaderActions";
   waveActions.setAttribute("role","group");
   waveActions.setAttribute("aria-label","Sample waveform actions");
-  for(const id of ["loadSampleBtn","autoMarkers"]){
-    const button=document.getElementById(id);
-    if(button)waveActions.appendChild(button);
-  }
+  const loadButton=document.getElementById("loadSampleBtn");
+  if(loadButton)waveActions.appendChild(loadButton);
   waveTitle.querySelector("span:not(.titleMeta)")?.remove();
   waveTitle.insertBefore(waveActions,waveTitle.firstChild);
 
