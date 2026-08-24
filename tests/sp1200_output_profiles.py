@@ -61,9 +61,6 @@ with contextlib.ExitStack() as stack:
           document.getElementById('sampleBpm').value='120';
           document.getElementById('punchMode').value='0';
           refreshPunchUI();
-          const vinyl=document.getElementById('vinylAmount');
-          vinyl.value='0';
-          vinyl.dispatchEvent(new Event('input',{bubbles:true}));
 
           await ChopperSP1200.setEnabled(true);
           await ChopperSP1200.setOutputMode('raw');
