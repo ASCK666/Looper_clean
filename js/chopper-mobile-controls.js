@@ -129,6 +129,10 @@
   if(bpmInput){
     bpmInput.max="200";
     bpmInput.inputMode="decimal";
+    const clampBpmMax=()=>{
+      const value=Number(bpmInput.value);
+      if(Number.isFinite(value) && value>200)bpmInput.value="200";
+    };
     const clampBpm=()=>{
       const value=Number(bpmInput.value);
       if(!Number.isFinite(value))return;
@@ -136,6 +140,7 @@
       const next=Math.max(min,Math.min(200,value));
       if(next!==value)bpmInput.value=String(next);
     };
+    bpmInput.addEventListener("input",clampBpmMax,{capture:true});
     bpmInput.addEventListener("change",clampBpm,{capture:true});
     bpmInput.addEventListener("blur",clampBpm,{capture:true});
     clampBpm();
