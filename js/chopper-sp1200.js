@@ -98,13 +98,6 @@
     return markerRange(index,sourceBuffer,cueMarkers,bank);
   }
 
-  async function maybeVinyl(buffer){
-    if(globalThis.ChopperVinyl?.processRenderedBuffer){
-      return await globalThis.ChopperVinyl.processRenderedBuffer(buffer);
-    }
-    return buffer;
-  }
-
   // SP reconstruction must use one output grid per live session. PAD audition
   // already renders against ctx; offline PLAY/SAVE must use that same rate so
   // zero-order hold does not change character between audition and export.
@@ -125,8 +118,8 @@
 
   // One operation owns the complete SP chop transition shared by PAD and
   // PLAY/SAVE: source range -> audible duration -> encoded PCM page -> playback
-  // reconstruction. Product routing (edge fade, PUNCH/master, VINYL/finalize)
-  // stays outside this boundary.
+  // reconstruction. Product routing (edge fade, PUNCH/master, finalize) stays
+  // outside this boundary.
   async function renderSpChop(audioContext,{
     sourceBuffer,
     range,
@@ -270,8 +263,7 @@
 
     const selection=await ensureDrumSelection();
     renderSelectedDrums(offline,selection,plan.bpm,plan.bars,plan.targetDur,master.input);
-    const rendered=finalizeLoopBuffer(await offline.startRendering());
-    return await maybeVinyl(rendered);
+    return finalizeLoopBuffer(await offline.startRendering());
   }
 
   async function previewSpSlice(index){
@@ -308,7 +300,7 @@
     });
     if(!renderedChop)return;
 
-    let buffer=await maybeVinyl(renderedChop.buffer);
+    const buffer=renderedChop.buffer;
     if(generation!==previewGeneration || !enabled || sampleBuffer!==sourceBuffer)return;
 
     const source=ctx.createBufferSource();
@@ -516,9 +508,9 @@
     style.textContent=`
       #chopper .samplerScreenModule {
         grid-template-areas:
-          "fine fine fine fine fine fine"
-          "title pitch tempo volume punch vinyl"
-          "wave wave wave wave wave wave" !important;
+          "fine fine fine fine fine"
+          "title pitch tempo volume punch"
+          "wave wave wave wave wave" !important;
       }
       #chopper .chopperStatusStrip,
       #chopper .samplerSampleInfo {
