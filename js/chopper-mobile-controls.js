@@ -22,6 +22,7 @@
   const waveNext=waveWrap.nextSibling;
   const HIDDEN_CLASS="mobileWorkspaceHidden";
   const workspaceNames=["chopper","sequence","pads","drums"];
+  const accessibilitySyncers=[];
   let workspace="chopper";
 
   const tabBar=document.createElement("div");
@@ -86,8 +87,10 @@
     const value=clampInputValue(input,numeric(input.value,min));
     const pct=max===min?0:(value-min)/(max-min)*100;
     owner?.style.setProperty("--knob-pct",String(pct));
-    target.setAttribute("aria-valuenow",String(value));
-    target.setAttribute("aria-valuetext",format(value));
+    if(mobileMedia.matches){
+      target.setAttribute("aria-valuenow",String(value));
+      target.setAttribute("aria-valuetext",format(value));
+    }
     if(readout)readout.textContent=format(value);
   }
 
@@ -95,12 +98,28 @@
     const input=document.getElementById(inputId);
     if(!input || !target)return;
 
-    target.tabIndex=0;
-    target.setAttribute("role","slider");
-    target.setAttribute("aria-label",input.getAttribute("aria-label") || inputId);
-    target.setAttribute("aria-valuemin",input.min);
-    target.setAttribute("aria-valuemax",input.max);
-    target.title="Glisser verticalement pour régler";
+    const syncAccessibility=()=>{
+      if(mobileMedia.matches){
+        target.tabIndex=0;
+        target.setAttribute("role","slider");
+        target.setAttribute("aria-label",input.getAttribute("aria-label") || inputId);
+        target.setAttribute("aria-valuemin",input.min);
+        target.setAttribute("aria-valuemax",input.max);
+        target.title="Glisser verticalement pour régler";
+        input.tabIndex=-1;
+      }else{
+        target.removeAttribute("tabindex");
+        target.removeAttribute("role");
+        target.removeAttribute("aria-label");
+        target.removeAttribute("aria-valuemin");
+        target.removeAttribute("aria-valuemax");
+        target.removeAttribute("aria-valuenow");
+        target.removeAttribute("aria-valuetext");
+        target.removeAttribute("title");
+        input.removeAttribute("tabindex");
+      }
+    };
+    accessibilitySyncers.push(syncAccessibility);
 
     let activeSource=null;
     let startY=0;
@@ -173,6 +192,7 @@
     });
 
     input.addEventListener("input",sync);
+    syncAccessibility();
     sync();
   }
 
@@ -208,9 +228,22 @@
   const punchTarget=document.getElementById("punchDesc");
   const punchLabels=["OFF","WARM","KNOCK","HARD"];
   if(punchInput && punchTarget){
-    punchTarget.tabIndex=0;
-    punchTarget.setAttribute("role","button");
-    punchTarget.setAttribute("aria-label","Changer le mode PUNCH");
+    const syncPunchAccessibility=()=>{
+      if(mobileMedia.matches){
+        punchTarget.tabIndex=0;
+        punchTarget.setAttribute("role","button");
+        punchTarget.setAttribute("aria-label","Changer le mode PUNCH");
+        punchInput.tabIndex=-1;
+      }else{
+        punchTarget.removeAttribute("tabindex");
+        punchTarget.removeAttribute("role");
+        punchTarget.removeAttribute("aria-label");
+        punchInput.removeAttribute("tabindex");
+      }
+    };
+    accessibilitySyncers.push(syncPunchAccessibility);
+    syncPunchAccessibility();
+
     const cyclePunch=()=>{
       if(!mobileMedia.matches)return;
       const min=numeric(punchInput.min,0);
@@ -251,6 +284,7 @@
     tempoKnob.hidden=!mobile;
     bpmReadout.hidden=!mobile;
     if(bpmInput)bpmInput.style.display=mobile?"none":"";
+    accessibilitySyncers.forEach(sync=>sync());
 
     if(!mobile){
       restoreWave();
