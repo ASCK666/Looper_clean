@@ -89,7 +89,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.wait_for_function('window.ChopperWaveSlices && window.ChopperMobileControls && window.ChopperMobileSliceEditor && window.ChopperBanks && window.ChopperSP1200',timeout=10000)
     page.click('[data-tab="chopper"]');page.set_input_files('#sampleFile',str(sample))
     page.wait_for_function('sampleBuffer !== null && markers.length === 17 && ChopperBanks.banks.length === 3',timeout=10000)
-    page.click('#autoMarkers');page.wait_for_timeout(100)
+    assert page.locator('#autoMarkers').count()==0
 
     state=page.evaluate('''() => ({
       mode:ChopperWaveSlices.mode,
@@ -138,7 +138,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       selected:[...document.querySelectorAll('.chopperMobileTab')].filter(button=>button.getAttribute('aria-selected')==='true').map(button=>button.dataset.mobileWorkspace)
     })''')
     assert chopper_view['upper']!='none' and chopper_view['performance']=='none' and chopper_view['drums']=='none',chopper_view
-    assert chopper_view['actionChildren']==['loadSampleBtn','autoMarkers','mobileChopperSpCell'],chopper_view
+    assert chopper_view['actionChildren']==['loadSampleBtn','mobileChopperSpCell'],chopper_view
     assert chopper_view['spChildren']==['sp1200Toggle','sp1200FilterToggle'],chopper_view
     assert chopper_view['bankParent']=='mobileChopperBankRow' and chopper_view['bankButtons']==['ALL','0–30','25–36'],chopper_view
     assert chopper_view['paramOrder']==['sampleBpm','samplePitch','sampleVolume','punchMode'],chopper_view
@@ -323,4 +323,4 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.click('#mobileChopDone');assert not errors,errors
     page.close();context.close();browser.close()
 
-print('OK: Chopper mobile — ordered CHOPPER rows, shared SEQ transport/SAVE, rotary controls and navigable touch CHOP editor')
+print('OK: Chopper mobile — AUTO CHOP retired, ordered CHOPPER rows, shared SEQ transport/SAVE, rotary controls and navigable touch CHOP editor')
