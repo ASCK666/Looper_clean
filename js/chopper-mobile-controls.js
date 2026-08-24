@@ -1,8 +1,8 @@
 "use strict";
 
 // Mobile Chopper navigation and parameter interaction. The four workspaces only
-// reveal existing Chopper surfaces; they never duplicate waveform, pads, grid or
-// drum state. PITCH/BPM/VOL rotary gestures drive the existing form inputs.
+// reveal or move existing Chopper surfaces; they never duplicate waveform, pads,
+// grid or drum state. PITCH/BPM/VOL gestures drive the existing form inputs.
 (() => {
   const root=document.getElementById("chopper");
   if(!root || globalThis.ChopperMobileControls)return;
@@ -10,13 +10,16 @@
   const mobileMedia=window.matchMedia("(max-width:760px)");
   const deck=root.querySelector(".samplerDeck");
   const upper=root.querySelector(".samplerUpperDeck");
-  const screen=root.querySelector(".samplerScreenModule");
   const performance=root.querySelector(".samplerPerformanceDeck");
   const pads=root.querySelector(".samplerPadsModule");
+  const padGrid=document.getElementById("pads");
   const sequence=root.querySelector(".samplerSequenceModule");
   const drums=root.querySelector(".samplerDrumSection");
-  if(!deck || !upper || !screen || !performance || !pads || !sequence || !drums)return;
+  const waveWrap=root.querySelector(".wavewrap.largeWave");
+  if(!deck || !upper || !performance || !pads || !padGrid || !sequence || !drums || !waveWrap)return;
 
+  const waveHome=waveWrap.parentNode;
+  const waveNext=waveWrap.nextSibling;
   const HIDDEN_CLASS="mobileWorkspaceHidden";
   const workspaceNames=["chopper","sequence","pads","drums"];
   let workspace="chopper";
@@ -56,20 +59,7 @@
   const bpmReadout=document.createElement("span");
   bpmReadout.id="sampleBpmReadout";
   bpmReadout.className="sampleKnobReadout mobileTempoReadout";
-  if(tempoBody && bpmInput){
-    tempoBody.append(tempoKnob,bpmReadout);
-  }
-
-  const chopperControls=[
-    screen.querySelector(":scope > .stableTitle"),
-    screen.querySelector(":scope > .advancedBox"),
-    root.querySelector(".samplePitchKnob"),
-    root.querySelector(".sampleTempoControl"),
-    root.querySelector(".sampleVolumeKnob"),
-    root.querySelector(".punchKnob"),
-    screen.querySelector(":scope > .chopperStatusStrip"),
-    screen.querySelector(":scope > .samplerSampleInfo")
-  ].filter(Boolean);
+  if(tempoBody && bpmInput)tempoBody.append(tempoKnob,bpmReadout);
 
   function numeric(value,fallback=0){
     const number=Number(value);
@@ -244,6 +234,17 @@
     node?.classList.toggle(HIDDEN_CLASS,Boolean(value));
   }
 
+  function restoreWave(){
+    if(waveWrap.parentNode===waveHome)return;
+    if(waveNext?.parentNode===waveHome)waveHome.insertBefore(waveWrap,waveNext);
+    else waveHome.appendChild(waveWrap);
+  }
+
+  function moveWaveToPads(){
+    if(waveWrap.parentNode===pads)return;
+    pads.insertBefore(waveWrap,padGrid);
+  }
+
   function applyWorkspace(){
     const mobile=mobileMedia.matches;
     tabBar.hidden=!mobile;
@@ -252,8 +253,9 @@
     if(bpmInput)bpmInput.style.display=mobile?"none":"";
 
     if(!mobile){
+      restoreWave();
       root.removeAttribute("data-mobile-workspace");
-      for(const node of [upper,performance,pads,sequence,drums,...chopperControls])hide(node,false);
+      for(const node of [upper,performance,pads,sequence,drums])hide(node,false);
       return;
     }
 
@@ -264,12 +266,14 @@
       button.classList.toggle("active",selected);
     }
 
-    hide(upper,workspace!=="chopper" && workspace!=="pads");
+    if(workspace==="pads")moveWaveToPads();
+    else restoreWave();
+
+    hide(upper,workspace!=="chopper");
     hide(performance,workspace!=="pads" && workspace!=="sequence");
     hide(drums,workspace!=="drums");
     hide(pads,workspace!=="pads");
     hide(sequence,workspace!=="sequence");
-    for(const node of chopperControls)hide(node,workspace!=="chopper");
 
     requestAnimationFrame(()=>{
       if((workspace==="chopper" || workspace==="pads") && typeof drawWave==="function")drawWave();
@@ -278,8 +282,7 @@
   }
 
   function setWorkspace(name){
-    const next=workspaceNames.includes(name)?name:"chopper";
-    workspace=next;
+    workspace=workspaceNames.includes(name)?name:"chopper";
     applyWorkspace();
     return workspace;
   }
