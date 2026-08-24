@@ -1,8 +1,8 @@
 "use strict";
 
 // Mobile Chopper navigation and parameter interaction. The four workspaces only
-// reveal or move existing Chopper surfaces; they never duplicate waveform, pads,
-// grid or drum state. PITCH/BPM/VOL gestures drive the existing form inputs.
+// reveal or move existing Chopper surfaces; waveform, transports and controls
+// keep their original DOM nodes/handlers instead of being duplicated per view.
 (() => {
   const root=document.getElementById("chopper");
   if(!root || globalThis.ChopperMobileControls)return;
@@ -10,20 +10,37 @@
   const mobileMedia=window.matchMedia("(max-width:760px)");
   const deck=root.querySelector(".samplerDeck");
   const upper=root.querySelector(".samplerUpperDeck");
+  const screen=root.querySelector(".samplerScreenModule");
   const performance=root.querySelector(".samplerPerformanceDeck");
   const pads=root.querySelector(".samplerPadsModule");
   const padGrid=document.getElementById("pads");
   const sequence=root.querySelector(".samplerSequenceModule");
   const drums=root.querySelector(".samplerDrumSection");
   const waveWrap=root.querySelector(".wavewrap.largeWave");
-  if(!deck || !upper || !performance || !pads || !padGrid || !sequence || !drums || !waveWrap)return;
+  const waveActions=root.querySelector(".waveHeaderActions");
+  const padTransport=root.querySelector(".padTransport");
+  const sequenceActions=root.querySelector(".sequenceActions");
+  if(!deck || !upper || !screen || !performance || !pads || !padGrid || !sequence || !drums || !waveWrap || !waveActions || !padTransport || !sequenceActions)return;
 
   const waveHome=waveWrap.parentNode;
   const waveNext=waveWrap.nextSibling;
   const HIDDEN_CLASS="mobileWorkspaceHidden";
   const workspaceNames=["chopper","sequence","pads","drums"];
   const accessibilitySyncers=[];
+  const homes=new Map();
   let workspace="chopper";
+
+  function rememberHome(element){
+    if(!element || homes.has(element))return;
+    homes.set(element,{parent:element.parentNode,next:element.nextSibling});
+  }
+
+  function restoreHome(element){
+    const home=homes.get(element);
+    if(!element || !home?.parent || element.parentNode===home.parent)return;
+    if(home.next && home.next.parentNode===home.parent)home.parent.insertBefore(element,home.next);
+    else home.parent.appendChild(element);
+  }
 
   const tabBar=document.createElement("div");
   tabBar.className="chopperMobileTabs";
@@ -51,6 +68,54 @@
   }
   deck.prepend(tabBar);
 
+  // CHOPPER mobile owns three compact rows, but every control in them is the
+  // maintained control already used by desktop.
+  const chopperActionRow=document.createElement("div");
+  chopperActionRow.id="mobileChopperActionRow";
+  chopperActionRow.className="mobileChopperRow mobileChopperActionRow";
+  const spCell=document.createElement("div");
+  spCell.id="mobileChopperSpCell";
+  spCell.className="mobileChopperSpCell";
+  chopperActionRow.appendChild(spCell);
+
+  const chopperBankRow=document.createElement("div");
+  chopperBankRow.id="mobileChopperBankRow";
+  chopperBankRow.className="mobileChopperRow mobileChopperBankRow";
+
+  const chopperParamRow=document.createElement("div");
+  chopperParamRow.id="mobileChopperParamRow";
+  chopperParamRow.className="mobileChopperRow mobileChopperParamRow";
+
+  screen.prepend(chopperParamRow);
+  screen.prepend(chopperBankRow);
+  screen.prepend(chopperActionRow);
+
+  // SEQ reuses the exact PLAY / STOP controls from PADS. SAVE is the existing
+  // SAVE BEAT button and belongs only to this sequence footer on mobile.
+  const sequenceFooter=document.createElement("div");
+  sequenceFooter.id="mobileSequenceFooter";
+  sequenceFooter.className="mobileSequenceFooter";
+  const sequenceTransport=document.createElement("div");
+  sequenceTransport.id="mobileSequenceTransport";
+  sequenceTransport.className="padTransport mobileSequenceTransport";
+  sequenceTransport.setAttribute("role","group");
+  sequenceTransport.setAttribute("aria-label","Transport du séquenceur");
+  sequenceFooter.appendChild(sequenceTransport);
+  sequence.appendChild(sequenceFooter);
+
+  const loadButton=document.getElementById("loadSampleBtn");
+  const autoButton=document.getElementById("autoMarkers");
+  const previewButton=document.getElementById("previewFlip");
+  const stopButton=document.getElementById("stopFlip");
+  const saveButton=document.getElementById("addFlipLibrary");
+  const pitchControl=root.querySelector(".samplePitchKnob");
+  const tempoControl=root.querySelector(".sampleTempoControl");
+  const volumeControl=root.querySelector(".sampleVolumeKnob");
+  const punchControl=root.querySelector(".punchKnob");
+  const modeButton=document.getElementById("sliceEditModeBtn");
+
+  for(const element of [loadButton,autoButton,previewButton,stopButton,saveButton,pitchControl,tempoControl,volumeControl,punchControl,modeButton])rememberHome(element);
+
   const bpmInput=document.getElementById("sampleBpm");
   const tempoBody=root.querySelector(".sampleTempoControl > div");
   const tempoKnob=document.createElement("div");
@@ -61,6 +126,104 @@
   bpmReadout.id="sampleBpmReadout";
   bpmReadout.className="sampleKnobReadout mobileTempoReadout";
   if(tempoBody && bpmInput)tempoBody.append(tempoKnob,bpmReadout);
+
+  const style=document.createElement("style");
+  style.dataset.chopperMobileControls="1";
+  style.textContent=`
+    @media (max-width:760px) {
+      #chopper[data-mobile-chop-view="1"] .chopperMobileTabs:not([hidden]) {
+        display:grid !important;
+      }
+      #chopper[data-mobile-workspace="chopper"] .samplerScreenModule {
+        grid-template-columns:minmax(0,1fr) !important;
+        grid-template-areas:none !important;
+      }
+      #chopper[data-mobile-workspace="chopper"] .samplerScreenModule > .stableTitle,
+      #chopper[data-mobile-workspace="chopper"] .samplerScreenModule > .advancedBox {
+        display:none !important;
+      }
+      #chopper .mobileChopperRow {
+        grid-column:1 / -1;
+        min-width:0;
+        width:100%;
+      }
+      #chopper .mobileChopperActionRow {
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:5px;
+      }
+      #chopper .mobileChopperActionRow > .btn,
+      #chopper .mobileChopperSpCell > .btn {
+        width:100%;
+        min-width:0 !important;
+        min-height:38px !important;
+        margin:0 !important;
+        padding:6px 4px !important;
+        font-size:8px !important;
+      }
+      #chopper .mobileChopperSpCell {
+        display:flex;
+        min-width:0;
+        gap:3px;
+      }
+      #chopper .mobileChopperSpCell > .sp1200Toggle {
+        flex:1 1 auto;
+      }
+      #chopper .mobileChopperSpCell > .sp1200FilterToggle:not([hidden]) {
+        flex:0 0 auto;
+        width:auto !important;
+      }
+      #chopper .mobileChopperBankRow {
+        display:flex;
+        align-items:center;
+        gap:5px;
+      }
+      #chopper .mobileChopperBankRow > .chopperBankTabs {
+        flex:1 1 auto;
+        min-width:0;
+      }
+      #chopper .mobileChopperBankRow > .chopModeToggle {
+        flex:0 0 auto;
+      }
+      #chopper .mobileChopperParamRow {
+        display:grid;
+        grid-template-columns:repeat(4,minmax(0,1fr));
+        align-items:start;
+        gap:5px;
+      }
+      #chopper .mobileChopperParamRow > * {
+        grid-area:auto !important;
+        min-width:0;
+      }
+      #chopper[data-mobile-workspace="chopper"] .samplerDisplayBody .wavewrap.largeWave {
+        grid-area:auto !important;
+        grid-column:1 / -1 !important;
+      }
+      #chopper .mobileSequenceFooter {
+        display:flex;
+        flex-direction:column;
+        align-items:stretch;
+        gap:7px;
+        margin-top:10px;
+      }
+      #chopper .mobileSequenceTransport {
+        grid-template-columns:repeat(2,76px) !important;
+        margin:0 auto !important;
+      }
+      #chopper .mobileSequenceFooter > #addFlipLibrary {
+        width:100%;
+        min-height:38px !important;
+        margin:0 !important;
+      }
+    }
+    @media (max-width:430px) {
+      #chopper .mobileSequenceTransport {
+        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+        width:100% !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
 
   function numeric(value,fallback=0){
     const number=Number(value);
@@ -278,18 +441,68 @@
     pads.insertBefore(waveWrap,padGrid);
   }
 
+  function syncChopperRows(){
+    if(!mobileMedia.matches)return;
+    if(loadButton)chopperActionRow.insertBefore(loadButton,spCell);
+    if(autoButton)chopperActionRow.insertBefore(autoButton,spCell);
+
+    const spButton=document.getElementById("sp1200Toggle");
+    const filterButton=document.getElementById("sp1200FilterToggle");
+    if(spButton)spCell.appendChild(spButton);
+    if(filterButton)spCell.appendChild(filterButton);
+
+    const bankTabs=document.getElementById("chopperBankTabs");
+    if(bankTabs)chopperBankRow.appendChild(bankTabs);
+    if(modeButton)chopperBankRow.appendChild(modeButton);
+
+    for(const control of [tempoControl,pitchControl,volumeControl,punchControl]){
+      if(control)chopperParamRow.appendChild(control);
+    }
+  }
+
+  function restoreDesktopLayout(){
+    restoreWave();
+    for(const element of [loadButton,autoButton,pitchControl,tempoControl,volumeControl,punchControl,modeButton,previewButton,stopButton,saveButton])restoreHome(element);
+
+    const bankTabs=document.getElementById("chopperBankTabs");
+    const spButton=document.getElementById("sp1200Toggle");
+    const filterButton=document.getElementById("sp1200FilterToggle");
+    if(bankTabs && waveActions)waveActions.insertBefore(bankTabs,spButton||filterButton||null);
+    if(spButton && waveActions)waveActions.appendChild(spButton);
+    if(filterButton && waveActions)waveActions.appendChild(filterButton);
+  }
+
+  function syncSequenceFooter(){
+    const mobile=mobileMedia.matches;
+    const active=mobile && workspace==="sequence";
+    sequenceFooter.hidden=!active;
+    if(active){
+      if(previewButton)sequenceTransport.appendChild(previewButton);
+      if(stopButton)sequenceTransport.appendChild(stopButton);
+      if(saveButton)sequenceFooter.appendChild(saveButton);
+    }else{
+      restoreHome(previewButton);
+      restoreHome(stopButton);
+      restoreHome(saveButton);
+    }
+  }
+
   function applyWorkspace(){
     const mobile=mobileMedia.matches;
     tabBar.hidden=!mobile;
+    chopperActionRow.hidden=!mobile;
+    chopperBankRow.hidden=!mobile;
+    chopperParamRow.hidden=!mobile;
     tempoKnob.hidden=!mobile;
     bpmReadout.hidden=!mobile;
     if(bpmInput)bpmInput.style.display=mobile?"none":"";
     accessibilitySyncers.forEach(sync=>sync());
 
     if(!mobile){
-      restoreWave();
       root.removeAttribute("data-mobile-workspace");
       for(const node of [upper,performance,pads,sequence,drums])hide(node,false);
+      restoreDesktopLayout();
+      syncSequenceFooter();
       return;
     }
 
@@ -302,6 +515,8 @@
 
     if(workspace==="pads")moveWaveToPads();
     else restoreWave();
+    syncChopperRows();
+    syncSequenceFooter();
 
     hide(upper,workspace!=="chopper");
     hide(performance,workspace!=="pads" && workspace!=="sequence");
@@ -321,6 +536,16 @@
     return workspace;
   }
 
+  // SP is dynamically loaded after this controller. Observe only until its two
+  // controls exist, then place them once in the CHOPPER row and disconnect.
+  const lateControls=new MutationObserver(()=>{
+    if(!document.getElementById("sp1200Toggle") || !document.getElementById("sp1200FilterToggle"))return;
+    if(mobileMedia.matches)syncChopperRows();
+    else restoreDesktopLayout();
+    lateControls.disconnect();
+  });
+  lateControls.observe(root,{childList:true,subtree:true});
+
   if(typeof mobileMedia.addEventListener==="function")mobileMedia.addEventListener("change",applyWorkspace);
   else mobileMedia.addListener(applyWorkspace);
   applyWorkspace();
@@ -328,6 +553,7 @@
   globalThis.ChopperMobileControls=Object.freeze({
     get active(){return mobileMedia.matches;},
     get workspace(){return workspace;},
-    setWorkspace
+    setWorkspace,
+    refresh:applyWorkspace
   });
 })();
