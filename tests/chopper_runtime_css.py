@@ -36,6 +36,8 @@ with contextlib.ExitStack() as stack:
             page.goto(url,wait_until='networkidle',timeout=30000)
             page.wait_for_function('window.__SP?.ready === true',timeout=10000)
             page.click('[data-tab="chopper"]')
+            if width<=760:
+                page.wait_for_function('window.ChopperMobileControls?.active === true',timeout=10000)
             page.wait_for_timeout(50)
 
             state=page.evaluate('''() => {
@@ -113,13 +115,41 @@ with contextlib.ExitStack() as stack:
             for key in ['wave','grid','editor','advanced','input','punch']:
                 assert state['backgrounds'][key] == 'none',(width,key,state['backgrounds'][key])
 
-            for key in ['deck','sequence','drums']:
-                box=state[key]
-                assert box['width']>0 and box['height']>0,(width,key,box)
-                assert box['left']>=-1 and box['right']<=width+1,(width,key,box)
+            deck_box=state['deck']
+            assert deck_box['width']>0 and deck_box['height']>0,(width,'deck',deck_box)
+            assert deck_box['left']>=-1 and deck_box['right']<=width+1,(width,'deck',deck_box)
+
+            if width>760:
+                for key in ['sequence','drums']:
+                    box=state[key]
+                    assert box['width']>0 and box['height']>0,(width,key,box)
+                    assert box['left']>=-1 and box['right']<=width+1,(width,key,box)
+            else:
+                # Mobile intentionally exposes one workspace at a time. Exercise
+                # every tab before measuring it instead of requiring hidden
+                # SEQ/DRUMS/PADS panels to have legacy non-zero geometry.
+                mobile_surfaces={
+                    'chopper':'#chopper .samplerUpperDeck',
+                    'sequence':'#chopper .samplerSequenceModule',
+                    'pads':'#chopper .samplerPadsModule',
+                    'drums':'#chopper .samplerDrumSection',
+                }
+                for workspace,selector in mobile_surfaces.items():
+                    page.evaluate('(name) => ChopperMobileControls.setWorkspace(name)',workspace)
+                    page.wait_for_timeout(30)
+                    mobile_state=page.evaluate('''({workspace,selector}) => ({
+                      workspace:ChopperMobileControls.workspace,
+                      display:getComputedStyle(document.querySelector(selector)).display,
+                      box:document.querySelector(selector).getBoundingClientRect().toJSON()
+                    })''',{'workspace':workspace,'selector':selector})
+                    assert mobile_state['workspace']==workspace,(width,workspace,mobile_state)
+                    assert mobile_state['display']!='none',(width,workspace,mobile_state)
+                    box=mobile_state['box']
+                    assert box['width']>0 and box['height']>0,(width,workspace,box)
+                    assert box['left']>=-1 and box['right']<=width+1,(width,workspace,box)
 
             assert not errors,(width,errors)
             page.close()
         browser.close()
 
-print('OK: real Chopper runtime loads its CSS owners with stable visual ownership across desktop/tablet/mobile widths')
+print('OK: real Chopper runtime loads its CSS owners with stable visual ownership across desktop/tablet/mobile workspaces')
