@@ -32,6 +32,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.click('[data-tab="chopper"]')
     page.set_input_files('#sampleFile',str(sample));page.wait_for_timeout(150)
     assert page.evaluate('sampleBuffer !== null && sampleName === "chopper-ui.wav"')
+    assert page.locator('#autoMarkers').count()==0
     # SAMPLE VOL is one Chopper operation: state, readout and active audition gain stay aligned.
     page.fill('#sampleVolume','37');page.dispatch_event('#sampleVolume','input')
     assert page.evaluate('sampleVolumePercent')==37
@@ -80,8 +81,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     }''')
     assert len(sparse_lines)==8,sparse_lines
     assert max(abs(line['y2']-line['y1']) for line in sparse_lines)<6,sparse_lines
-    # AUTO CHOP must still populate the sixteen-pad workstation while the sequence owns 32 total eighth-note steps.
-    page.click('#autoMarkers');page.wait_for_timeout(50)
+    # Sample loading still populates the sixteen-pad workstation while the sequence owns 32 total eighth-note steps.
     state=page.evaluate('''() => ({
       markers:markers.length,
       pads:document.querySelectorAll('#pads .pad').length,
@@ -301,7 +301,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert page.evaluate('isLoopPlaying === false && loopPlayheadState === null') is True
     assert page.evaluate(playhead_pixels)['count']==0
     # Essential controls must remain physically clickable after CSS changes.
-    boxes=page.evaluate('''() => ['loadSampleBtn','autoMarkers','previewFlip','stopFlip','addFlipLibrary','sequencePage12','sequencePage34','clearGrid'].map(id=>{
+    boxes=page.evaluate('''() => ['loadSampleBtn','previewFlip','stopFlip','addFlipLibrary','sequencePage12','sequencePage34','clearGrid'].map(id=>{
       const r=document.getElementById(id).getBoundingClientRect();return {id,w:r.width,h:r.height};
     })''')
     assert all(x['w']>20 and x['h']>20 for x in boxes),boxes
