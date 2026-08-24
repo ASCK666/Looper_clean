@@ -126,12 +126,12 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
       wave:getComputedStyle(document.querySelector('.wavewrap')).display,
       waveParent:document.querySelector('.wavewrap').parentElement.className,
       pitchKnob:getComputedStyle(document.querySelector('.samplePitchKnob .sampleKnobControl')).display,
-      tempoKnob:getComputedStyle(document.getElementById('mobileTempoKnob')).display,
+      tempoProxy:document.querySelectorAll('#mobileTempoKnob').length,
       volumeKnob:getComputedStyle(document.querySelector('.sampleVolumeKnob .sampleKnobControl')).display,
       punchKnob:getComputedStyle(document.querySelector('.punchKnob .sampleKnobControl')).display,
       bpmInput:getComputedStyle(document.getElementById('sampleBpm')).display,
+      bpmMax:document.getElementById('sampleBpm').max,
       pitchRole:document.querySelector('.samplePitchKnob .sampleKnobControl').getAttribute('role'),
-      bpmRole:document.getElementById('mobileTempoKnob').getAttribute('role'),
       volumeRole:document.querySelector('.sampleVolumeKnob .sampleKnobControl').getAttribute('role'),
       punchRole:document.getElementById('punchDesc').getAttribute('role'),
       saveParent:document.getElementById('addFlipLibrary').parentElement.className,
@@ -143,29 +143,29 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert chopper_view['bankParent']=='mobileChopperBankRow' and chopper_view['bankButtons']==['ALL','0–30','25–36'],chopper_view
     assert chopper_view['paramOrder']==['sampleBpm','samplePitch','sampleVolume','punchMode'],chopper_view
     assert chopper_view['wave']!='none' and 'samplerDisplayBody' in chopper_view['waveParent'],chopper_view
-    assert chopper_view['pitchKnob']!='none' and chopper_view['tempoKnob']!='none' and chopper_view['volumeKnob']!='none',chopper_view
-    assert chopper_view['punchKnob']=='none' and chopper_view['bpmInput']=='none',chopper_view
-    assert chopper_view['pitchRole']=='slider' and chopper_view['bpmRole']=='slider' and chopper_view['volumeRole']=='slider' and chopper_view['punchRole']=='button',chopper_view
+    assert chopper_view['pitchKnob']!='none' and chopper_view['volumeKnob']!='none',chopper_view
+    assert chopper_view['tempoProxy']==0 and chopper_view['punchKnob']=='none' and chopper_view['bpmInput']!='none' and chopper_view['bpmMax']=='200',chopper_view
+    assert chopper_view['pitchRole']=='slider' and chopper_view['volumeRole']=='slider' and chopper_view['punchRole']=='button',chopper_view
     assert 'sequenceActions' in chopper_view['saveParent'] and chopper_view['selected']==['chopper'],chopper_view
 
     touch_drag(page.locator('.samplePitchKnob .sampleKnobControl'),-36)
-    touch_drag(page.locator('#mobileTempoKnob'),-30)
+    page.locator('#sampleBpm').fill('250');page.wait_for_timeout(60)
     touch_drag(page.locator('.sampleVolumeKnob .sampleKnobControl'),20)
     punch_target=page.locator('#punchDesc');px,py=touch_point(punch_target);page.touchscreen.tap(px,py);page.wait_for_timeout(60)
-    rotary_values=page.evaluate('''() => ({
+    control_values=page.evaluate('''() => ({
       pitch:document.getElementById('samplePitch').value,
       pitchText:document.getElementById('samplePitchReadout').textContent,
       bpm:document.getElementById('sampleBpm').value,
-      bpmText:document.getElementById('sampleBpmReadout').textContent,
+      bpmMax:document.getElementById('sampleBpm').max,
       volume:document.getElementById('sampleVolume').value,
       volumeText:document.getElementById('sampleVolumeReadout').textContent,
       punch:document.getElementById('punchMode').value,
       punchText:document.getElementById('punchDesc').textContent
     })''')
-    assert rotary_values['pitch']=='2' and rotary_values['pitchText']=='+2 st',rotary_values
-    assert rotary_values['bpm']=='100' and rotary_values['bpmText']=='100 BPM',rotary_values
-    assert rotary_values['volume']=='70' and rotary_values['volumeText']=='70%',rotary_values
-    assert rotary_values['punch']=='2' and rotary_values['punchText']=='KNOCK',rotary_values
+    assert control_values['pitch']=='2' and control_values['pitchText']=='+2 st',control_values
+    assert control_values['bpm']=='200' and control_values['bpmMax']=='200',control_values
+    assert control_values['volume']=='70' and control_values['volumeText']=='70%',control_values
+    assert control_values['punch']=='2' and control_values['punchText']=='KNOCK',control_values
 
     page.click('[data-mobile-workspace="sequence"]');page.wait_for_timeout(80)
     sequence_view=page.evaluate('''() => ({
@@ -323,4 +323,4 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.click('#mobileChopDone');assert not errors,errors
     page.close();context.close();browser.close()
 
-print('OK: Chopper mobile — AUTO CHOP retired, ordered CHOPPER rows, shared SEQ transport/SAVE, rotary controls and navigable touch CHOP editor')
+print('OK: Chopper mobile — AUTO CHOP retired, bounded text BPM, ordered CHOPPER rows, shared SEQ transport/SAVE and navigable touch CHOP editor')
