@@ -12,7 +12,7 @@
 
   const SP_SAMPLE_RATE=DSP.sampleRate;
   const ALL_ENCODE_PAGE_SECONDS=30;
-  const MAX_PAD_PREVIEW_SECONDS=30;
+  const MAX_PAD_PREVIEW_SECONDS=6;
   const MAX_PREVIEW_RENDER_CACHE_ENTRIES=3;
   let enabled=false;
   let outputMode="raw";
@@ -128,6 +128,7 @@
     outputMode:outputProfile,
     durationLimit,
     bank=null,
+    exactEncodeRange=false,
     encodedCache=null,
     renderedCache=null,
     shouldContinue=null
@@ -145,7 +146,9 @@
       range.end,
       range.start+audible*tune.ratio+1/SP_SAMPLE_RATE
     );
-    const encodeRange=workingEncodeRange(sourceBuffer,range.start,sourceEnd,bank);
+    const encodeRange=exactEncodeRange
+      ? {start:range.start,end:sourceEnd}
+      : workingEncodeRange(sourceBuffer,range.start,sourceEnd,bank);
     const cacheKey=`${encodeRange.start}:${encodeRange.end}`;
     let encoded=encodedCache?.get(cacheKey)||null;
     if(!encoded){
@@ -156,9 +159,8 @@
       encodedCache?.set(cacheKey,encoded);
     }
 
-    // PAD requests can become stale while an encode is pending. Preserve the
-    // previous early-cancellation behavior so a stale 30 s request never spends
-    // time reconstructing a buffer that cannot be played.
+    // PAD requests can become stale while an encode is pending. Preserve early
+    // cancellation so stale preview work never reaches reconstruction/playback.
     if(typeof shouldContinue==="function" && !shouldContinue())return null;
 
     const renderKey=`${range.start}:${sourceEnd}:t${tune.code}:l${levelCode}:o${outputProfile}:r${audioContext.sampleRate}:d${audible}`;
@@ -295,6 +297,7 @@
       outputMode:requestOutputMode,
       durationLimit:MAX_PAD_PREVIEW_SECONDS,
       bank:requestBank,
+      exactEncodeRange:true,
       renderedCache:previewRenderedCache,
       shouldContinue:()=>generation===previewGeneration && enabled && sampleBuffer===sourceBuffer
     });
