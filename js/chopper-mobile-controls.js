@@ -69,8 +69,6 @@
   }
   deck.prepend(tabBar);
 
-  // Three mobile CHOPPER rows. Geometry stays on these owned nodes so the
-  // responsive feature does not add another stylesheet/selector layer.
   const chopperActionRow=document.createElement("div");
   chopperActionRow.id="mobileChopperActionRow";
   chopperActionRow.className="mobileChopperRow mobileChopperActionRow";
@@ -96,8 +94,6 @@
   screen.prepend(chopperBankRow);
   screen.prepend(chopperActionRow);
 
-  // SEQ owns no duplicate transport. These hosts temporarily receive the exact
-  // PLAY / STOP / SAVE nodes already maintained by the normal Chopper layout.
   const sequenceFooter=document.createElement("div");
   sequenceFooter.id="mobileSequenceFooter";
   sequenceFooter.className="mobileSequenceFooter";
@@ -274,33 +270,9 @@
     sync();
   }
 
-  bindRotary({
-    inputId:"samplePitch",
-    target:root.querySelector(".samplePitchKnob .sampleKnobControl"),
-    owner:pitchControl,
-    readout:document.getElementById("samplePitchReadout"),
-    pixelsPerStep:18,
-    step:1,
-    format:value=>`${value>0?"+":""}${Math.round(value)} st`
-  });
-  bindRotary({
-    inputId:"sampleBpm",
-    target:tempoKnob,
-    owner:tempoBody,
-    readout:bpmReadout,
-    pixelsPerStep:3,
-    step:1,
-    format:value=>`${Math.round(value)} BPM`
-  });
-  bindRotary({
-    inputId:"sampleVolume",
-    target:root.querySelector(".sampleVolumeKnob .sampleKnobControl"),
-    owner:volumeControl,
-    readout:document.getElementById("sampleVolumeReadout"),
-    pixelsPerStep:2,
-    step:1,
-    format:value=>`${Math.round(value)}%`
-  });
+  bindRotary({inputId:"samplePitch",target:root.querySelector(".samplePitchKnob .sampleKnobControl"),owner:pitchControl,readout:document.getElementById("samplePitchReadout"),pixelsPerStep:18,step:1,format:value=>`${value>0?"+":""}${Math.round(value)} st`});
+  bindRotary({inputId:"sampleBpm",target:tempoKnob,owner:tempoBody,readout:bpmReadout,pixelsPerStep:3,step:1,format:value=>`${Math.round(value)} BPM`});
+  bindRotary({inputId:"sampleVolume",target:root.querySelector(".sampleVolumeKnob .sampleKnobControl"),owner:volumeControl,readout:document.getElementById("sampleVolumeReadout"),pixelsPerStep:2,step:1,format:value=>`${Math.round(value)}%`});
 
   const punchInput=document.getElementById("punchMode");
   const punchTarget=document.getElementById("punchDesc");
@@ -341,9 +313,7 @@
     });
   }
 
-  function hide(node,value){
-    node?.classList.toggle(HIDDEN_CLASS,Boolean(value));
-  }
+  function hide(node,value){node?.classList.toggle(HIDDEN_CLASS,Boolean(value));}
 
   function restoreWave(){
     if(waveWrap.parentNode===waveHome)return;
@@ -351,9 +321,7 @@
     else waveHome.appendChild(waveWrap);
   }
 
-  function moveWaveToPads(){
-    if(waveWrap.parentNode!==pads)pads.insertBefore(waveWrap,padGrid);
-  }
+  function moveWaveToPads(){if(waveWrap.parentNode!==pads)pads.insertBefore(waveWrap,padGrid);}
 
   function setControlItemStyle(element,active){
     if(!element)return;
@@ -368,39 +336,17 @@
 
   function syncChopperRows(){
     if(!mobileMedia.matches)return;
-    if(loadButton){
-      chopperActionRow.insertBefore(loadButton,spCell);
-      loadButton.style.width="100%";
-      loadButton.style.minWidth="0";
-    }
-    if(autoButton){
-      chopperActionRow.insertBefore(autoButton,spCell);
-      autoButton.style.width="100%";
-      autoButton.style.minWidth="0";
-    }
+    if(loadButton){chopperActionRow.insertBefore(loadButton,spCell);loadButton.style.width="100%";loadButton.style.minWidth="0";}
+    if(autoButton){chopperActionRow.insertBefore(autoButton,spCell);autoButton.style.width="100%";autoButton.style.minWidth="0";}
 
     const spButton=document.getElementById("sp1200Toggle");
     const filterButton=document.getElementById("sp1200FilterToggle");
-    if(spButton){
-      spCell.appendChild(spButton);
-      spButton.style.flex="1 1 auto";
-      spButton.style.minWidth="0";
-    }
-    if(filterButton){
-      spCell.appendChild(filterButton);
-      filterButton.style.flex="0 0 auto";
-    }
+    if(spButton){spCell.appendChild(spButton);spButton.style.flex="1 1 auto";spButton.style.minWidth="0";}
+    if(filterButton){spCell.appendChild(filterButton);filterButton.style.flex="0 0 auto";}
 
     const bankTabs=document.getElementById("chopperBankTabs");
-    if(bankTabs){
-      chopperBankRow.appendChild(bankTabs);
-      bankTabs.style.flex="1 1 auto";
-      bankTabs.style.minWidth="0";
-    }
-    if(modeButton){
-      chopperBankRow.appendChild(modeButton);
-      modeButton.style.flex="0 0 auto";
-    }
+    if(bankTabs){chopperBankRow.appendChild(bankTabs);bankTabs.style.flex="1 1 auto";bankTabs.style.minWidth="0";}
+    if(modeButton){chopperBankRow.appendChild(modeButton);modeButton.style.flex="0 0 auto";}
 
     for(const control of [tempoControl,pitchControl,volumeControl,punchControl]){
       if(!control)continue;
@@ -410,22 +356,12 @@
   }
 
   function resetMovedStyles(){
-    for(const element of [loadButton,autoButton]){
-      element?.style.removeProperty("width");
-      element?.style.removeProperty("min-width");
-    }
+    for(const element of [loadButton,autoButton]){element?.style.removeProperty("width");element?.style.removeProperty("min-width");}
     for(const control of [tempoControl,pitchControl,volumeControl,punchControl])setControlItemStyle(control,false);
     modeButton?.style.removeProperty("flex");
-
     const bankTabs=document.getElementById("chopperBankTabs");
-    if(bankTabs){
-      bankTabs.style.removeProperty("flex");
-      bankTabs.style.removeProperty("min-width");
-    }
-    for(const button of [document.getElementById("sp1200Toggle"),document.getElementById("sp1200FilterToggle")]){
-      button?.style.removeProperty("flex");
-      button?.style.removeProperty("min-width");
-    }
+    if(bankTabs){bankTabs.style.removeProperty("flex");bankTabs.style.removeProperty("min-width");}
+    for(const button of [document.getElementById("sp1200Toggle"),document.getElementById("sp1200FilterToggle")]){button?.style.removeProperty("flex");button?.style.removeProperty("min-width");}
   }
 
   function restoreDesktopLayout(){
@@ -454,23 +390,18 @@
     if(active){
       if(previewButton)sequenceTransport.appendChild(previewButton);
       if(stopButton)sequenceTransport.appendChild(stopButton);
-      if(saveButton){
-        sequenceFooter.appendChild(saveButton);
-        saveButton.style.width="100%";
-        saveButton.style.margin="0";
-      }
+      if(saveButton){sequenceFooter.appendChild(saveButton);saveButton.style.width="100%";saveButton.style.margin="0";}
     }else{
-      restoreHome(previewButton);
-      restoreHome(stopButton);
-      restoreHome(saveButton);
-      saveButton?.style.removeProperty("width");
-      saveButton?.style.removeProperty("margin");
+      restoreHome(previewButton);restoreHome(stopButton);restoreHome(saveButton);
+      saveButton?.style.removeProperty("width");saveButton?.style.removeProperty("margin");
     }
   }
 
   function applyWorkspace(){
     const mobile=mobileMedia.matches;
     tabBar.hidden=!mobile;
+    if(mobile)tabBar.style.setProperty("display","grid","important");
+    else tabBar.style.removeProperty("display");
     chopperActionRow.hidden=!mobile;
     chopperBankRow.hidden=!mobile;
     chopperParamRow.hidden=!mobile;
@@ -511,7 +442,6 @@
 
     syncChopperRows();
     syncSequenceFooter();
-
     hide(upper,workspace!=="chopper");
     hide(performance,workspace!=="pads" && workspace!=="sequence");
     hide(drums,workspace!=="drums");
@@ -530,8 +460,6 @@
     return workspace;
   }
 
-  // SP is dynamically loaded after this controller. Observe only until its two
-  // controls exist, then move those maintained nodes into the first CHOPPER row.
   const lateControls=new MutationObserver(()=>{
     if(!document.getElementById("sp1200Toggle") || !document.getElementById("sp1200FilterToggle"))return;
     if(mobileMedia.matches)syncChopperRows();
