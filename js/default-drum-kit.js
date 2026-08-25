@@ -1,25 +1,25 @@
 "use strict";
 
 (() => {
-  if(globalThis.LooperDefaultDrumKit?.version>=2)return;
+  if(globalThis.LooperDefaultDrumKit?.version>=3)return;
 
-  const KIT_NAME="LOOPER BOOM BAP 90 V2";
-  const KIT_VERSION=2;
+  const KIT_NAME="SP1200 BOOM BAP DEFAULT";
+  const KIT_VERSION=3;
   const ASSETS=Object.freeze({
     kick:Object.freeze({
       url:"./assets/drums/default/kick.wav",
-      name:"LOOPER_BB90_V2_KICK",
-      compensationDb:1.5
+      name:"BB_SP1200_KICK_01_Dusty",
+      compensationDb:0
     }),
     snare:Object.freeze({
       url:"./assets/drums/default/snare.wav",
-      name:"LOOPER_BB90_V2_SNARE",
-      compensationDb:2.0
+      name:"BB_SP1200_SNARE_01_Dusty",
+      compensationDb:0
     }),
     hat:Object.freeze({
       url:"./assets/drums/default/hat.wav",
-      name:"LOOPER_BB90_V2_HAT",
-      compensationDb:4.0
+      name:"BB_SP1200_HAT_01_Tight",
+      compensationDb:0
     })
   });
 
@@ -40,7 +40,7 @@
 
   async function loadEmbeddedDrum(kind){
     const spec=ASSETS[kind];
-    if(!spec)return null;
+    if(!spec)throw new Error(`Unknown default drum kind: ${kind}`);
 
     if(!embeddedLoads.has(kind)){
       embeddedLoads.set(kind,(async()=>{
@@ -59,9 +59,8 @@
   }
 
   if(typeof loadSelectedDrum!=="function" ||
-     typeof randomAudioFileFromDirectory!=="function" ||
-     typeof makeSynthBuffer!=="function"){
-    console.warn("Default drum kit v2: drum engine unavailable");
+     typeof randomAudioFileFromDirectory!=="function"){
+    console.warn("Default SP1200 drum kit: drum engine unavailable");
     return;
   }
 
@@ -70,16 +69,11 @@
     if(file)return await decodeUserDrum(kind,file);
 
     try{
-      const embedded=await loadEmbeddedDrum(kind);
-      if(embedded)return embedded;
+      return await loadEmbeddedDrum(kind);
     }catch(error){
-      console.warn(`Default ${kind} one-shot unavailable; using synth fallback`,error);
+      globalThis.__SP?.report?.("DEFAULT DRUM KIT",error);
+      throw error;
     }
-
-    return {
-      buffer:makeSynthBuffer(kind,rate),
-      name:`SYNTH-${Math.floor(performance.now())}-${randomIndex(999)}`
-    };
   };
 
   if(typeof drumAutoGain==="function"){
@@ -95,11 +89,12 @@
     installed:true,
     name:KIT_NAME,
     version:KIT_VERSION,
-    source:"bundled-wav-one-shots",
-    priority:"user-library > embedded-default > synth-fallback",
+    source:"bundled-sp1200-boom-bap-wav",
+    priority:"user-library > embedded-sp1200-pack",
+    syntheticFallback:false,
     dry:true,
     snareReverbReady:true,
-    gainCompensationDb:Object.freeze({kick:1.5,snare:2.0,hat:4.0}),
+    gainCompensationDb:Object.freeze({kick:0,snare:0,hat:0}),
     assets:Object.freeze({
       kick:ASSETS.kick.url,
       snare:ASSETS.snare.url,

@@ -1,5 +1,6 @@
 from pathlib import Path
 import re
+import wave
 ROOT=Path(__file__).resolve().parents[1]
 problems=[]
 
@@ -59,5 +60,37 @@ events=(ROOT/'js'/'events.js').read_text(encoding='utf-8')
 if 'serviceWorker.register' in events:
     problems.append('events.js must not re-register the retired service worker')
 
+# The bundled default kit must be real audio, not runtime-generated synth hits.
+default_kit=(ROOT/'js'/'default-drum-kit.js').read_text(encoding='utf-8')
+expected_default_drums={
+    './assets/drums/default/kick.wav',
+    './assets/drums/default/snare.wav',
+    './assets/drums/default/hat.wav',
+}
+referenced_default_drums=set(re.findall(r'url:"(\./assets/drums/default/[^"\']+\.wav)"', default_kit))
+if referenced_default_drums != expected_default_drums:
+    problems.append(
+        'Default drum kit must reference exactly kick.wav, snare.wav and hat.wav; '
+        f'found: {sorted(referenced_default_drums)}'
+    )
+for val in sorted(expected_default_drums):
+    target=(ROOT/val[2:]).resolve()
+    if not target.exists():
+        problems.append(f'Default drum missing: {val} -> {target}')
+        continue
+    try:
+        with wave.open(str(target),'rb') as wav:
+            if wav.getnchannels()!=1 or wav.getsampwidth()!=2 or wav.getframerate()!=26040:
+                problems.append(
+                    f'Default drum must be mono PCM16 26040 Hz: {val} '
+                    f'({wav.getnchannels()} ch, {wav.getsampwidth()*8}-bit, {wav.getframerate()} Hz)'
+                )
+    except wave.Error as error:
+        problems.append(f'Default drum is not a readable PCM WAV: {val}: {error}')
+if 'makeSynthBuffer(' in default_kit or 'synth-fallback' in default_kit:
+    problems.append('Default drum kit must not synthesize fallback drums at runtime')
+if 'syntheticFallback:false' not in default_kit:
+    problems.append('Default drum kit must declare syntheticFallback:false')
+
 assert not problems, '\n'.join(problems)
-print('OK: local resource paths resolve and Pages development mode cannot serve stale app caches')
+print('OK: local resource paths resolve, Pages caches stay retired, and bundled default drums are real WAV assets')
