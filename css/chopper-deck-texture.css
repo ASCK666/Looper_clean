@@ -21,3 +21,55 @@
   background-repeat:no-repeat,repeat !important;
   background-blend-mode:normal,normal !important;
 }
+
+/* Vintage sampler button material.
+   This layer does not change button geometry; existing width, height and padding stay authoritative. */
+#chopper.screen .btn,
+#chopper.screen .drumEditLibraryButton {
+  position:relative;
+  isolation:isolate;
+  text-shadow:0 1px 1px rgba(0,0,0,.58);
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.32));
+}
+
+#chopper.screen .btn::before,
+#chopper.screen .drumEditLibraryButton::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:1px;
+  border-radius:3px;
+  pointer-events:none;
+  background:
+    linear-gradient(180deg,rgba(255,248,225,.20),rgba(255,255,255,0) 34%),
+    linear-gradient(180deg,#776d5b 0%,#625a4b 58%,#4f483c 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,247,224,.22),
+    inset 0 -2px 0 rgba(30,22,14,.30);
+  transition:filter .12s ease,transform .08s ease,background .12s ease;
+}
+
+#chopper.screen .btn.primary::before,
+#chopper.screen .btn.blue::before,
+#chopper.screen .btn.good::before,
+#chopper.screen .btn.active::before,
+#chopper.screen .btn[aria-pressed="true"]::before {
+  background:
+    linear-gradient(180deg,rgba(255,232,178,.17),rgba(255,255,255,0) 34%),
+    linear-gradient(180deg,#b66e20 0%,#8a4f16 58%,#5a2f09 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,232,178,.24),
+    inset 0 -2px 0 rgba(62,27,3,.34),
+    0 0 7px rgba(226,173,95,.13);
+}
+
+#chopper.screen .btn:hover::before,
+#chopper.screen .drumEditLibraryButton:hover::before {
+  filter:brightness(1.08);
+}
+
+#chopper.screen .btn:active::before,
+#chopper.screen .drumEditLibraryButton:active::before {
+  transform:translateY(1px);
+  filter:brightness(.92);
+}
