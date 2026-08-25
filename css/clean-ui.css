@@ -1,84 +1,9 @@
 /* Lean UI overrides: keep the workstation focused on Looper / Chopper. */
 
-/* Put the two working modes first. Keep utility controls secondary. */
-.machine {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 7px !important;
-}
-
-.mainModeTabs {
-  order: -20 !important;
-}
-
-.stableTop {
-  order: -10 !important;
-  min-height: 0 !important;
-  grid-template-columns: auto minmax(0, 1fr) !important;
-  grid-template-areas: "actions master" !important;
-  gap: 8px !important;
-  padding: 6px 8px !important;
-}
-
-.stableBrand,
-.headerDeckPill {
+/* The compat header is out of flow/hidden, so the mode tabs are already the
+   first visible machine child without an explicit flex order override. */
+:is(.stableBrand,.headerDeckPill) {
   display: none !important;
-}
-
-.headerActions {
-  grid-area: actions !important;
-}
-
-.headerMaster {
-  grid-area: master !important;
-  min-width: 0 !important;
-}
-
-.headerMasterInner {
-  width: 100% !important;
-  min-width: 0 !important;
-  grid-template-columns: 48px 52px minmax(0, 1fr) !important;
-  gap: 6px !important;
-}
-
-.headerMasterBox {
-  width: 46px !important;
-  height: 46px !important;
-}
-
-.headerMasterBox:after {
-  top: 6px !important;
-  left: 22px !important;
-  height: 11px !important;
-  transform-origin: 50% 17px !important;
-  pointer-events: none !important;
-}
-
-.headerVolLabel,
-.headerMeterScale {
-  display: none !important;
-}
-
-/* Looper: guide the first obvious action without adding instructions. */
-@keyframes looperPlayHint {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.35); }
-}
-
-#looper.active #playBeat:not(:active) {
-  animation: looperPlayHint 1.8s ease-in-out infinite;
-}
-
-/* These labels duplicate information already visible on the deck. */
-#looper .titleMeta,
-#looper #beatImportStatus {
-  display: none !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #looper.active #playBeat {
-    animation: none !important;
-  }
 }
 
 /* Remove decorative / explanatory Chopper chrome. */
@@ -92,10 +17,6 @@
 #chopper .samplerDeck {
   gap: 8px !important;
   padding: 8px !important;
-}
-
-#chopper .samplerUpperDeck {
-  grid-template-columns: minmax(0, 1fr) !important;
 }
 
 #chopper .samplerControlModule.chopTransportPanel {
@@ -125,12 +46,6 @@
 
 #chopper .samplerScreenModule {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 52px 68px 52px !important;
-  grid-template-areas:
-    "actions actions actions actions"
-    "title pitch tempo volume"
-    "wave wave wave wave"
-    "info info info info" !important;
   align-items: center !important;
   column-gap: 7px !important;
   row-gap: 8px !important;
@@ -147,10 +62,6 @@
   grid-area: title;
   min-width: 0;
   margin: 0 !important;
-}
-
-#chopper .samplerScreenModule > .stableTitle .titleMeta {
-  display: none !important;
 }
 
 #chopper .samplerDisplayBody {
@@ -170,7 +81,6 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: #9ca6ad;
   font: 800 8px/1 var(--font-mono);
   letter-spacing: .6px;
   text-align: center;
@@ -202,8 +112,6 @@
   inset: 4px;
   border: 1px solid #3f392f;
   border-radius: 50%;
-  background: radial-gradient(circle at 34% 28%,#383630 0,#211f1a 40%,#0b0a08 74%,#030302 100%);
-  box-shadow: inset 0 1px rgba(255,255,255,.05),0 6px 12px rgba(0,0,0,.34);
   pointer-events: none;
 }
 
@@ -215,8 +123,6 @@
   width: 2px;
   height: 12px;
   border-radius: 2px;
-  background: var(--accent);
-  box-shadow: 0 0 6px rgba(226,173,95,.42);
   transform: rotate(calc((var(--knob-pct) - 50) * 2.7deg));
   transform-origin: 50% 18px;
 }
@@ -241,7 +147,6 @@
 
 #chopper .sampleKnobReadout {
   min-width: 44px;
-  color: #d6c49f;
   font-size: 8px;
   line-height: 1;
 }
@@ -275,11 +180,6 @@
   margin-top: 9px;
 }
 
-#chopper .samplerSampleInfo {
-  grid-area: info;
-}
-
-#chopper .samplerSampleInfo,
 #chopper .saveBeatStatus {
   min-height: 0 !important;
   padding: 4px 6px !important;
@@ -333,16 +233,6 @@
   min-height: 16px;
 }
 
-.drumPatternPreviewStep {
-  border: 1px solid #2f2a23;
-  background: #0e0c09;
-}
-
-.drumPatternPreviewStep.active {
-  border-color: #9a7038;
-  background: #80552c;
-}
-
 /* Pads should never sit in a narrow island once the layout stacks. */
 @media (max-width: 1000px) {
   #chopper .samplerPadsModule {
@@ -383,38 +273,8 @@
     display: none !important;
   }
 
-  .stableTop {
-    padding: 4px !important;
-    border-radius: 0 !important;
-  }
-
-  .headerActions .utilityBtn {
-    min-height: 40px !important;
-    padding: 0 10px !important;
-  }
-
-  .headerMasterInner {
-    grid-template-columns: 42px 44px minmax(0, 1fr) !important;
-  }
-  .headerMasterBox {
-    width: 40px !important;
-    height: 40px !important;
-  }
-
-  .headerMasterBox:after {
-    top: 5px !important;
-    left: 19px !important;
-    height: 10px !important;
-    transform-origin: 50% 15px !important;
-  }
-
   #chopper,
-  #chopper .samplerDeck,
-  #chopper .samplerUpperDeck,
-  #chopper .samplerPerformanceDeck,
-  #chopper .samplerPadsModule,
-  #chopper .samplerSequenceModule,
-  #chopper .samplerDrumSection {
+  #chopper :is(.samplerDeck,.samplerUpperDeck,.samplerPerformanceDeck,.samplerSequenceModule,.samplerDrumSection) {
     width: 100% !important;
     max-width: none !important;
   }
@@ -432,7 +292,7 @@
   }
 
   #chopper .samplerScreenModule {
-    grid-template-columns: minmax(0, 1fr) 44px 60px 44px !important;
+    grid-template-columns: minmax(0,1fr) 52px 52px 52px 52px !important;
     column-gap: 5px !important;
     row-gap: 6px !important;
   }
@@ -442,29 +302,60 @@
   }
 
   #chopper .sampleKnobControl {
-    width: 42px;
-    height: 42px;
+    width: 52px;
+    height: 52px;
+    cursor: ns-resize;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   #chopper .sampleKnobFace:after {
-    top: 3px;
-    left: 16px;
-    height: 11px;
-    transform-origin: 50% 16px;
+    left: 21px;
+    transform-origin: 50% 20px;
+  }
+
+  #chopper .sampleKnobInput {
+    pointer-events: none;
   }
 
   #chopper .sampleKnobReadout {
-    min-width: 40px;
-    font-size: 7px;
+    display: flex;
+    min-width: 42px;
+    min-height: 18px;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    line-height: 1;
   }
 
   #chopper .sampleTempoControl > div {
-    padding: 5px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 0 !important;
+    --knob-pct: 28;
   }
 
-  #chopper .sampleTempoControl input {
-    min-height: 30px !important;
-    font-size: 9px !important;
+  #chopper .sampleTempoControl label {
+    margin: 0 !important;
+  }
+
+  #chopper .punchKnob .sampleKnobControl {
+    display: none;
+  }
+
+  #chopper .punchKnob .sampleKnobReadout {
+    min-width: 52px;
+    min-height: 52px;
+    padding: 5px;
+    border: 1px solid #5c452b;
+    border-radius: 4px;
+    background: linear-gradient(180deg,#22180f,#0e0a07);
+    color: #d9bf91;
+    cursor: pointer;
+    touch-action: manipulation;
   }
 
   #chopper .samplerPerformanceDeck {
@@ -483,56 +374,33 @@
 }
 
 @media (max-width: 430px) {
-  .stableTop {
-    grid-template-columns: auto minmax(0, 1fr) !important;
+  #chopper .sampleKnob > label,
+  #chopper .sampleTempoControl label {
+    font-size: 7px !important;
   }
 
-  .headerMasterInner {
-    grid-template-columns: 38px 40px minmax(0, 1fr) !important;
-  }
-
-  .headerMasterBox {
-    width: 36px !important;
-    height: 36px !important;
-  }
-
-  .masterDb {
-    min-width: 36px !important;
-    font-size: 8px !important;
-  }
-
-  .headerMeterWrap {
-    padding-inline: 4px !important;
-  }
-
-  #chopper .samplerScreenModule {
-    grid-template-columns: minmax(0, 1fr) 40px 54px 40px !important;
-    column-gap: 4px !important;
-  }
-
-  #chopper .sampleKnobControl {
-    width: 38px;
-    height: 38px;
+  #chopper .sampleKnobControl,
+  #chopper .punchKnob .sampleKnobReadout {
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+    min-height: 46px;
   }
 
   #chopper .sampleKnobFace:after {
-    left: 14px;
-    height: 10px;
-    transform-origin: 50% 14px;
+    left: 18px;
+    transform-origin: 50% 17px;
   }
 
-  #chopper .sampleKnob > label,
-  #chopper .sampleTempoControl label {
-    font-size: 6px !important;
+  #chopper .samplerScreenModule {
+    grid-template-columns: minmax(0,1fr) 46px 46px 46px 46px !important;
+    column-gap: 4px !important;
   }
+}
 
-  #chopper .sampleTempoControl > div {
-    padding: 4px !important;
-  }
-
-  #chopper .sampleTempoControl input {
-    min-height: 28px !important;
-    padding: 2px !important;
-    font-size: 8px !important;
+/* Keep mode navigation aligned with the native-width Looper66 mobile shell. */
+@media (max-width: 680px) {
+  .mainModeTabs {
+    width: min(100%, 441px) !important;
   }
 }

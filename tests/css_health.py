@@ -3,10 +3,36 @@ import re
 from css_parser import parse_stylesheet
 
 ROOT=Path(__file__).resolve().parents[1]
-CSS_FILES=[ROOT/'css/base.css',ROOT/'css/clean-ui.css']
+HTML=(ROOT/'index.html').read_text(encoding='utf-8')
 SOURCE='\n'.join(p.read_text(encoding='utf-8',errors='ignore') for p in [ROOT/'index.html',*sorted((ROOT/'js').glob('*.js'))])
 TOKENS=set(re.findall(r'[A-Za-z_][A-Za-z0-9_-]*',SOURCE))
 SELECTOR_BRANCH_BUDGET=750
+
+
+def runtime_css_files():
+    files=[]
+    hrefs=[]
+    for tag in re.findall(r'<link\b[^>]*>',HTML,flags=re.I):
+        rel=re.search(r'\brel=["\']([^"\']+)["\']',tag,flags=re.I)
+        href=re.search(r'\bhref=["\']([^"\']+)["\']',tag,flags=re.I)
+        if not rel or not href or 'stylesheet' not in rel.group(1).lower().split():
+            continue
+        value=href.group(1)
+        if value.startswith(('http://','https://','data:')):
+            continue
+        clean=value.split('?',1)[0].split('#',1)[0]
+        path=(ROOT/clean.lstrip('./')).resolve()
+        assert path.exists(),f'Runtime CSS missing from index.html: {value}'
+        assert path.suffix.lower()=='.css',f'Runtime stylesheet is not CSS: {value}'
+        files.append(path)
+        hrefs.append('./'+str(path.relative_to(ROOT)).replace('\\','/'))
+    assert files,'index.html declares no local runtime stylesheets'
+    assert len(files)==len(set(files)),f'duplicate runtime stylesheet links: {hrefs}'
+    return files,hrefs
+
+
+CSS_FILES,RUNTIME_CSS_HREFS=runtime_css_files()
+
 
 def impossible(selector):
     # Tokens inside :not(...) are exclusions, not requirements for a selector
@@ -24,15 +50,22 @@ def impossible(selector):
         return False
     return any(not known(token) for token in required)
 
+
 assert not impossible('.trackSource:not(.class-that-does-not-exist)')
 assert impossible('.class-that-does-not-exist')
 
-# Browser tests that inline the base stylesheet must also inline clean-ui.css.
-# Otherwise they validate a visual runtime that index.html never serves.
+# Preserve the existing inline-fixture safety gate during P1: any test that
+# embeds the primary stylesheet must also embed the maintained lean layer. Full
+# fixture-manifest migration is a separate regression-safety step; P1's scope is
+# making the production manifest and CSS health model truthful.
+primary_href=RUNTIME_CSS_HREFS[0]
+legacy_required='./css/clean-ui.css'
 for test_path in sorted((ROOT/'tests').glob('*.py')):
     test_source=test_path.read_text(encoding='utf-8',errors='ignore')
-    if './css/base.css' in test_source:
-        assert './css/clean-ui.css' in test_source, f'{test_path.name}: base.css is inlined without clean-ui.css'
+    if primary_href in test_source:
+        assert legacy_required in test_source,(
+            f'{test_path.name}: {primary_href} is inlined without {legacy_required}'
+        )
 
 total_lines=0
 total_selectors=0
@@ -55,7 +88,8 @@ assert total_selectors < SELECTOR_BRANCH_BUDGET,(
 )
 
 print(
-    f'OK: CSS health — {total_selectors}/{SELECTOR_BRANCH_BUDGET} selector branches, '
+    f'OK: CSS health — {len(CSS_FILES)} runtime stylesheets from index.html, '
+    f'{total_selectors}/{SELECTOR_BRANCH_BUDGET} selector branches, '
     f'{total_lines} informational lines, 0 unreachable selector branches, '
-    'browser tests use the full cascade'
+    'legacy inline-fixture cascade guard preserved'
 )

@@ -51,14 +51,6 @@ $("headerCrateToggle").onclick=()=>{
   );
 };
 
-$("practiceOverlayOpen").onclick=()=>$("practice").classList.add("overlayOpen");
-$("practiceOverlayClose").onclick=()=>{
-  stopPractice();
-  $("practice").classList.remove("overlayOpen");
-};
-
-let cassetteDoorTimer=null;
-
 function openFilePicker(id){
   const input=$(id);
   input.value="";
@@ -82,29 +74,6 @@ async function handleBeatImport(files,label){
   }
 }
 
-function pulseCassetteDoor(){
-  const deck=$("looperDropzoneBtn");
-  if(!deck)return;
-  deck.classList.remove("ejecting");
-  void deck.offsetWidth;
-  deck.classList.add("ejecting");
-  if(cassetteDoorTimer)clearTimeout(cassetteDoorTimer);
-  cassetteDoorTimer=setTimeout(()=>{
-    deck.classList.remove("ejecting");
-    cassetteDoorTimer=null;
-  },760);
-}
-
-$("cassetteDoorEject").onclick=(ev)=>{
-  ev.stopPropagation();
-  if(deckSource)stopDeck();
-  pulseCassetteDoor();
-  openFilePicker("beatFiles");
-};
-$("tapeCounterReset").onclick=(ev)=>{
-  ev.stopPropagation();
-  resetTapeCounter();
-};
 $("looperDropzoneBtn").addEventListener("dragover",ev=>{
   ev.preventDefault();
   $("looperDropzoneBtn").classList.add("dragging");
@@ -126,7 +95,7 @@ $("beatFiles").onchange=()=>handleBeatImport($("beatFiles").files,"IMPORT");
 $("beatFolder").onchange=()=>handleBeatImport($("beatFolder").files,"FOLDER IMPORT");
 $("librarySearch").oninput=()=>refreshLibrary(false);
 $("libraryOrder").onchange=()=>refreshLibrary(false);
-const deckTransportControlIds=["prevBeat","playBeat","stopBeat","nextBeat","autoLooperToggle"];
+const deckTransportControlIds=["prevBeat","playBeat","stopBeat","nextBeat","autoLooperToggle","deckAutoToggle","deckPitch"];
 deckTransportControlIds.forEach(id=>{
   $(id)?.addEventListener("click",ev=>ev.stopPropagation());
 });
@@ -144,13 +113,12 @@ function runLooperAction(label,action){
 }
 
 $("autoLooperToggle").onclick=toggleAutoLooper;
+$("deckAutoToggle").onclick=toggleDeckAuto;
+$("deckPitch").oninput=event=>setLooperPitch(event.currentTarget.value);
 $("playBeat").onclick=()=>runLooperAction("PLAY",playDeck);
 $("stopBeat").onclick=()=>stopDeck();
 $("prevBeat").onclick=()=>runLooperAction("PREV",()=>selectRelative(-1));
 $("nextBeat").onclick=()=>runLooperAction("NEXT",()=>selectRelative(1));
-
-$("newPattern").onclick=makePractice;
-$("startPractice").onclick=startPractice;
 
 $("loadSampleBtn").onclick=()=>openFilePicker("sampleFile");
 $("sampleFile").onchange=()=>loadChopperSample($("sampleFile").files[0]);
@@ -158,8 +126,6 @@ $("sliceCount").onchange=()=>{
   stopChopAudition();
   autoPlaceMarkers();
 };
-$("masterVolume").oninput=()=>updateMasterVolume($("masterVolume").value);
-
 $("sampleVolume").oninput=()=>updateSampleVolume($("sampleVolume").value);
 
 $("sampleVolume").onchange=async()=>{
@@ -174,7 +140,10 @@ $("sampleVolume").onchange=async()=>{
   }
 };
 
-$("sampleBpm").oninput=renderSampleTimeline;
+$("sampleBpm").oninput=()=>{
+  invalidatePreviewRender();
+  renderSampleTimeline();
+};
 $("sampleBpm").onchange=async()=>{
   if(!isLoopPlaying)return;
   const mode=lastPreviewMode;
@@ -202,11 +171,10 @@ $("samplePitch").onchange=async()=>{
     }
   }
 };
+document.querySelectorAll("[data-sequence-page]").forEach(button=>{
+  button.onclick=()=>setSequencePage(button.dataset.sequencePage);
+});
 $("clearGrid").onclick=clearLoopGrid;
-$("autoMarkers").onclick=()=>{
-  stopChopAudition();
-  autoPlaceMarkers();
-};
 
 $("waveZoom").oninput=drawWave;
 $("waveScroll").oninput=drawWave;
@@ -214,11 +182,11 @@ $("gridDivision").onchange=drawWave;
 $("transientRadius").onchange=drawWave;
 
 $("snareReverbMix").oninput=()=>{
+  invalidatePreviewRender();
   $("snareReverbMixReadout").textContent=`${$("snareReverbMix").value}%`;
 };
 $("snareReverbMix").onchange=async()=>{
   const mix=Number($("snareReverbMix").value)||0;
-  renderedFlip=null;
   if(!isLoopPlaying){
     $("drumStatus").textContent=mix>0?`REVERB ${mix}% • READY`:"REVERB OFF • READY";
     return;
@@ -231,11 +199,13 @@ $("snareReverbMix").onchange=async()=>{
   }
 };
 
-$("punchMode").oninput=refreshPunchUI;
+$("punchMode").oninput=()=>{
+  invalidatePreviewRender();
+  refreshPunchUI();
+};
 $("punchMode").onchange=async()=>{
   const mode=punchModeName();
   refreshPunchUI();
-  renderedFlip=null; // never keep a preview rendered with an older PUNCH preset
 
   if(!isLoopPlaying){
     $("chopStatus").textContent=`PUNCH ${mode.toUpperCase()} • READY`;
@@ -260,20 +230,33 @@ $("newDrums").onclick=generateNewDrums;
 $("playDrumsOnly").onclick=playDrumsPreview;
 async function playCurrentBeat(){
   stopChopAudition();
+  const generation=invalidatePreviewRender();
   try{
     const events=gridEventsForRender();
     await ensureDrumSelection();
-    renderedFlip=await renderSequence(events,sampleBuffer,markers,samplePitchRate());
+    if(generation!==previewRenderGeneration)return false;
+
+    const buffer=await renderSequence(events,sampleBuffer,markers,samplePitchRate());
+    if(generation!==previewRenderGeneration)return false;
+
+    renderedFlip=buffer;
     lastPreviewMode="full";
     $("chopStatus").textContent=`READY • ${events.filter(Boolean).length} chop triggers • ${samplePitchSemitones>0?"+":""}${samplePitchSemitones} st`;
-    await playRendered(renderedFlip);
+    return await playRendered(buffer,generation);
   }catch(e){
-    $("chopStatus").textContent="ERROR: "+e.message;
+    if(generation===previewRenderGeneration){
+      $("chopStatus").textContent="ERROR: "+e.message;
+    }
+    return false;
   }
 }
 
 $("previewFlip").onclick=playCurrentBeat;
-$("stopFlip").onclick=stopCurrentBeat;
+$("stopFlip").onclick=()=>{
+  stopChopAudition();
+  stopCurrentBeat();
+  $("chopStatus").textContent="STOP";
+};
 document.addEventListener("keydown",async ev=>{
   if(ev.code!=="Space" || ev.repeat)return;
 
@@ -283,13 +266,11 @@ document.addEventListener("keydown",async ev=>{
     tag==="input" || tag==="textarea" || tag==="select" || tag==="button" || tag==="a" ||
     target?.isContentEditable || target?.closest?.('[role="button"],[role="slider"]');
   if(interactive)return;
-  if($("practice")?.classList.contains("overlayOpen"))return;
 
   ev.preventDefault();
 
   if($("looper")?.classList.contains("active")){
-    if(deckSource)stopDeck();
-    else await playDeck();
+    await toggleDeckPlayback();
     return;
   }
 
@@ -395,12 +376,8 @@ function safeInit(name,fn){
 }
 
 [
-  ["meters",ensureMeterElements],
-  ["practice",makePractice],
   ["drum-selection",updateDrumSelectionUI],
   ["auto-looper",refreshAutoLooperCompact],
-  ["tape-counter",refreshTapeCounter],
-  ["master-volume",updateMasterVolume],
   ["punch",refreshPunchUI],
   ["loop-grid",renderLoopGrid],
   ["waveform",drawWave]

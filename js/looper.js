@@ -8,74 +8,59 @@ const BEAT_DB_VERSION=3;
 const BEAT_STORE_NAME="beats";
 const BEAT_FOLDER_CACHE_PREFIX="beat-folder-cache:";
 
+// Looper66 owns the complete deck state. Other modules may call the transport
+// functions below, but do not mutate or mirror these values.
+let deckSource=null;
+let deckBuffer=null;
+let currentTrack=null;
+let deckOutputGain=null;
+let autoLooperEnabledState=false;
+let autoLooperTimer=null;
+let autoLooperLastCtxTime=0;
+let autoLooperSourceSeconds=0;
+let autoLooperLoopCount=0;
+let autoLooperSpeedPercent=100;
+let looperSpeedRateLevel=0;
+let looperPitchPercent=0;
+
 // Physical rack and transport contracts live here so rendering, timing and
 // tests share the same values instead of repeating UI magic numbers.
 const MIN_RACK_COLUMNS=3;
-const RACK_SLOTS_PER_COLUMN=4;
+const RACK_SLOTS_PER_COLUMN=3;
 const AUTO_LOOP_BATCH=8;
-const AUTO_SPEED_INCREMENT_PERCENT=1;
 const AUTO_SPEED_MAX_PERCENT=200;
-const AUTO_SPEED_MODES=[
-  {label:"OFF",loops:0,readout:"OFF"},
-  {label:`+${AUTO_SPEED_INCREMENT_PERCENT}% / ${AUTO_LOOP_BATCH} LOOPS`,loops:AUTO_LOOP_BATCH,readout:`1/${AUTO_LOOP_BATCH}`},
-  {label:`+${AUTO_SPEED_INCREMENT_PERCENT}% / 4 LOOPS`,loops:4,readout:"1/4"},
-  {label:`+${AUTO_SPEED_INCREMENT_PERCENT}% / 2 LOOPS`,loops:2,readout:"1/2"},
-  {label:`+${AUTO_SPEED_INCREMENT_PERCENT}% / LOOP`,loops:1,readout:"1/1"}
-];
-let autoLooperModeIndex=0;
 const AUTO_PROGRESS_INTERVAL_MS=200;
-const TAPE_COUNTER_INTERVAL_MS=100;
-const STANDARD_TAPE_SPEED_CM_PER_SECOND=4.75;
-const TAPE_COUNTER_CM_PER_UNIT=4.75;
 const SUPPLY_REEL_CYCLE_SECONDS=2.91;
 const TAKEUP_REEL_CYCLE_SECONDS=1.46;
 
-function autoLooperMode(){
-  return AUTO_SPEED_MODES[autoLooperModeIndex]||AUTO_SPEED_MODES[0];
-}
-
-function autoLooperLoopBatch(){
-  return autoLooperMode().loops||AUTO_LOOP_BATCH;
-}
-
 // Keep the cassette view beside the Looper state it renders. This function is
 // deliberately presentation-only: transport changes remain in playDeck(),
-// stopDeck() and toggleAutoLooper(), which makes UI refreshes safe to repeat.
+// stopDeck() and the Speed Rate transitions, which makes refreshes safe to repeat.
 function refreshCassetteUI(){
   const zone=$("looperDropzoneBtn");
   const name=$("cassetteBeatName");
-  const hint=$("cassetteHint");
-  const door=$("cassetteDoorEject");
-  const action=$("cassetteDoorAction");
+  const readoutTrack=$("deckReadoutTrack");
   const transportState=$("deckTransportState");
   const speedReadout=$("deckSpeedReadout");
+  const speedEcho=$("deckSpeedEcho");
   const autoReadout=$("deckAutoReadout");
-  if(!zone || !name || !hint || !door || !action) return;
+  if(!zone || !name) return;
 
   const currentName=($("deckTrack")?.textContent || "NO BEAT LOADED").trim();
-  name.textContent=shortName(currentName.toUpperCase(),32);
+  const displayName=shortName(currentName.toUpperCase(),32);
+  name.textContent=displayName;
+  if(readoutTrack)readoutTrack.textContent=displayName;
 
   const loaded=!!deckBuffer;
   const playing=!!deckSource;
 
   zone.classList.toggle("loaded",loaded);
   zone.classList.toggle("playing",playing);
-  action.textContent=loaded ? "REPLACE" : "LOAD";
   if(transportState)transportState.textContent=!loaded ? "EMPTY" : playing ? "PLAYING" : "READY";
-  if(speedReadout)speedReadout.textContent=`${autoLooperSpeedPercent}%`;
-  if(autoReadout)autoReadout.textContent=autoLooperMode().readout;
-  door.setAttribute("aria-label",loaded
-    ? "Éjecter la cassette et choisir un autre beat"
-    : "Ouvrir la porte cassette et charger un beat"
-  );
-
-  if(!loaded){
-    hint.textContent="PRESS EJECT TO LOAD A BEAT";
-  }else if(playing){
-    hint.textContent="PLAYING • EJECT STOPS";
-  }else{
-    hint.textContent="READY • PLAY OR EJECT";
-  }
+  const formattedRate=formatDeckRate();
+  if(speedReadout)speedReadout.textContent=formattedRate;
+  if(speedEcho)speedEcho.textContent=formattedRate;
+  if(autoReadout)autoReadout.textContent=autoLooperEnabledState ? "ON" : "OFF";
 }
 
 // V61 stability: IndexedDB can be blocked by browser/privacy context. In that
@@ -84,7 +69,6 @@ function refreshCassetteUI(){
 const memoryBeatStore=new Map();
 let dbFallbackMode=false;
 let dbPromise=null;
-let storeLampTimer=null;
 
 function enableDbFallback(error){
   dbFallbackMode=true;
@@ -152,16 +136,7 @@ async function runBeatStoreTransaction(mode,operation){
   });
 }
 
-function flashStoreLamp(){
-  if(storeLampTimer)clearTimeout(storeLampTimer);
-  setLamp("lampStore",true);
-  storeLampTimer=setTimeout(()=>{
-    storeLampTimer=null;
-    setLamp("lampStore",false);
-  },250);
-}
-
-async function dbPut(row,{flashLamp=true}={}){
+async function dbPut(row){
   if(dbFallbackMode){
     memoryBeatStore.set(row.id,row);
   }else{
@@ -179,7 +154,6 @@ async function dbPut(row,{flashLamp=true}={}){
       }
     }
   }
-  if(flashLamp)flashStoreLamp();
 }
 
 async function dbDelete(id){
@@ -609,12 +583,6 @@ function renderLibraryRows(rows){
     content.push(createCassetteRackColumn(rows,columnIndex));
   }
 
-  if(!rows.length){
-    const message=document.createElement("div");
-    message.className="libraryEmptyMessage";
-    message.textContent="Aucun résultat. Importe un beat ou efface la recherche.";
-    content.push(message);
-  }
   box.replaceChildren(...content);
 }
 
@@ -649,9 +617,14 @@ function commitLoadedTrack(row,decoded){
   deckBuffer=decoded;
   row.duration=deckBuffer.duration;
 
-  // Imported beats start at original speed.
+  // Every newly loaded beat starts at its original speed and neutral pitch.
   autoLooperSpeedPercent=100;
+  looperSpeedRateLevel=0;
+  looperPitchPercent=0;
+  autoLooperEnabledState=false;
   stopAutoLooperProgress();
+  const pitch=$('deckPitch');
+  if(pitch)pitch.value="0";
   $("deckTrack").textContent=row.name;
   $("deckInfo").textContent=`${deckBuffer.duration.toFixed(1)} s • original speed`;
   refreshCassetteUI();
@@ -677,64 +650,15 @@ async function switchTrack(row){
 }
 
 function deckRate(){
-  return autoLooperSpeedPercent / 100;
+  return (autoLooperSpeedPercent/100)*(1+looperPitchPercent/100);
 }
 
-function formatTapeCounter(value){
-  const normalized=Math.floor(Math.max(0,Number(value)||0))%10000;
-  return String(normalized).padStart(4,"0");
+function formatDeckRate(){
+  return `${Math.round(deckRate()*100)}%`;
 }
 
-function refreshTapeCounter(animate=true){
-  const counter=$("tapeCounter");
-  if(!counter)return;
-  const display=formatTapeCounter(tapeCounterUnits);
-  if(counter.dataset.value===display)return;
-  counter.dataset.value=display;
-  const wheels=[...counter.querySelectorAll(".counterWheel")];
-  wheels.forEach((wheel,index)=>{
-    const digit=Number(display[index]);
-    const glyph=wheel.querySelector(".counterGlyph");
-    if(wheel.dataset.digit===String(digit))return;
-    wheel.dataset.digit=String(digit);
-    wheel.dataset.prev=String((digit+9)%10);
-    wheel.dataset.next=String((digit+1)%10);
-    if(glyph)glyph.textContent=String(digit);
-    wheel.classList.remove("rolling");
-    if(animate){
-      void wheel.offsetWidth;
-      wheel.classList.add("rolling");
-    }
-  });
-  counter.setAttribute("aria-label",`Compteur de bande ${display}`);
-}
-
-function resetTapeCounter(){
-  tapeCounterUnits=0;
-  refreshTapeCounter(false);
-}
-
-function stopTapeCounter(){
-  if(tapeCounterTimer){
-    clearInterval(tapeCounterTimer);
-    tapeCounterTimer=null;
-  }
-  tapeCounterLastCtxTime=0;
-}
-
-function startTapeCounter(){
-  stopTapeCounter();
-  if(!ctx)return;
-  tapeCounterLastCtxTime=ctx.currentTime;
-  tapeCounterTimer=setInterval(()=>{
-    if(!deckSource||!ctx)return;
-    const now=ctx.currentTime;
-    const delta=Math.max(0,now-tapeCounterLastCtxTime);
-    tapeCounterLastCtxTime=now;
-    const unitsPerSecond=(STANDARD_TAPE_SPEED_CM_PER_SECOND/TAPE_COUNTER_CM_PER_UNIT)*deckRate();
-    tapeCounterUnits+=delta*unitsPerSecond;
-    refreshTapeCounter();
-  },TAPE_COUNTER_INTERVAL_MS);
+function syncDeckPlaybackRate(){
+  if(deckSource)deckSource.playbackRate.value=deckRate();
 }
 
 function refreshAutoLooperCompact(){
@@ -742,12 +666,13 @@ function refreshAutoLooperCompact(){
   const status=$("autoLooperCompactStatus");
   const deck=$("looperDropzoneBtn");
   const speed=$("deckSpeedReadout");
+  const speedEcho=$("deckSpeedEcho");
   const auto=$("deckAutoReadout");
-  const cadence=document.querySelector(".deckReadoutAuto em");
+  const autoButton=$("deckAutoToggle");
+  const pitchControl=$("deckPitch");
+  const pitchReadout=$("deckPitchReadout");
+  const pitchModule=$("deckPitchModule");
   if(!btn || !status) return;
-
-  const mode=autoLooperMode();
-  const batch=autoLooperLoopBatch();
 
   // Compact cassette tape moves at 4.75 cm/s. Keep the visual reels tied to
   // the actual deck playback rate instead of using a decorative fixed spin.
@@ -757,18 +682,29 @@ function refreshAutoLooperCompact(){
     deck.style.setProperty("--takeup-reel-cycle",`${(TAKEUP_REEL_CYCLE_SECONDS/rate).toFixed(3)}s`);
   }
 
-  btn.dataset.autoStep=String(autoLooperModeIndex);
-  btn.classList.toggle("active",autoLooperEnabledState);
-  btn.setAttribute("aria-pressed",autoLooperEnabledState ? "true" : "false");
-  btn.setAttribute("aria-label",`Accélération automatique ${mode.label}`);
-  btn.title=`AUTO ${mode.label}`;
-  if(speed)speed.textContent=`${autoLooperSpeedPercent}%`;
-  if(auto)auto.textContent=mode.readout;
-  if(cadence)cadence.textContent=mode.label;
+  btn.dataset.speedLevel=String(looperSpeedRateLevel);
+  btn.setAttribute("aria-pressed",looperSpeedRateLevel ? "true" : "false");
+  btn.setAttribute("aria-label",looperSpeedRateLevel
+    ? `Speed Up niveau ${looperSpeedRateLevel}, plus ${looperSpeedRateLevel} pour cent toutes les huit boucles`
+    : "Speed Up désactivé"
+  );
+  if(autoButton)autoButton.setAttribute("aria-pressed",autoLooperEnabledState ? "true" : "false");
+  const formattedRate=formatDeckRate();
+  if(speed)speed.textContent=formattedRate;
+  if(speedEcho)speedEcho.textContent=formattedRate;
+  if(auto)auto.textContent=autoLooperEnabledState ? "ON" : "OFF";
+  const pitchLabel=`${looperPitchPercent>0?"+":""}${looperPitchPercent.toFixed(1)}%`;
+  if(pitchReadout)pitchReadout.textContent=pitchLabel;
+  if(pitchControl)pitchControl.setAttribute("aria-valuetext",pitchLabel);
+  if(pitchModule){
+    const pitchProgress=(looperPitchPercent+8)/16;
+    pitchModule.style.setProperty("--pitch-x",`${(18+pitchProgress*58).toFixed(2)}%`);
+    pitchModule.style.setProperty("--pitch-y",`${(70-pitchProgress*50).toFixed(2)}%`);
+  }
 
-  status.textContent=autoLooperEnabledState
-    ? `${mode.label} • ${autoLooperLoopCount}/${batch}`
-    : `OFF • +${AUTO_SPEED_INCREMENT_PERCENT}% / ${AUTO_LOOP_BATCH} LOOPS`;
+  status.textContent=looperSpeedRateLevel
+    ? `+${looperSpeedRateLevel}% • ${autoLooperLoopCount}/${AUTO_LOOP_BATCH}`
+    : "OFF";
 }
 
 function resetAutoLooperProgress(){
@@ -790,23 +726,19 @@ function stopAutoLooperProgress(){
 }
 
 function applyAutoLooperIncrement(){
-  if(autoLooperSpeedPercent>=AUTO_SPEED_MAX_PERCENT)return;
+  if(!looperSpeedRateLevel || autoLooperSpeedPercent>=AUTO_SPEED_MAX_PERCENT)return;
 
   autoLooperSpeedPercent=Math.min(
     AUTO_SPEED_MAX_PERCENT,
-    autoLooperSpeedPercent+AUTO_SPEED_INCREMENT_PERCENT
+    autoLooperSpeedPercent+looperSpeedRateLevel
   );
-  if(deckSource){
-    deckSource.playbackRate.value=deckRate();
-  }
+  syncDeckPlaybackRate();
   refreshAutoLooperCompact();
 }
 
 function startAutoLooperProgress(){
   if(autoLooperTimer) clearInterval(autoLooperTimer);
   resetAutoLooperProgress();
-  const batch=autoLooperLoopBatch();
-
   autoLooperTimer=setInterval(()=>{
     if(!deckSource || !deckBuffer || !ctx) return;
 
@@ -820,7 +752,7 @@ function startAutoLooperProgress(){
       autoLooperSourceSeconds-=dur;
       autoLooperLoopCount++;
 
-      if(autoLooperLoopCount>=batch){
+      if(autoLooperLoopCount>=AUTO_LOOP_BATCH){
         autoLooperLoopCount=0;
         if(autoLooperEnabledState){
           applyAutoLooperIncrement();
@@ -833,27 +765,46 @@ function startAutoLooperProgress(){
 }
 
 function toggleAutoLooper(){
-  autoLooperModeIndex=(autoLooperModeIndex+1)%AUTO_SPEED_MODES.length;
-  autoLooperEnabledState=autoLooperModeIndex!==0;
+  looperSpeedRateLevel=(looperSpeedRateLevel+1)%6;
+  autoLooperEnabledState=looperSpeedRateLevel!==0;
 
   if(autoLooperEnabledState){
     if(deckSource)startAutoLooperProgress();
     else resetAutoLooperProgress();
   }else{
     autoLooperSpeedPercent=100;
-    if(deckSource)deckSource.playbackRate.value=1;
+    syncDeckPlaybackRate();
     stopAutoLooperProgress();
   }
 
   refreshAutoLooperCompact();
 }
 
+function toggleDeckAuto(){
+  if(!looperSpeedRateLevel)looperSpeedRateLevel=1;
+  autoLooperEnabledState=!autoLooperEnabledState;
+  if(autoLooperEnabledState){
+    if(deckSource)startAutoLooperProgress();
+    else resetAutoLooperProgress();
+  }else{
+    stopAutoLooperProgress();
+  }
+  refreshAutoLooperCompact();
+}
+
+function setLooperPitch(value){
+  const parsed=Number(value);
+  looperPitchPercent=Math.max(-8,Math.min(8,Number.isFinite(parsed)?parsed:0));
+  autoLooperEnabledState=false;
+  stopAutoLooperProgress();
+  syncDeckPlaybackRate();
+  refreshCassetteUI();
+  refreshAutoLooperCompact();
+}
+
 async function playDeck(){
   const request=++deckTransportSequence;
-  if(!deckBuffer){
-    $("cassetteHint").textContent="LOAD A BEAT FIRST";
-    return false;
-  }
+  if(!deckBuffer)return false;
 
   const buffer=deckBuffer;
   await ensureAudio();
@@ -871,12 +822,8 @@ async function playDeck(){
   deckOutputGain.connect(liveBus);
 
   deckSource.start(0);
-  startTapeCounter();
   if(autoLooperEnabledState)startAutoLooperProgress();
   else stopAutoLooperProgress();
-  setLamp("lampPlay",true);
-  ensureMeterElements();
-  startMeterAnimation();
   refreshCassetteUI();
   return true;
 }
@@ -884,7 +831,6 @@ async function playDeck(){
 function stopDeck({cancelPendingPlay=true}={}){
   if(cancelPendingPlay)deckTransportSequence++;
   stopAutoLooperProgress();
-  stopTapeCounter();
   if(deckSource){
     try{deckSource.stop()}catch{}
     try{deckSource.disconnect()}catch{}
@@ -894,8 +840,15 @@ function stopDeck({cancelPendingPlay=true}={}){
     try{deckOutputGain.disconnect()}catch{}
     deckOutputGain=null;
   }
-  setLamp("lampPlay",false);
   refreshCassetteUI();
+}
+
+async function toggleDeckPlayback(){
+  if(deckSource){
+    stopDeck();
+    return false;
+  }
+  return playDeck();
 }
 
 

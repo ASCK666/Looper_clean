@@ -73,13 +73,112 @@ function synthHit(kind,rate){
   return out;
 }
 
-function sampleDensity(buffer){
-  const data=buffer.getChannelData(0),hop=1024;let hits=0,total=0,prev=0;
-  for(let i=0;i+hop<data.length;i+=hop){
-    let e=0;for(let j=0;j<hop;j++){const v=data[i+j];e+=v*v;}
-    e=Math.sqrt(e/hop);if(e-prev>.025)hits++;prev=e;total++;
+const AUTO_MIX_DRUM_PEAK_TARGET_DB={kick:-2.5,snare:-3.5,hat:-7.5};
+const AUTO_MIX_DRUM_COMPENSATION_DB=6;
+const AUTO_MIX_SAMPLE_RMS_TARGET_DB=-13.5;
+const AUTO_MIX_SAMPLE_CUT_DB=-3;
+const AUTO_MIX_SAMPLE_BOOST_DB=4;
+const FINAL_MIX_CEILING_DB=-1;
+const CHOP_EDGE_FADE_SECONDS=.0025;
+const mixAnalysisCache=new WeakMap();
+let previewRenderGeneration=0;
+
+// Renderer-owned invalidation for state changes that make a not-yet-started
+// preview obsolete. Keep transport separate: callers that also need to stop an
+// active source must use stopCurrentBeat().
+function invalidatePreviewRender(){
+  previewRenderGeneration++;
+  renderedFlip=null;
+  return previewRenderGeneration;
+}
+
+function analyzeMixBuffer(buffer){
+  if(!buffer || !buffer.length || !buffer.numberOfChannels){
+    return {peak:0,peakDb:-120,rms:0,rmsDb:-120};
   }
-  return total?clamp(hits/total*5,0,1):.5;
+  const cached=mixAnalysisCache.get(buffer);
+  if(cached)return cached;
+
+  const stride=Math.max(1,Math.floor(buffer.length/250000));
+  let peak=0,sumSq=0,count=0;
+  for(let ch=0;ch<buffer.numberOfChannels;ch++){
+    const data=buffer.getChannelData(ch);
+    for(let i=0;i<data.length;i+=stride){
+      const v=Number.isFinite(data[i])?data[i]:0;
+      const a=Math.abs(v);
+      if(a>peak)peak=a;
+      sumSq+=v*v;
+      count++;
+    }
+  }
+
+  const rms=Math.sqrt(sumSq/Math.max(1,count));
+  const result={
+    peak,
+    peakDb:20*Math.log10(Math.max(peak,1e-8)),
+    rms,
+    rmsDb:20*Math.log10(Math.max(rms,1e-8))
+  };
+  mixAnalysisCache.set(buffer,result);
+  return result;
+}
+
+function drumAutoGain(kind,buffer){
+  const target=AUTO_MIX_DRUM_PEAK_TARGET_DB[kind]??-4;
+  const level=analyzeMixBuffer(buffer);
+  if(level.peak<=1e-8)return 1;
+  const correctionDb=clamp(
+    target-level.peakDb,
+    -AUTO_MIX_DRUM_COMPENSATION_DB,
+    AUTO_MIX_DRUM_COMPENSATION_DB
+  );
+  return dbToGain(correctionDb);
+}
+
+function sampleAutoMixGain(buffer){
+  if(!buffer)return 1;
+  const profile=analyzeSampleCondition(buffer);
+  const rmsDb=Number(profile?.rmsDb);
+  if(!Number.isFinite(rmsDb) || rmsDb<=-119)return 1;
+  const postTrimRmsDb=rmsDb+(Number(profile?.trimDb)||0);
+  const correctionDb=clamp(
+    AUTO_MIX_SAMPLE_RMS_TARGET_DB-postTrimRmsDb,
+    AUTO_MIX_SAMPLE_CUT_DB,
+    AUTO_MIX_SAMPLE_BOOST_DB
+  );
+  return dbToGain(correctionDb);
+}
+
+function sampleDensity(buffer){
+  if(!buffer || !buffer.length || !buffer.numberOfChannels)return .5;
+  const hop=1024;
+  const env=[];
+  let maxEnv=0;
+
+  for(let i=0;i+hop<buffer.length;i+=hop){
+    let sumSq=0,count=0;
+    for(let ch=0;ch<buffer.numberOfChannels;ch++){
+      const data=buffer.getChannelData(ch);
+      for(let j=0;j<hop;j++){
+        const v=Number.isFinite(data[i+j])?data[i+j]:0;
+        sumSq+=v*v;
+        count++;
+      }
+    }
+    const rms=Math.sqrt(sumSq/Math.max(1,count));
+    env.push(rms);
+    if(rms>maxEnv)maxEnv=rms;
+  }
+
+  if(!env.length || maxEnv<=1e-8)return .5;
+  const threshold=maxEnv*.055;
+  let hits=0;
+  let prev=env[0];
+  for(let i=1;i<env.length;i++){
+    if(env[i]-prev>threshold)hits++;
+    prev=env[i];
+  }
+  return clamp(hits/env.length*5,0,1);
 }
 
 function autoDrumStyle(density,previousMode=null){
@@ -188,23 +287,13 @@ async function refreshDrumsAfterFolderChange(kind,count,origin){
   // Folder changes stay on the AUTO groove path while rerolling sound files.
   const wasPlaying=isLoopPlaying;
   const modeBefore=lastPreviewMode;
+  invalidatePreviewRender();
 
   try{
     await generateDrumSelection(true);
 
     if(wasPlaying){
-      if(modeBefore==="drums"){
-        renderedFlip=await renderDrumsOnly();
-        lastPreviewMode="drums";
-        await playRendered(renderedFlip);
-      }else if(modeBefore==="full" && sampleBuffer){
-        const events=gridEventsForRender();
-        if(events.some(Boolean)){
-          renderedFlip=await renderSequence(events,sampleBuffer,markers,samplePitchRate());
-          lastPreviewMode="full";
-          await playRendered(renderedFlip);
-        }
-      }
+      await rerenderPreviewMode(modeBefore);
     }
 
     const selected={
@@ -401,35 +490,41 @@ function markDrumSelectionEdited(){
   $("drumSelectionStatus").textContent="Groove modifié manuellement • NEW DRUMS pour repartir d'un nouveau pattern.";
 }
 
-async function rerenderPreviewMode(mode=lastPreviewMode){
+async function rerenderPreviewMode(mode=lastPreviewMode,generation=invalidatePreviewRender()){
   if(mode==="drums"){
-    renderedFlip=await renderDrumsOnly();
+    const buffer=await renderDrumsOnly();
+    if(generation!==previewRenderGeneration)return false;
+    renderedFlip=buffer;
     lastPreviewMode="drums";
-    await playRendered(renderedFlip);
-    return true;
+    return await playRendered(buffer,generation);
   }
 
   if(mode==="full" && sampleBuffer){
     const events=gridEventsForRender();
     if(events.some(Boolean)){
-      renderedFlip=await renderSequence(events,sampleBuffer,markers,samplePitchRate());
+      const buffer=await renderSequence(events,sampleBuffer,markers,samplePitchRate());
+      if(generation!==previewRenderGeneration)return false;
+      renderedFlip=buffer;
       lastPreviewMode="full";
-      await playRendered(renderedFlip);
-      return true;
+      return await playRendered(buffer,generation);
     }
   }
 
   return false;
 }
 
-async function rerenderAfterDrumEdit(){
+async function rerenderAfterDrumEdit(generation){
   if(!isLoopPlaying)return false;
-  return await rerenderPreviewMode();
+  return await rerenderPreviewMode(lastPreviewMode,generation);
 }
 
 async function clearDrumEdits(){
+  let generation=invalidatePreviewRender();
   try{
-    await ensureDrumSelection();
+    if(!currentDrumSelection){
+      await ensureDrumSelection();
+      generation=invalidatePreviewRender();
+    }
     currentDrumSelection.kicks=[];
     currentDrumSelection.snares=[];
     currentDrumSelection.ghosts=[];
@@ -439,7 +534,7 @@ async function clearDrumEdits(){
     currentDrumSelection.hatVelocity={};
     markDrumSelectionEdited();
     renderDrumEditor();
-    await rerenderAfterDrumEdit();
+    await rerenderAfterDrumEdit(generation);
     $("drumStatus").textContent="DRUMS CLEARED ✓";
   }catch(e){
     $("drumStatus").textContent="DRUM EDIT ERROR: "+e.message;
@@ -451,6 +546,7 @@ async function generateNewDrums(){
   try{
     const wasPlaying=isLoopPlaying;
     const modeBefore=lastPreviewMode;
+    invalidatePreviewRender();
 
     await generateDrumSelection(true);
 
@@ -536,9 +632,11 @@ function renderDrumEditor(){
       }
 
       cell.onclick=async()=>{
+        let generation=invalidatePreviewRender();
         if(!currentDrumSelection || currentDrumSelection.mode==="off"){
           try{
             await generateDrumSelection(false);
+            generation=invalidatePreviewRender();
           }catch(e){
             $("drumStatus").textContent="DRUM ERROR: "+e.message;
             return;
@@ -561,7 +659,7 @@ function renderDrumEditor(){
         renderDrumEditor();
 
         try{
-          await rerenderAfterDrumEdit();
+          await rerenderAfterDrumEdit(generation);
           $("drumStatus").textContent=`EDIT ${labelText} ✓`;
         }catch(e){
           $("drumStatus").textContent="DRUM EDIT ERROR: "+e.message;
@@ -584,12 +682,13 @@ function renderDrumEditor(){
 
         if(next===current)return;
 
+        const generation=invalidatePreviewRender();
         setDrumStepVelocity(lane,step,next);
         markDrumSelectionEdited();
         renderDrumEditor();
 
         try{
-          await rerenderAfterDrumEdit();
+          await rerenderAfterDrumEdit(generation);
           $("drumStatus").textContent=`${labelText} ${Math.round(next*100)}%`;
         }catch(e){
           $("drumStatus").textContent="DRUM VELOCITY ERROR: "+e.message;
@@ -876,8 +975,11 @@ function makeSnareBus(offline,destination=offline.destination){
   const conv=offline.createConvolver();
 
   conv.buffer=makeReverbImpulse(offline,fx.type);
-  dry.gain.value=1-fx.mix*.45;
-  wet.gain.value=fx.mix;
+  // Energy-normalized wet/dry law: increasing REVERB changes space without
+  // turning the snare bus into an accidental volume control.
+  const norm=1/Math.sqrt(1+fx.mix*fx.mix);
+  dry.gain.value=norm;
+  wet.gain.value=fx.mix*norm;
 
   input.connect(dry).connect(destination);
   input.connect(conv).connect(wet).connect(destination);
@@ -892,6 +994,9 @@ function renderSelectedDrums(offline,selection,bpm,bars,targetDur,destination=of
   const hat=selection.hat.buffer;
   const beat=60/bpm;
   const snareBus=makeSnareBus(offline,destination);
+  const kickMixGain=drumAutoGain("kick",kick);
+  const snareMixGain=drumAutoGain("snare",snare);
+  const hatMixGain=drumAutoGain("hat",hat);
 
   const add=(buf,time,gain,target=destination)=>{
     if(time<0||time>=targetDur)return;
@@ -909,19 +1014,19 @@ function renderSelectedDrums(offline,selection,bpm,bars,targetDur,destination=of
     for(const step of selection.snares){
       const t=base+step*beat/4+selection.snareDelay*beat;
       const velocity=clamp(Number(selection.snareVelocity?.[step]??1),.10,1);
-      add(snare,t,.72*velocity,snareBus.input);
+      add(snare,t,.72*snareMixGain*velocity,snareBus.input);
     }
 
     for(const step of selection.ghosts){
       const t=base+step*beat/4+selection.snareDelay*beat*.55;
-      add(snare,t,.18,snareBus.input);
+      add(snare,t,.18*snareMixGain,snareBus.input);
     }
 
     for(const step of selection.kicks){
       const nudge=Number(selection.kickNudge?.[step]||0);
       const t=base+step*beat/4+nudge*beat;
       const velocity=clamp(Number(selection.kickVelocity?.[step]??1),.10,1);
-      const gain=(step===0?.86:.80)*velocity;
+      const gain=(step===0?.86:.80)*kickMixGain*velocity;
       add(kick,t,gain);
     }
 
@@ -938,13 +1043,40 @@ function renderSelectedDrums(offline,selection,bpm,bars,targetDur,destination=of
           ? Math.max(.12,selection.hatOff*.78)
           : selection.hatOn;
       const velocity=clamp(Number(selection.hatVelocity?.[step]??1),.10,1);
-      add(hat,t,baseGain*velocity);
+      add(hat,t,baseGain*hatMixGain*velocity);
     }
   }
 }
 
+function applyFinalPeakGuard(buffer,ceilingDb=FINAL_MIX_CEILING_DB){
+  if(!buffer || !buffer.length)return buffer;
+  const ceiling=dbToGain(ceilingDb);
+  let peak=0;
+
+  for(let ch=0;ch<buffer.numberOfChannels;ch++){
+    const data=buffer.getChannelData(ch);
+    for(let i=0;i<data.length;i++){
+      const v=data[i];
+      if(!Number.isFinite(v)){
+        data[i]=0;
+        continue;
+      }
+      const a=Math.abs(v);
+      if(a>peak)peak=a;
+    }
+  }
+
+  if(peak<=ceiling || peak<=1e-8)return buffer;
+  const scale=ceiling/peak;
+  for(let ch=0;ch<buffer.numberOfChannels;ch++){
+    const data=buffer.getChannelData(ch);
+    for(let i=0;i<data.length;i++)data[i]*=scale;
+  }
+  return buffer;
+}
+
 function finalizeLoopBuffer(buffer,fadeMs=3){
-  if(!buffer || !buffer.length || buffer.length<4)return buffer;
+  if(!buffer || !buffer.length || buffer.length<4)return applyFinalPeakGuard(buffer);
   const frames=Math.min(
     Math.max(2,Math.round(buffer.sampleRate*fadeMs/1000)),
     Math.max(2,Math.floor(buffer.length/8))
@@ -973,7 +1105,7 @@ function finalizeLoopBuffer(buffer,fadeMs=3){
       data[data.length-frames+i]=endOriginal[i]*(1-t)+boundary*t;
     }
   }
-  return buffer;
+  return applyFinalPeakGuard(buffer);
 }
 
 async function renderDrumsOnly(){
@@ -991,41 +1123,43 @@ async function renderDrumsOnly(){
 
 async function renderSequence(events,sourceBuffer,cueMarkers,pitchRate){
   if(!sourceBuffer)throw new Error("Charge un sample");
-  const bpm=Math.max(40,Number($("sampleBpm").value)||90);
-  const stepDur=(60/bpm)/2; // eighth note
-  const bars=2;
-  const targetDur=8*60/bpm; // 2 bars x 4 beats
+  const plan=buildSequencePlan(events,$("sampleBpm")?.value,Math.max(0,(cueMarkers?.length||0)-1));
+  const {bpm,bars,targetDur,placed}=plan;
   const rate=44100;
   const offline=new OfflineAudioContext(2,Math.ceil(targetDur*rate),rate);
   const master=makePunchMaster(offline);
-  const sampleConditioner=makeSampleConditioner(offline,master.input,.72*sampleVolumeGain());
+  const sampleConditioner=makeSampleConditioner(
+    offline,
+    master.input,
+    .72*sampleVolumeGain()*sampleAutoMixGain(sourceBuffer)
+  );
 
-  const placed=[];
-  for(let step=0;step<16;step++){
-    const chop=Number(events[step])||0;
-    if(chop>=1 && chop<cueMarkers.length)placed.push({step,chop});
-  }
   if(!placed.length)throw new Error("Place au moins un PAD sur la grille");
 
   // Monophonic chop lane: a pad plays from its cue until the next active
   // eighth-note trigger, or until the sample itself ends.
-  for(let e=0;e<placed.length;e++){
-    const ev=placed[e];
-    const startTime=ev.step*stepDur;
-    const nextTime=e+1<placed.length?placed[e+1].step*stepDur:targetDur;
+  for(const ev of placed){
     const idx=ev.chop-1;
     const sampleStart=cueMarkers[idx];
     const available=Math.max(.01,sourceBuffer.duration-sampleStart);
-    const wanted=Math.max(.01,nextTime-startTime);
+    const wanted=Math.max(.01,ev.nextTime-ev.startTime);
+
+    const maxAudible=available/pitchRate;
+    const stopTime=Math.min(targetDur,ev.startTime+Math.min(wanted,maxAudible));
+    const audibleDur=Math.max(.001,stopTime-ev.startTime);
+    const edgeFade=Math.min(CHOP_EDGE_FADE_SECONDS,audibleDur*.5);
 
     const src=offline.createBufferSource();
     src.buffer=sourceBuffer;
     src.playbackRate.value=pitchRate;
-    src.connect(sampleConditioner.input);
-    src.start(startTime,sampleStart);
-
-    const maxAudible=available/pitchRate;
-    src.stop(Math.min(targetDur,startTime+Math.min(wanted,maxAudible)));
+    const edge=offline.createGain();
+    edge.gain.setValueAtTime(0,ev.startTime);
+    edge.gain.linearRampToValueAtTime(1,ev.startTime+edgeFade);
+    edge.gain.setValueAtTime(1,Math.max(ev.startTime+edgeFade,stopTime-edgeFade));
+    edge.gain.linearRampToValueAtTime(0,stopTime);
+    src.connect(edge).connect(sampleConditioner.input);
+    src.start(ev.startTime,sampleStart);
+    src.stop(stopTime);
   }
 
   const selection=await ensureDrumSelection();
@@ -1033,8 +1167,9 @@ async function renderSequence(events,sourceBuffer,cueMarkers,pitchRate){
   return finalizeLoopBuffer(await offline.startRendering());
 }
 
-async function playRendered(buffer){
+async function playRendered(buffer,expectedGeneration=null){
   await ensureAudio();
+  if(expectedGeneration!==null && expectedGeneration!==previewRenderGeneration)return false;
 
   if(flipSource){
     try{flipSource.stop()}catch{}
@@ -1058,22 +1193,30 @@ async function playRendered(buffer){
       stopPlayheadAnimation(true);
     }
   }
+  return true;
 }
 
 async function playDrumsPreview(){
   stopChopAudition();
+  const generation=invalidatePreviewRender();
   try{
     const selection=await ensureDrumSelection();
-    renderedFlip=await renderDrumsOnly();
+    const buffer=await renderDrumsOnly();
+    if(generation!==previewRenderGeneration)return false;
+    renderedFlip=buffer;
     lastPreviewMode="drums";
     $("drumStatus").textContent=`DRUMS • ${$("sampleBpm").value} BPM • ${selection.mode.toUpperCase()}`;
-    await playRendered(renderedFlip);
+    return await playRendered(buffer,generation);
   }catch(e){
-    $("drumStatus").textContent="DRUM ERROR: "+e.message;
+    if(generation===previewRenderGeneration){
+      $("drumStatus").textContent="DRUM ERROR: "+e.message;
+    }
+    return false;
   }
 }
 
 function stopCurrentBeat(){
+  invalidatePreviewRender();
   if(flipSource){
     try{flipSource.stop()}catch{}
     flipSource=null;

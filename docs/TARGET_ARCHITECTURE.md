@@ -43,8 +43,7 @@ UI / events
 Owns only shared audio/runtime infrastructure:
 
 - `AudioContext` lifecycle;
-- master/live bus;
-- master analyser and meter primitives;
+- live bus and fixed master output gain;
 - reusable audio conversion/decoding helpers;
 - generic, dependency-free helpers that are genuinely shared.
 

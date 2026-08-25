@@ -66,9 +66,9 @@ These changes did **not** relocate feature state out of `core.js`, extract a ren
 
 | State family | Declared today | Main writers today | Main readers today | Target owner | Current issue |
 |---|---|---|---|---|---|
-| `ctx`, `liveBus`, `masterAnalyser`, meter runtime | `core.js` | `core.js`, master-volume UI path | all audio domains | Core | Mostly correct; master-volume state is still mutated directly from Events and its UI/gain refresh is not cleanly owned |
+| `ctx`, `liveBus`, fixed master output gain | `core.js` | `core.js` | all audio domains | Core | Correctly owned shared audio infrastructure |
 | `deckSource`, `deckBuffer`, `currentTrack`, `deckOutputGain` | `core.js` | `looper.js`, some `events.js` transport handlers | Looper UI, Events | Looper | Feature state physically lives in Core and transport state is still inspected from Events |
-| AUTO Looper state and tape counter | `core.js` | `looper.js` | Looper UI, Events | Looper | Feature state physically lives in Core |
+| AUTO Looper state | `core.js` | `looper.js` | Looper UI, Events | Looper | Feature state physically lives in Core |
 | `sampleBuffer`, `sampleName`, `markers`, `transients`, `selectedMarker` | `core.js` | `chopper.js` | Chopper, combined renderer, limited Events readers | Chopper | Behavioral writes are mostly Chopper-owned; `sampleBuffer` and cue positions reach `renderSequence()` explicitly, but this state is still physically declared in Core |
 | sample pitch / volume / condition profile | `core.js` | `chopper.js` | Chopper, combined renderer, Events status/rerender triggers | Chopper | Pitch rate is explicit at the render boundary; sample gain/conditioning and physical ownership remain unresolved |
 | chop audition/playhead state | `core.js` | `chopper.js` | Chopper, renderer play/stop lifecycle | Chopper | Physical ownership mismatch remains; renderer interacts with playhead behavior during preview start/stop |
@@ -134,7 +134,6 @@ Events no longer performs the Chopper sample-load, immediate volume, immediate p
 
 Remaining violations include:
 
-- direct mutation of `masterVolumePercent`;
 - direct inspection of playback/preview state such as `isLoopPlaying`, `lastPreviewMode` and `sampleBuffer` in several handlers;
 - the cross-domain full-preview `playCurrentBeat()` workflow;
 - save/render flows that still know Renderer and Looper internals;
@@ -212,9 +211,7 @@ Completed:
 7. drums-only preview-start lifecycle;
 8. NEW DRUMS while-playing lifecycle.
 
-Remaining P1 candidates still exist, notably full `playCurrentBeat()`, master-volume and save/transport workflows. They are **deferred**, not queued. A move that only transfers a cross-domain block into `drums.js` without reducing hidden dependencies should be rejected.
-
-The master-volume guard still applies: do **not** add a setter that merely hides the global assignment.
+Remaining P1 candidates still exist, notably full `playCurrentBeat()` and save/transport workflows. They are **deferred**, not queued. A move that only transfers a cross-domain block into `drums.js` without reducing hidden dependencies should be rejected.
 
 ### P2 — Renderer input stabilization
 

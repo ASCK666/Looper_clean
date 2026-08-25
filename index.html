@@ -7,16 +7,19 @@
 <meta name="referrer" content="no-referrer">
 <title>Scratch Practice Station</title>
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="./css/base.css">
+<link rel="stylesheet" href="./css/tokens.css">
+<link rel="stylesheet" href="./css/shared.css">
+<link rel="stylesheet" href="./css/base.css?v=looper66-tabs-210826-5">
+<link rel="stylesheet" href="./css/looper.css">
 <link rel="stylesheet" href="./css/clean-ui.css">
 <link rel="stylesheet" href="./css/chopper-drum-controls.css">
-<link rel="stylesheet" href="./assets/looper-ui/overlay.css">
+<link rel="stylesheet" href="./css/chopper-deck-texture.css" data-chopper-deck-texture="1">
 </head>
 <body>
 <div id="appBootError" role="alert" aria-live="assertive"></div>
 <div class="app">
 <div class="machine">
-  <div class="top stableTop">
+  <div class="compatHidden" aria-hidden="true">
     <div class="stableBrand">
       <div class="stableBrandMark">SP</div>
       <div class="stableBrandName">SCRATCH PRACTICE</div>
@@ -30,36 +33,12 @@
       </div>
       <button id="headerCrateToggle" class="headerDeckCaret" type="button" aria-label="Ouvrir la beat crate">▾</button>
     </div>
-
-    <div class="headerActions">
-      <button id="practiceOverlayOpen" class="utilityBtn" type="button">PRACTICE</button>
-    </div>
-
-    <div class="headerMaster">
-      <div class="headerVolLabel">VOLUME</div>
-      <div class="headerMasterInner">
-        <div class="masterVolumeBox headerMasterBox">
-          <input id="masterVolume" type="range" min="0" max="100" step="1" value="85">
-        </div>
-        <div id="masterDb" class="masterDb">-1.8 dB</div>
-        <span id="masterVolumeReadout" class="compatHidden">85%</span>
-        <div class="headerMeterWrap">
-          <div id="vu" class="vu headerVu"></div>
-          <div class="headerMeterScale"><span>-24</span><span>-18</span><span>-12</span><span>-6</span><span>-3</span><span>0</span></div>
-        </div>
-      </div>
-      <div class="compatHidden">
-        <div id="lampReady" class="lamp green on"></div>
-        <div id="lampPlay" class="lamp red"></div>
-        <div id="lampStore" class="lamp amber"></div>
-      </div>
-    </div>
   </div>
 
   <div class="tabs mainModeTabs" role="tablist" aria-label="Main workstation mode">
     <button class="tab active" data-tab="looper" type="button" role="tab" aria-selected="true">
       <span class="tabLed"></span>
-      <span class="tabCopy"><b>LOOPER</b><small>PLAY / PRACTICE</small></span>
+      <span class="tabCopy"><b>LOOPER</b><small>PLAY / BEATS</small></span>
     </button>
     <button class="tab" data-tab="chopper" type="button" role="tab" aria-selected="false">
       <span class="tabLed"></span>
@@ -68,137 +47,77 @@
   </div>
 
   <!-- LOOPER -->
-  <section id="looper" class="screen active asset-ui">
-    <div class="layout">
-      <div class="panel beatCratePanel">
-        <div class="title stableTitle"><span>BEAT CRATE <i class="blueLed"></i></span><span class="titleMeta">LOCAL CASSETTE RACK</span></div>
-
-        <div class="grid2 beatCrateControls">
-          <div><label for="librarySearch">SEARCH</label><input id="librarySearch" placeholder="SEARCH BEATS…"></div>
-          <div><label for="libraryOrder">SORT</label><select id="libraryOrder"><option value="name">NAME</option><option value="recent">RECENT</option></select></div>
-        </div>
-        <div id="library" class="library"></div>
-      </div>
-
-      <div class="panel looperMainPanel">
-        <div class="title stableTitle looperFrameHeader">
-          <span>LOOPER <i class="blueLed"></i></span>
-          <span class="looperPanelOutput"><b>OUTPUT</b><span id="looperVu" class="vu looperVu" aria-label="Niveau de sortie du Looper"></span></span>
-        </div>
-        <div class="looperPlayerHardware">
-          <div class="display looperDisplay">
-            <div id="looperDropzoneBtn" class="cassetteDeck" role="group" aria-label="Lecteur cassette pixel art et commandes du looper">
-              <div class="deckReadout" role="status" aria-live="polite">
-                <div class="deckReadoutTrack"><small>TRACK</small><strong id="cassetteBeatName">NO BEAT LOADED</strong></div>
-                <div><small>STATE</small><strong id="deckTransportState">READY</strong></div>
-                <div><small>SPEED</small><strong id="deckSpeedReadout">100%</strong></div>
-                <div class="deckReadoutAuto"><small>AUTO</small><strong id="deckAutoReadout">OFF</strong><em>+1% / 8 LOOPS</em></div>
-              </div>
-
-              <div class="deckHardwareGrid">
-                <aside class="tapeCounterModule" aria-label="Compteur mécanique de bande">
-                  <small class="tapeCounterLabel">TAPE COUNTER</small>
-                  <div id="tapeCounter" class="tapeCounterWindow" role="timer" aria-live="off" aria-label="Compteur de bande 0000">
-                    <span class="counterWheel" data-digit="0" data-prev="9" data-next="1"><span class="counterGlyph">0</span></span>
-                    <span class="counterWheel" data-digit="0" data-prev="9" data-next="1"><span class="counterGlyph">0</span></span>
-                    <span class="counterWheel" data-digit="0" data-prev="9" data-next="1"><span class="counterGlyph">0</span></span>
-                    <span class="counterWheel" data-digit="0" data-prev="9" data-next="1"><span class="counterGlyph">0</span></span>
-                  </div>
-                  <button id="tapeCounterReset" class="deckCounterKey" type="button" aria-label="Remettre le compteur de bande à zéro">RESET</button>
-                  <button id="cassetteDoorEject" class="deckSideKey counterEjectKey" type="button" aria-label="Éjecter la cassette et remplacer le beat" title="EJECT / REPLACE">
-                    <span class="deckKeyIcon" aria-hidden="true">⏏</span>
-                    <strong>EJECT</strong>
-                    <small id="cassetteDoorAction">LOAD</small>
-                  </button>
-                </aside>
-
-                <div class="deckMechanismColumn">
-                  <div class="cassetteMechanismCrop">
-                    <div class="cassetteDeckStage">
-                      <img class="cassetteDeckImage" src="assets/cassette-mechanism-pixel-v84.png" alt="Cabine cassette pixel art aux proportions physiques 10,16 par 6,35 cm" draggable="false">
-
-                      <div class="cassetteDoorCavity" aria-hidden="true"></div>
-
-                      <div class="cassetteDoorAssembly">
-                        <img class="cassetteDoorPanel" src="assets/cassette-mechanism-pixel-v84.png" alt="" aria-hidden="true" draggable="false">
-                        <div class="cassetteDoorGlass" aria-hidden="true"></div>
-                        <div class="cassetteDoorLip" aria-hidden="true"></div>
-
-                        <img class="cassetteReel cassetteReelLeft" src="assets/cassette-reel-pixel-v81.png" alt="" aria-hidden="true" draggable="false">
-                        <img class="cassetteReel cassetteReelRight" src="assets/cassette-reel-pixel-v81.png" alt="" aria-hidden="true" draggable="false">
-                      </div>
-
-                      <div id="cassetteHint" class="cassetteDeckHint">PRESS EJECT TO LOAD A BEAT</div>
-                    </div>
-                  </div>
-
-                  <div class="deckTransport" role="group" aria-label="Transport du Looper">
-                    <button id="prevBeat" class="deckHotspot" type="button" aria-label="Beat précédent" title="PREV"><span aria-hidden="true">◀◀</span><strong>PREV</strong></button>
-                    <button id="playBeat" class="deckHotspot" type="button" aria-label="Lecture" title="PLAY"><span aria-hidden="true">▶</span><strong>PLAY</strong></button>
-                    <button id="stopBeat" class="deckHotspot" type="button" aria-label="Stop" title="STOP"><span aria-hidden="true">■</span><strong>STOP</strong></button>
-                    <button id="nextBeat" class="deckHotspot" type="button" aria-label="Beat suivant" title="NEXT"><span aria-hidden="true">▶▶</span><strong>NEXT</strong></button>
-                    <button id="autoLooperToggle" class="deckHotspot deckAutoHotspot" type="button" aria-label="Accélération automatique" title="AUTO +1% / 8 LOOPS" aria-pressed="false">
-                      <span aria-hidden="true">+1</span><strong>AUTO SPEED</strong><small id="autoLooperCompactStatus">OFF • +1% / 8 LOOPS</small>
-                    </button>
-                  </div>
-                </div>
-
-                <aside class="looperImportDock" aria-label="Chargement des beats">
-                  <button id="importBeatsBtn" class="deckLoadKey deckLoadBeat" type="button">
-                    <span class="deckKeyLamp" aria-hidden="true"></span>
-                    <strong>IMPORT BEAT</strong><small>FILE</small>
-                  </button>
-                  <button id="importFolderBtn" class="deckLoadKey deckLoadLibrary" type="button">
-                    <span class="deckKeyLamp" aria-hidden="true"></span>
-                    <strong>OPEN LIBRARY</strong><small>FOLDER</small>
-                  </button>
-                </aside>
-              </div>
-
-              <div id="beatImportStatus" class="beatImportStatus" aria-live="polite">READY • LOAD LIBRARY OR IMPORT</div>
+  <section id="looper" class="screen active">
+    <div class="looper66Shell">
+      <div class="looper66Workspace">
+        <picture class="looper66Skin" aria-hidden="true">
+          <source media="(max-width:680px)" srcset="assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp">
+          <img src="assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp" alt="" draggable="false">
+        </picture>
+        <section class="panel looperMainPanel" aria-label="Deck Looper66">
+          <div id="looperDropzoneBtn" class="cassetteDeck" role="group" aria-label="Lecteur cassette pixel art et commandes du looper">
+            <div class="deckReadout" role="status" aria-live="polite">
+              <strong id="deckReadoutTrack" class="deckReadoutTrack">NO BEAT LOADED</strong>
+              <span class="deckReadoutProgress" aria-hidden="true">◆◆◆◆◆◆◆◆◆◆◆◇◇◇</span>
+              <strong id="deckSpeedReadout" class="deckReadoutRate">100%</strong>
+              <div class="deckReadoutState"><small>STATE</small><strong id="deckTransportState">EMPTY</strong></div>
+              <div class="deckReadoutSpeed"><small>SPEED</small><strong id="deckSpeedEcho">100%</strong></div>
+              <span class="compatHidden"><span id="deckAutoReadout">OFF</span><span id="autoLooperCompactStatus">OFF</span></span>
             </div>
+
+            <div id="deckPitchModule" class="deckPitchModule">
+              <div class="deckPitchHeader">
+                <label for="deckPitch">PITCH</label>
+                <output id="deckPitchReadout" for="deckPitch">0.0%</output>
+              </div>
+              <input id="deckPitch" type="range" min="-8" max="8" step="0.1" value="0" aria-label="Pitch manuel du beat, moins huit à plus huit pour cent">
+              <div class="deckPitchScale" aria-hidden="true"><span>-8</span><span>0</span><span>+8</span></div>
+              <button id="deckAutoToggle" class="deckAutoKey" type="button" aria-pressed="false">AUTO</button>
+            </div>
+
+            <div class="cassetteMechanism" aria-label="Cassette chargée dans son mécanisme">
+              <span class="cassetteReel cassetteReelLeft" aria-hidden="true"></span>
+              <span class="cassetteReel cassetteReelRight" aria-hidden="true"></span>
+              <strong id="cassetteBeatName" class="cassetteBeatName">NO BEAT LOADED</strong>
+              <img class="cassetteBayForeground" src="assets/looper-ui/looper66-cassette-bay-b10ab679.png" width="793" height="496" alt="" aria-hidden="true" draggable="false" decoding="sync" fetchpriority="high">
+              <div class="cassetteCssLight" aria-hidden="true"></div>
+              <div class="cassetteGlass" aria-hidden="true"></div>
+            </div>
+
+            <aside class="looperImportDock" aria-label="Chargement des beats">
+              <button id="importFolderBtn" class="deckLoadKey" type="button"><span class="deckKeyLamp" aria-hidden="true"></span><strong>LOAD LIBRARY</strong></button>
+              <button id="importBeatsBtn" class="deckLoadKey" type="button"><span class="deckKeyLamp" aria-hidden="true"></span><strong>LOAD BEAT</strong></button>
+            </aside>
+
+            <div class="deckTransportVisual" aria-hidden="true">
+              <span class="deckRateVisualSegments"><i></i><i></i><i></i><i></i><i></i></span>
+            </div>
+            <div class="deckTransport" role="group" aria-label="Transport du Looper">
+              <button id="stopBeat" class="deckHotspot" type="button" aria-label="Stop"></button>
+              <button id="playBeat" class="deckHotspot" type="button" aria-label="Lecture"></button>
+              <button id="autoLooperToggle" class="deckHotspot deckRateHotspot" type="button" aria-label="Speed Up, plus un pour cent toutes les huit boucles" aria-pressed="false"></button>
+            </div>
+
+            <div id="beatImportStatus" class="beatImportStatus compatHidden" aria-live="polite">READY • LOAD LIBRARY OR LOAD BEAT</div>
           </div>
-        </div>
+        </section>
 
-        <input id="beatFiles" class="hidden" type="file" accept="audio/*" multiple>
-        <input id="beatFolder" class="hidden" type="file" accept="audio/*" webkitdirectory multiple>
-      </div>
-    </div>
-  </section>
-
-  <!-- PRACTICE -->
-  <section id="practice" class="screen">
-    <button id="practiceOverlayClose" class="practiceClose" type="button">CLOSE</button>
-    <div class="layout">
-      <div class="panel">
-        <div class="title"><span>01</span> TRAINING SETUP</div>
-        <div class="grid3">
-          <div><label>LEVEL</label><select id="practiceLevel"><option value="beginner">BEGINNER</option><option value="intermediate">INTERMEDIATE</option><option value="advanced">ADVANCED</option></select></div>
-          <div><label>SUBDIVISION</label><select id="practiceSub"><option value="8">8TH</option><option value="16">16TH</option></select></div>
-          <div><label>PRACTICE TEMPO</label><input id="practiceTempo" type="number" min="40" max="220" value="80"></div>
-        </div>
-        <select id="practiceBars" class="hidden"><option selected>2</option></select>
-        <div class="grid2">
-          <button id="newPattern" class="btn primary">NEW PATTERN</button>
-          <button id="startPractice" class="btn good">START PRACTICE</button>
-        </div>
-        <div class="grid2">
-          <div><label>AUTO PROGRESSION</label><select id="practiceAuto"><option value="off">OFF</option><option value="up">+ SPEED %</option></select></div>
-          <div><label>CHANGE EVERY</label><select id="patternCycles"><option value="2">2 CYCLES</option><option value="4" selected>4 CYCLES</option><option value="8">8 CYCLES</option></select></div>
-        </div>
-        <div class="help">Le moteur n'utilise pas une “notation standard” propriétaire : il affiche une notation pédagogique simple et explicite. → avant, ← arrière, X fermeture fader, O ouverture.</div>
+        <section class="panel beatCratePanel">
+          <div class="title stableTitle compatHidden"><span>BEAT CRATE</span></div>
+          <div class="grid2 beatCrateControls">
+            <div><label for="librarySearch">SEARCH</label><input id="librarySearch" placeholder="SEARCH BEATS…"></div>
+            <div><label for="libraryOrder">SORT</label><select id="libraryOrder"><option value="name">NAME</option><option value="recent">RECENT</option></select></div>
+          </div>
+          <div id="library" class="library"></div>
+          <div class="beatCrateTransport" role="group" aria-label="Navigation dans le Beat Crate">
+            <button id="prevBeat" type="button" aria-label="Beat précédent"><span aria-hidden="true">◀</span> PREVIOUS</button>
+            <button id="nextBeat" type="button" aria-label="Beat suivant">NEXT <span aria-hidden="true">▶</span></button>
+          </div>
+        </section>
       </div>
 
-      <div class="panel">
-        <div class="title"><span>02</span> CURRENT DRILL</div>
-        <div class="practiceCard">
-          <div id="practiceName" class="practiceName">BABY FLOW</div>
-          <div id="practiceNotation" class="notation">→ ← · · | → ← · ·</div>
-          <div id="practiceGrid" class="beatgrid"></div>
-          <div id="practiceCount" class="status">READY</div>
-        </div>
-        <div class="legend">→ push / forward • ← pull / backward • X fader close • O fader open • C chirp • T transformer • S stab • · silence / hold</div>
-      </div>
+      <input id="beatFiles" class="hidden" type="file" accept="audio/*" multiple>
+      <input id="beatFolder" class="hidden" type="file" accept="audio/*" webkitdirectory multiple>
     </div>
   </section>
 
@@ -213,7 +132,7 @@
         </div>
         <div class="samplerRailMeta">
           <span>16 PADS</span>
-          <span>2 BARS</span>
+          <span>4 BARS</span>
           <span>LOCAL AUDIO</span>
         </div>
       </div>
@@ -276,7 +195,7 @@
             </div>
 
             <div class="friendlyControls sampleTempoControl">
-              <div><label for="sampleBpm">TEMPO</label><input id="sampleBpm" type="number" min="40" max="220" step="0.1" value="90"></div>
+              <div><label for="sampleBpm">TEMPO</label><input id="sampleBpm" type="number" min="40" max="200" step="0.1" value="90"></div>
             </div>
 
             <div class="sampleKnob sampleVolumeKnob" data-range-knob="sampleVolume">
@@ -312,18 +231,22 @@
 
         <div class="panel gridPanel samplerSequenceModule">
           <div class="samplerSequenceHead">
-            <div class="title compactTitle samplerSectionTitle">SEQUENCE <span class="titleMeta">2 BARS / 8TH</span></div>
-            <button id="clearGrid" class="btn">CLEAR GRID</button>
+            <div class="title compactTitle samplerSectionTitle">SEQUENCE <span class="titleMeta">4 BARS / 8TH</span></div>
+            <div class="sequenceActions" role="group" aria-label="Pages de mesures du séquenceur">
+              <button id="sequencePage12" class="btn sequencePageTab active" data-sequence-page="0" type="button" aria-pressed="true" aria-label="Afficher les mesures 1 et 2">1–2</button>
+              <button id="sequencePage34" class="btn sequencePageTab" data-sequence-page="1" type="button" aria-pressed="false" aria-label="Afficher les mesures 3 et 4">3–4</button>
+              <button id="clearGrid" class="btn">CLEAR GRID</button>
+            </div>
           </div>
           <div class="loopGridWrap">
             <div class="sampleTimelineStack">
-              <canvas id="sampleTimelineCanvas" width="830" height="86" aria-label="Timeline du sample alignée sur la séquence de deux mesures">Sample timeline</canvas>
+              <canvas id="sampleTimelineCanvas" width="830" height="86" aria-label="Timeline du sample, mesures 1 à 2">Sample timeline</canvas>
               <canvas id="sampleTimelinePlayheadCanvas" width="830" height="86" aria-hidden="true"></canvas>
             </div>
             <div id="loopGrid" class="matrixGrid"></div>
-            <div id="drumPatternPreview" class="drumPatternPreview" aria-label="Aperçu nominal de la batterie sur deux mesures"></div>
+            <div id="drumPatternPreview" class="drumPatternPreview" aria-label="Aperçu nominal de la batterie répétée sur les quatre mesures"></div>
           </div>
-          <div class="samplerModuleHint">Click = place • right click = clear • one chop per step.</div>
+          <div class="samplerModuleHint">1–2 / 3–4 = page • click = place • right click = clear • one chop per step.</div>
         </div>
       </div>
 
@@ -385,10 +308,13 @@
 <script src="./js/bootstrap.js"></script>
 <script src="./js/core.js" defer></script>
 <script src="./js/looper.js" defer></script>
-<script src="./js/practice.js" defer></script>
 <script src="./js/chopper.js" defer></script>
 <script src="./js/drums.js" defer></script>
 <script src="./js/events.js" defer></script>
 <script src="./js/chopper-drum-controls.js" defer></script>
+<script src="./js/chopper-wave-slices-core.js" defer></script>
+<script src="./js/chopper-banks.js" defer></script>
+<script src="./js/chopper-folder-reconnect.js" defer></script>
+<script src="./js/chopper-wave-slices.js" defer></script>
 </body>
 </html>

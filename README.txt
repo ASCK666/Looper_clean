@@ -1,5 +1,5 @@
-SCRATCH PRACTICE / LOOPER666
-============================
+SCRATCH PRACTICE / LOOPER66
+===========================
 
 Scratch looper et beat maker local-first construit avec Web Audio.
 
@@ -21,8 +21,10 @@ PRINCIPES DU PRODUIT
 
 LOOPER
 - Beat Crate locale avec recherche, tri et imports audio.
-- Lecture PREV / PLAY / STOP / NEXT dans une interface cassette.
-- AUTO SPEED pour faire évoluer progressivement la vitesse du beat.
+- PLAY / STOP sur le deck, PREVIOUS / NEXT dans le Beat Crate.
+- SPEED RATE réglable de +1 à +5 % toutes les huit boucles, avec éclairage CSS.
+- PITCH manuel de -8 à +8 % et mode AUTO.
+- Bobines animées derrière la coque pendant la lecture et titre du beat en HTML.
 - Cache local IndexedDB et connexion optionnelle à un dossier de beats local.
 - Compteur de bande et transport adaptés au travail de scratch.
 

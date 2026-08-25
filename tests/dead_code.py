@@ -6,27 +6,42 @@ RUNTIME_DIRS = (ROOT / "js", ROOT / "css")
 RUNTIME_SUFFIXES = {".js", ".css"}
 problems = []
 
-# Keep index.html as the primary runtime manifest, while also accepting explicit
-# local dependencies that bootstrap.js loads dynamically. Replaced files must
-# still be deleted in the same update instead of surviving as dormant runtime code.
+# index.html is the root runtime manifest. Runtime JS may then load additional
+# local JS/CSS modules dynamically; follow that dependency graph recursively so
+# a real loader can own feature modules without weakening the orphan-file rule.
 html = (ROOT / "index.html").read_text(encoding="utf-8")
-bootstrap = (ROOT / "js" / "bootstrap.js").read_text(encoding="utf-8")
 referenced = set()
+js_queue = []
+scanned_js = set()
 
-for source_name, text, pattern in [
-    ("index.html", html, r'\b(?:src|href)=["\']([^"\']+)["\']'),
-    ("bootstrap.js", bootstrap, r'["\'](\./[^"\']+)["\']'),
-]:
-    for value in re.findall(pattern, text):
-        if value.startswith(("http://", "https://", "data:", "#", "mailto:", "blob:")):
-            continue
-        clean = value.split("#", 1)[0].split("?", 1)[0]
-        target = (ROOT / clean.lstrip("./")).resolve()
-        if target.suffix not in RUNTIME_SUFFIXES:
-            continue
-        referenced.add(target)
-        if not target.exists():
-            problems.append(f"Runtime reference missing from {source_name}: {value}")
+
+def add_runtime_reference(source_name, value):
+    if value.startswith(("http://", "https://", "data:", "#", "mailto:", "blob:")):
+        return
+    clean = value.split("#", 1)[0].split("?", 1)[0]
+    target = (ROOT / clean.lstrip("./")).resolve()
+    if target.suffix not in RUNTIME_SUFFIXES:
+        return
+    referenced.add(target)
+    if not target.exists():
+        problems.append(f"Runtime reference missing from {source_name}: {value}")
+        return
+    if target.suffix == ".js" and target not in scanned_js:
+        js_queue.append(target)
+
+
+for value in re.findall(r'\b(?:src|href)=["\']([^"\']+)["\']', html):
+    add_runtime_reference("index.html", value)
+
+while js_queue:
+    script = js_queue.pop(0)
+    if script in scanned_js:
+        continue
+    scanned_js.add(script)
+    text = script.read_text(encoding="utf-8")
+    source_name = str(script.relative_to(ROOT))
+    for value in re.findall(r'["\'](\./[^"\']+)["\']', text):
+        add_runtime_reference(source_name, value)
 
 runtime_files = {
     path.resolve()
@@ -37,7 +52,7 @@ runtime_files = {
 
 for orphan in sorted(runtime_files - referenced):
     problems.append(
-        f"Dead runtime file: {orphan.relative_to(ROOT)} is not referenced by index.html/bootstrap.js; "
+        f"Dead runtime file: {orphan.relative_to(ROOT)} is not reachable from index.html runtime dependencies; "
         "delete replaced code in the same update"
     )
 
@@ -69,4 +84,4 @@ for script in sorted((ROOT / "js").rglob("*.js")):
         )
 
 assert not problems, "\n".join(problems)
-print("OK: runtime JS/CSS is explicit, current docs reject retired CSS generation paths and retired update paths stay removed")
+print("OK: runtime JS/CSS dependency graph is explicit, current docs reject retired CSS generation paths and retired update paths stay removed")

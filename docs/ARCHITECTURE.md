@@ -30,7 +30,7 @@ bootstrap.js -> core.js -> looper.js -> practice.js -> chopper.js -> drums.js ->
 - `css/base.css` — maintained primary runtime stylesheet
 - `css/clean-ui.css` — maintained late cascade for the intentional lean workstation UI
 - `js/bootstrap.js` — boot diagnostics and retirement of stale app caches/workers
-- `js/core.js` — shared audio infrastructure, meter primitives, WAV helpers and generic utilities
+- `js/core.js` — shared audio infrastructure, fixed output gain, WAV helpers and generic utilities
 - `js/looper.js` — Beat Crate, imports, persistence and cassette transport
 - `js/practice.js` — frozen Practice implementation
 - `js/chopper.js` — sample import/conditioning, waveform, markers, pads and placement grid
@@ -54,7 +54,7 @@ Important current facts:
 - renderer source buffer, cue markers and sample pitch rate are explicit inputs;
   other hidden inputs are documented in `STATE_DEPENDENCY_MAP.md` and are deferred
   until feature work makes a narrow boundary worth changing.
-- `events.js` still owns some full-preview, save and master-volume orchestration;
+- `events.js` still owns some full-preview and save orchestration;
   those are documented exceptions, not invitations for a broad cleanup.
 - Drum-local feedback writes to `#drumStatus`; `drums.js` must not use the
   Chopper/combined `#chopStatus` sink.
@@ -90,7 +90,7 @@ See `CSS_WORKFLOW.md` for the edit/test contract.
 - When a mechanism is replaced, delete the old listener/helper/selector/path in the same change.
 - Keep the three hidden Drum folder file inputs: they are the real fallback when
   `showDirectoryPicker()` is unavailable, not duplicate UI.
-- Keep the header master gain/meter. The retired lower vertical master display must not return.
+- Keep the fixed master output gain in Core. The retired header volume control and VU must not return.
 - Add or update a focused regression invariant when a responsibility boundary changes.
 
 ## Regression gate

@@ -3,14 +3,12 @@
 #chopper {
   --chopper-bg: #080604;
   --chopper-surface: #100c08;
-  --chopper-surface-hi: #17110c;
   --chopper-border: #4b3928;
   --chopper-border-hot: #765a34;
   --chopper-border-bright: #9a7038;
   --chopper-text: #dcc8a9;
   --chopper-muted: #8f795d;
   --chopper-amber: #e2ad5f;
-  --chopper-amber-hot: #f0b45f;
   --chopper-active: #80552c;
 }
 
@@ -21,7 +19,6 @@
 #chopper .samplerScreenModule {
   grid-template-columns: minmax(0,1fr) 52px 68px 52px 52px !important;
   grid-template-areas:
-    "actions actions actions actions actions"
     "fine fine fine fine fine"
     "title pitch tempo volume punch"
     "wave wave wave wave wave"
@@ -29,19 +26,58 @@
     "info info info info info" !important;
 }
 
-#chopper .chopperActionStrip {
-  grid-area: actions;
-  display: grid;
-  grid-template-columns: repeat(6,minmax(0,1fr));
+#chopper .waveHeaderActions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
   gap: 6px;
-  width: 100%;
-  margin: 0;
 }
 
-#chopper .chopperActionStrip .btn {
+#chopper .waveHeaderActions .btn {
   min-width: 0;
-  min-height: 36px !important;
-  padding-inline: 7px !important;
+  min-height: 30px !important;
+  padding: 6px 9px !important;
+  white-space: nowrap;
+}
+
+/* The pad surface is self-explanatory. Keep this structural hook for the
+   branch compositor, but remove the visible CHOP PADS heading and its spacing. */
+#chopper .samplerPadsModule .samplerSectionTitle {
+  display: flex !important;
+  min-width: 0;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0;
+  flex-wrap: wrap;
+  color: transparent !important;
+  font-size: 0 !important;
+  letter-spacing: 0 !important;
+}
+
+#chopper .samplerSequenceHead {
+  display: flex !important;
+  min-width: 0;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#chopper .sequenceActions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+#chopper .sequenceActions .btn {
+  min-height: 30px !important;
+  margin: 0 !important;
+  padding: 6px 9px !important;
   white-space: nowrap;
 }
 
@@ -172,7 +208,7 @@
   margin: 0 0 4px !important;
   color: var(--chopper-muted) !important;
   font: 800 8px/1 var(--font-mono) !important;
-  letter-spacing: .6px;
+  letter-spacing: .6px !important;
   text-align: center;
   cursor: default;
 }
@@ -268,11 +304,14 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,.04),0 0 12px rgba(226,173,95,.12) !important;
 }
 
-/* Waveform keeps its display bezel; the sequence wrapper does not need one. */
+/* The waveform already reads as a screen. Do not add a second frame around it. */
 #chopper .wavewrap.largeWave {
-  border-color: #4a3826 !important;
-  background: linear-gradient(180deg,#0d0906,#050403) !important;
-  box-shadow: inset 0 0 0 1px rgba(226,173,95,.025),inset 0 8px 18px rgba(0,0,0,.28) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
 }
 
 #chopper .loopGridWrap,
@@ -315,16 +354,7 @@
 
 /* Pads keep the previous amber backlight and now carry the same warm tint on the key surface. */
 #chopper .pad {
-  color: #d8bd91 !important;
   border-color: #5a4328 !important;
-  background:
-    radial-gradient(circle at 50% 115%,rgba(226,173,95,.13),transparent 58%),
-    linear-gradient(180deg,#2b1d11 0%,#1c130c 48%,#100b07 100%) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.035),
-    inset 0 -10px 18px rgba(226,173,95,.055),
-    0 0 7px rgba(226,173,95,.08),
-    0 5px 9px rgba(0,0,0,.32) !important;
 }
 
 #chopper .pad:hover {
@@ -350,15 +380,6 @@
 #chopper .pad.active {
   color: #fff0d0 !important;
   border-color: #c6924e !important;
-  background:
-    radial-gradient(circle at 50% 105%,rgba(255,210,132,.38),transparent 58%),
-    linear-gradient(145deg,#9b6933 0%,#80552c 55%,#382111 100%) !important;
-  box-shadow:
-    inset 0 1px rgba(255,255,255,.09),
-    inset 0 -12px 22px rgba(240,180,95,.22),
-    0 0 10px rgba(240,180,95,.38),
-    0 0 24px rgba(226,173,95,.30),
-    0 6px 10px rgba(0,0,0,.34) !important;
 }
 
 #chopper .drumEditStep.active.kick,
@@ -391,8 +412,14 @@
     grid-template-columns: minmax(0,1fr) 40px 56px 40px 40px !important;
   }
 
-  #chopper .chopperActionStrip {
-    grid-template-columns: repeat(3,minmax(0,1fr));
+  #chopper .waveHeaderActions {
+    gap: 4px;
+  }
+
+  #chopper .waveHeaderActions .btn,
+  #chopper .sequenceActions .btn {
+    padding-inline: 6px !important;
+    font-size: 8px !important;
   }
 
   #chopper .chopperStatusStrip {
@@ -428,14 +455,29 @@
     column-gap: 3px !important;
   }
 
-  #chopper .chopperActionStrip {
-    grid-template-columns: repeat(2,minmax(0,1fr));
-    gap: 5px;
+  #chopper .waveHeaderActions {
+    flex-wrap: wrap;
+  }
+
+  #chopper .waveHeaderActions .btn {
+    flex: 1 1 88px;
+  }
+
+  #chopper .samplerPadsModule .samplerSectionTitle {
+    align-items: stretch !important;
+  }
+
+  #chopper .sequenceActions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  #chopper .sequenceActions .btn {
+    flex: 1 1 0;
   }
 
   /* Two clean rows are preferable to overlapping four controls on a phone. */
   #chopper .drumQuickActions {
-    grid-template-columns: 76px 60px !important;
     column-gap: 18px !important;
     row-gap: 16px !important;
   }
@@ -461,5 +503,376 @@
     grid-template-columns:max-content max-content !important;
     width:max-content !important;
     max-width:100% !important;
+  }
+}
+
+/* looper-next SLICES hierarchy: neutral at rest, amber only for intent/action. */
+#chopper #waveCanvas[data-edit-mode="slices"] {
+  filter: saturate(.30) sepia(.08) brightness(.92) contrast(1.05);
+}
+
+#chopper #waveCanvas[data-edit-mode="slices"] + #playheadCanvas {
+  filter: saturate(.16) sepia(.04) brightness(1.22) contrast(1.08);
+}
+
+#chopper.screen .chopModeToggle {
+  color: #c7b89f !important;
+  border-color: #514b42 !important;
+  background: linear-gradient(180deg,#181612,#0c0a08) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025) !important;
+}
+
+#chopper.screen .chopModeToggle[data-mode="slices"] {
+  color: #e5d5b9 !important;
+  border-color: #8b6d45 !important;
+  background: linear-gradient(180deg,#211a12,#100d09) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035),0 0 7px rgba(226,173,95,.07) !important;
+}
+
+#chopper.screen #waveCanvas[data-edit-mode="slices"]:focus {
+  outline-color: rgba(232,219,194,.48) !important;
+}
+
+/* In SLICES mode, unused pads fall back to a dark hardware surface instead of
+   all sixteen keys carrying the same amber halo. */
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active) {
+  border-color: #474038 !important;
+}
+
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active):hover {
+  border-color: #6d5d49 !important;
+}
+
+#chopper.screen .pad.slice-selected:not(.hit):not(.active) {
+  border-color: #9a7038 !important;
+}
+
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad.unavailable:not(.hit):not(.active) {
+  border-color: #302c27 !important;
+}
+
+/* asset-ui-chopper: one neutral powered-off button is derived from the real
+   Looper transport artwork. The bitmap owns only physical chrome/texture;
+   labels and every amber/red lit state remain runtime HTML/CSS. */
+#chopper {
+  --chopper-looper-button-art: url("../assets/looper-ui/chopper-looper-button-off-alpha-6920266c.webp");
+}
+
+#chopper .samplerPadsModule {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--deck-texture) center/256px 256px repeat !important;
+  box-shadow: none !important;
+}
+
+#chopper .samplerPadsModule::before {
+  display: none !important;
+}
+
+#chopper .samplerPadsModule .samplerSectionTitle {
+  margin-bottom: 0 !important;
+}
+
+#chopper .padTransport .btn {
+  --chopper-light-core: rgba(255,238,170,.18);
+  --chopper-light-yellow: rgba(255,205,64,.06);
+  --chopper-light-edge: rgba(244,169,20,.024);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  color: transparent !important;
+  background: var(--chopper-looper-button-art) center/100% 100% no-repeat !important;
+  box-shadow: none !important;
+  filter: sepia(.08) saturate(.72) brightness(.88) !important;
+  font-size: 0 !important;
+  text-shadow: none !important;
+  white-space: nowrap;
+}
+
+/* Transport and pads now share one isolated Looper-derived physical button.
+   The inset layer stays responsible only for the runtime lamp and face grain. */
+#chopper .padTransport .btn::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 16% 12% 17%;
+  background:
+    radial-gradient(ellipse 28% 40% at 50% 44%,var(--chopper-light-core),var(--chopper-light-yellow) 48%,var(--chopper-light-edge) 72%,transparent 100%),
+    var(--deck-texture) center/256px 256px repeat !important;
+  opacity: 1;
+  pointer-events: none;
+}
+
+#chopper .padTransport .btn::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e2cfaa;
+  font: 800 9px/1 var(--font-mono);
+  letter-spacing: .7px;
+  pointer-events: none;
+}
+
+#chopper #previewFlip::after { content: "PLAY"; }
+#chopper #playDrumsOnly::after { content: "DRUMS"; }
+#chopper #stopFlip::after { content: "STOP"; }
+
+#chopper #previewFlip,
+#chopper #playDrumsOnly {
+  --chopper-light-core: rgba(255,238,170,.24);
+  --chopper-light-yellow: rgba(255,205,64,.085);
+  --chopper-light-edge: rgba(244,169,20,.034);
+}
+
+#chopper .padTransport .btn:is(:hover,:focus-visible) {
+  --chopper-light-core: rgba(255,238,170,.34);
+  --chopper-light-yellow: rgba(255,205,64,.12);
+  --chopper-light-edge: rgba(244,169,20,.048);
+  outline: 0 !important;
+  filter: sepia(.15) saturate(.94) brightness(1.02) !important;
+}
+
+#chopper .padTransport .btn:is(.active,[aria-pressed="true"]),
+#chopper .padTransport .btn:active {
+  --chopper-light-core: rgba(255,238,170,.52);
+  --chopper-light-yellow: rgba(255,205,64,.18);
+  --chopper-light-edge: rgba(244,169,20,.07);
+}
+
+#chopper .padTransport .btn:active {
+  transform: translateY(1px);
+  filter: sepia(.28) saturate(1.2) brightness(1.16) !important;
+}
+
+/* DRUMS deliberately pulses while idle: it is the alternate performance mode
+   for testing pads over the drum loop, so the control should advertise itself. */
+#chopper #playDrumsOnly::before {
+  animation: chopperDrumsReadyPulse 1.25s ease-in-out infinite;
+}
+
+#chopper #playDrumsOnly:is(:hover,:focus-visible,:active)::before {
+  animation: none;
+  opacity: 1;
+  filter: none;
+}
+
+@keyframes chopperDrumsReadyPulse {
+  0%,100% { opacity: .72; filter: brightness(.92); }
+  50% { opacity: 1; filter: brightness(1.42); }
+}
+
+#chopper .pads {
+  counter-reset: chopper-pad;
+  gap: 8px !important;
+}
+
+#chopper .pad,
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active),
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active):hover,
+#chopper.screen .pad.slice-selected:not(.hit):not(.active),
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad.unavailable:not(.hit):not(.active) {
+  --chopper-light-core: rgba(255,238,170,.12);
+  --chopper-light-yellow: rgba(255,205,64,.04);
+  --chopper-light-edge: rgba(244,169,20,.016);
+  counter-increment: chopper-pad;
+  position: relative;
+  isolation: isolate;
+  min-height: 66px !important;
+  overflow: hidden;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  color: transparent !important;
+  background: var(--chopper-looper-button-art) center/100% 100% no-repeat !important;
+  box-shadow: none !important;
+  filter: sepia(.05) saturate(.64) brightness(.82) !important;
+  font-size: 0 !important;
+  text-shadow: none !important;
+}
+
+#chopper .pad::before,
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 16% 12% 17%;
+  background:
+    radial-gradient(ellipse 28% 40% at 50% 44%,var(--chopper-light-core),var(--chopper-light-yellow) 48%,var(--chopper-light-edge) 72%,transparent 100%),
+    var(--deck-texture) center/256px 256px repeat !important;
+  opacity: 1;
+  pointer-events: none;
+}
+
+#chopper .pad::after,
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad::after {
+  content: counter(chopper-pad, decimal-leading-zero);
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c8b697;
+  font: 800 13px/1 var(--font-mono);
+  letter-spacing: .7px;
+  pointer-events: none;
+}
+
+#chopper .pad:hover,
+#chopper .pad:focus-visible,
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad:not(.slice-selected):not(.hit):not(.active):hover {
+  --chopper-light-core: rgba(255,238,170,.27);
+  --chopper-light-yellow: rgba(255,205,64,.095);
+  --chopper-light-edge: rgba(244,169,20,.038);
+  outline: 0 !important;
+  filter: sepia(.12) saturate(.84) brightness(.98) !important;
+}
+
+#chopper .pad:hover::after,
+#chopper .pad:focus-visible::after {
+  color: #e6d5b9;
+}
+
+#chopper .pad.selected,
+#chopper .pad.slice-selected {
+  --chopper-light-core: rgba(255,238,170,.34);
+  --chopper-light-yellow: rgba(255,205,64,.12);
+  --chopper-light-edge: rgba(244,169,20,.048);
+  outline: 0 !important;
+  filter: sepia(.18) saturate(.94) brightness(1.04) !important;
+}
+
+#chopper .pad.hit,
+#chopper .pad.active {
+  --chopper-light-core: rgba(255,238,170,.52);
+  --chopper-light-yellow: rgba(255,205,64,.18);
+  --chopper-light-edge: rgba(244,169,20,.07);
+  transform: translateY(1px);
+  border: 0 !important;
+  background: var(--chopper-looper-button-art) center/100% 100% no-repeat !important;
+  box-shadow: none !important;
+  filter: sepia(.36) saturate(1.35) brightness(1.18) !important;
+}
+
+#chopper .pad.hit::after,
+#chopper .pad.active::after,
+#chopper .pad.slice-selected::after {
+  color: #fff0c6;
+}
+
+#chopper .pad.unavailable,
+#chopper.screen:has(#waveCanvas[data-edit-mode="slices"]) .pad.unavailable:not(.hit):not(.active) {
+  --chopper-light-core: rgba(255,238,170,0);
+  --chopper-light-yellow: rgba(255,205,64,0);
+  --chopper-light-edge: rgba(244,169,20,0);
+  opacity: .34 !important;
+  filter: grayscale(.45) brightness(.58) !important;
+}
+
+@media (max-width:760px) {
+  #chopper .pad {
+    min-height: 62px !important;
+  }
+}
+
+@media (max-width:430px) {
+  #chopper .pad {
+    min-height: 56px !important;
+  }
+
+  #chopper .pad::after {
+    font-size: 11px;
+  }
+}
+
+/* STOP stays physically identical to the Looper-derived transport keys, but
+   uses a red lamp so destructive transport intent is unmistakable. */
+#chopper #stopFlip {
+  --chopper-light-core: rgba(255,170,154,.24);
+  --chopper-light-yellow: rgba(255,92,76,.085);
+  --chopper-light-edge: rgba(197,48,36,.034);
+  filter: sepia(.14) saturate(.90) hue-rotate(316deg) brightness(.88) !important;
+}
+
+#chopper #stopFlip::after {
+  color: #e0aaa0;
+}
+
+#chopper #stopFlip:is(:hover,:focus-visible) {
+  --chopper-light-core: rgba(255,176,158,.40);
+  --chopper-light-yellow: rgba(255,86,70,.14);
+  --chopper-light-edge: rgba(204,48,35,.056);
+  filter: sepia(.26) saturate(1.10) hue-rotate(316deg) brightness(1.02) !important;
+}
+
+#chopper #stopFlip:active {
+  --chopper-light-core: rgba(255,190,170,.68);
+  --chopper-light-yellow: rgba(255,82,65,.25);
+  --chopper-light-edge: rgba(210,44,30,.10);
+  filter: sepia(.38) saturate(1.35) hue-rotate(316deg) brightness(1.13) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #chopper #playDrumsOnly::before {
+    animation: none;
+    opacity: 1;
+    filter: none;
+  }
+}
+
+/* Keep transport controls on the same physical ratio as the isolated button. */
+#chopper .padTransport {
+  display: grid;
+  grid-template-columns: repeat(3,88px) !important;
+  gap: 7px;
+  width: auto !important;
+  max-width: 100%;
+  margin-left: auto;
+  justify-content: end;
+}
+
+#chopper .padTransport .btn {
+  width: 88px !important;
+  min-width: 88px !important;
+  height: 88px !important;
+  min-height: 88px !important;
+  aspect-ratio: 1 / 1;
+}
+
+@media (max-width:760px) {
+  #chopper .padTransport {
+    grid-template-columns: repeat(3,76px) !important;
+  }
+
+  #chopper .padTransport .btn {
+    width: 76px !important;
+    min-width: 76px !important;
+    height: 76px !important;
+    min-height: 76px !important;
+  }
+}
+
+@media (max-width:430px) {
+  #chopper .padTransport {
+    grid-template-columns: repeat(3,minmax(0,1fr)) !important;
+    gap: 5px;
+    width: 100% !important;
+    margin: 5px 0 0;
+  }
+
+  #chopper .padTransport .btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: 1 / 1;
   }
 }

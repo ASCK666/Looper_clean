@@ -12,9 +12,34 @@ const sampleTimeline2d=sampleTimelineCanvas?.getContext("2d");
 const sampleTimelinePlayheadCanvas=$("sampleTimelinePlayheadCanvas");
 const sampleTimelinePlayhead2d=sampleTimelinePlayheadCanvas?.getContext("2d");
 const CHOPPER_SEQUENCE_STEPS=16;
+const CHOPPER_SEQUENCE_TOTAL_STEPS=32;
 const SEQUENCE_LABEL_WIDTH=66;
 const SEQUENCE_MIN_WIDTH=830;
 const SAMPLE_TIMELINE_HEIGHT=86;
+let chopperSequencePage=0;
+
+function buildSequencePlan(events,bpm,padCount){
+  const sequence=Array.from(events||[],value=>Number(value)||0);
+  const tempo=Math.max(40,Number(bpm)||90);
+  const availablePads=Math.max(0,Math.floor(Number(padCount)||0));
+  const stepDur=(60/tempo)/2;
+  const bars=Math.max(1,Math.ceil(sequence.length/8));
+  const targetDur=bars*4*60/tempo;
+  const triggers=[];
+
+  for(let step=0;step<sequence.length;step++){
+    const chop=sequence[step];
+    if(chop>=1 && chop<=availablePads)triggers.push({step,chop});
+  }
+
+  const placed=triggers.map((event,index)=>({
+    ...event,
+    startTime:event.step*stepDur,
+    nextTime:index+1<triggers.length?triggers[index+1].step*stepDur:targetDur
+  }));
+
+  return {events:sequence,bpm:tempo,stepDur,bars,targetDur,placed};
+}
 
 function samplePitchRate(){
   return Math.pow(2,samplePitchSemitones/12);
@@ -146,6 +171,7 @@ function refreshSamplePitchUI(){
 }
 
 function updateSamplePitch(value){
+  invalidatePreviewRender();
   samplePitchSemitones=Number(value)||0;
   stopChopAudition();
   refreshMarkerEditor();
@@ -159,6 +185,7 @@ function sampleVolumeGain(){
 }
 
 function updateSampleVolume(value){
+  invalidatePreviewRender();
   sampleVolumePercent=Number(value)||0;
   $("sampleVolumeReadout").textContent=`${sampleVolumePercent}%`;
   if(chopAuditionGain){
@@ -166,14 +193,24 @@ function updateSampleVolume(value){
   }
 }
 
+let sampleLoadGeneration=0;
+
 async function loadChopperSample(file){
-  stopChopAudition();
   if(!file)return false;
+  const generation=++sampleLoadGeneration;
+  if(typeof stopCurrentBeat==="function" && isLoopPlaying)stopCurrentBeat();
+  else{
+    stopChopAudition();
+    invalidatePreviewRender();
+  }
 
   try{
     $("chopStatus").textContent="LOADING SAMPLE…";
     assertLocalFileSize(file,MAX_SAMPLE_FILE_BYTES,"sample");
-    sampleBuffer=await decodeFile(file);
+    const decoded=await decodeFile(file);
+    if(generation!==sampleLoadGeneration)return false;
+
+    sampleBuffer=decoded;
     sampleName=file.name;
     sampleConditionProfile=analyzeSampleCondition(sampleBuffer);
     samplePitchSemitones=0;
@@ -189,6 +226,7 @@ async function loadChopperSample(file){
     $("chopStatus").textContent=`SAMPLE READY • ${file.name} • ${sampleConditionProfile.label}`;
     return true;
   }catch(error){
+    if(generation!==sampleLoadGeneration)return false;
     console.error("Sample load:",error);
     $("chopStatus").textContent=`SAMPLE ERROR • ${safeErrorMessage(error)}`;
     return false;
@@ -212,6 +250,7 @@ function refreshMarkerEditor(){
 
 function setMarkers(count){
   if(!sampleBuffer)return;
+  invalidatePreviewRender();
   count=clamp(Math.round(Number(count)||8),1,16);
   const dur=sampleBuffer.duration;
   markers=Array.from({length:count+1},(_,i)=>dur*i/count);
@@ -267,6 +306,7 @@ function autoPlaceMarkers(){
   }
 
   chosen.push(dur);
+  invalidatePreviewRender();
   markers=chosen;
   selectedMarker=0;
   refreshMarkerEditor();
@@ -378,7 +418,10 @@ function markerBounds(i){
 function moveMarker(i,sec,snap=true){
   if(!sampleBuffer||i<0||i>=markers.length)return;
   if(snap)sec=applySnap(sec);
-  const [lo,hi]=markerBounds(i);markers[i]=clamp(sec,lo,hi);selectedMarker=i;refreshMarkerEditor();drawWave();renderPads();
+  const [lo,hi]=markerBounds(i);
+  const next=clamp(sec,lo,hi);
+  if(next!==markers[i])invalidatePreviewRender();
+  markers[i]=next;selectedMarker=i;refreshMarkerEditor();drawWave();renderPads();
 }
 
 function markerFromEvent(ev){
@@ -443,39 +486,25 @@ function clearPlayhead(){
 function buildLoopPlayheadState(){
   if(!sampleBuffer)return null;
 
-  const bpm=Math.max(40,Number($("sampleBpm").value)||90);
-  const stepDur=(60/bpm)/2;
-  const targetDur=8*60/bpm;
   const pitchRate=samplePitchRate();
-  const events=gridEventsForRender();
-
-  const placed=[];
-  for(let step=0;step<CHOPPER_SEQUENCE_STEPS;step++){
-    const chop=Number(events[step])||0;
-    if(chop>=1 && chop<markers.length){
-      placed.push({step,chop});
-    }
-  }
-
-  if(!placed.length)return null;
+  const plan=buildSequencePlan(
+    gridEventsForRender(),
+    $("sampleBpm").value,
+    Math.max(0,markers.length-1)
+  );
+  if(!plan.placed.length)return null;
 
   const segments=[];
-  for(let i=0;i<placed.length;i++){
-    const ev=placed[i];
-    const startTime=ev.step*stepDur;
-    const nextTime=i+1<placed.length
-      ? placed[i+1].step*stepDur
-      : targetDur;
-
+  for(const ev of plan.placed){
     const sampleStart=markers[ev.chop-1];
     const available=Math.max(0,sampleBuffer.duration-sampleStart);
     const maxAudible=available/pitchRate;
-    const endTime=Math.min(targetDur,nextTime,startTime+maxAudible);
+    const endTime=Math.min(plan.targetDur,ev.nextTime,ev.startTime+maxAudible);
 
-    if(endTime>startTime){
+    if(endTime>ev.startTime){
       segments.push({
         pad:ev.chop-1,
-        startTime,
+        startTime:ev.startTime,
         endTime,
         sampleStart
       });
@@ -483,7 +512,7 @@ function buildLoopPlayheadState(){
   }
 
   return {
-    duration:targetDur,
+    duration:plan.targetDur,
     pitchRate,
     segments
   };
@@ -512,9 +541,14 @@ function renderSampleTimeline(){
   const state=buildLoopPlayheadState();
   const cells=[];
   if(state){
-    const stepDur=state.duration/CHOPPER_SEQUENCE_STEPS;
+    const stepDur=state.duration/CHOPPER_SEQUENCE_TOTAL_STEPS;
+    const offset=sequencePageOffset();
+    const pageStart=offset*stepDur;
+    const pageDuration=CHOPPER_SEQUENCE_STEPS*stepDur;
+
     for(let step=0;step<CHOPPER_SEQUENCE_STEPS;step++){
-      const cellStart=step*stepDur;
+      const absoluteStep=offset+step;
+      const cellStart=absoluteStep*stepDur;
       const cellEnd=cellStart+stepDur;
       const segment=state.segments.find(seg=>cellStart<seg.endTime && cellEnd>seg.startTime);
       if(!segment)continue;
@@ -525,6 +559,7 @@ function renderSampleTimeline(){
 
       cells.push({
         step,
+        absoluteStep,
         pad:segment.pad,
         startTime,
         endTime,
@@ -541,8 +576,8 @@ function renderSampleTimeline(){
     ctx.strokeStyle="#d7a455";
     ctx.lineWidth=1;
     for(const cell of cells){
-      const x=SEQUENCE_LABEL_WIDTH+(cell.startTime/state.duration)*timelineWidth;
-      const endX=SEQUENCE_LABEL_WIDTH+(cell.endTime/state.duration)*timelineWidth;
+      const x=SEQUENCE_LABEL_WIDTH+((cell.startTime-pageStart)/pageDuration)*timelineWidth;
+      const endX=SEQUENCE_LABEL_WIDTH+((cell.endTime-pageStart)/pageDuration)*timelineWidth;
       const drawX=Math.ceil(x)+1;
       const drawEnd=Math.floor(endX)-1;
       const drawWidth=Math.max(1,drawEnd-drawX);
@@ -559,21 +594,25 @@ function renderSampleTimeline(){
   ctx.fillStyle="#9e896b";
   ctx.fillText("SAMPLE",7,6);
 
+  const offset=sequencePageOffset();
   for(let step=0;step<=CHOPPER_SEQUENCE_STEPS;step++){
     const x=SEQUENCE_LABEL_WIDTH+(step/CHOPPER_SEQUENCE_STEPS)*timelineWidth;
     const barStart=step===0||step===CHOPPER_SEQUENCE_STEPS/2||step===CHOPPER_SEQUENCE_STEPS;
     const beatStart=step%2===0;
-    ctx.strokeStyle=barStart?"#765a34":(beatStart?"#4a3a29":"#2f2a23");
-    ctx.lineWidth=barStart?2:1;
+    ctx.strokeStyle=barStart?"#9a7038":(beatStart?"#5b4630":"#27231e");
+    ctx.lineWidth=barStart?3:(beatStart?2:1);
     ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,height);ctx.stroke();
     if(step<CHOPPER_SEQUENCE_STEPS){
-      ctx.fillStyle="#9e896b";
-      ctx.fillText(stepLabel(step),x+4,6);
+      const absoluteStep=offset+step;
+      ctx.fillStyle=beatStart?"#d7c09a":"#6f6252";
+      ctx.font=beatStart?"bold 9px monospace":"8px monospace";
+      ctx.fillText(sequenceHeadLabel(step,absoluteStep),x+4,6);
     }
   }
 
   if(cells.length){
     ctx.fillStyle="#ead9b9";
+    ctx.font="8px monospace";
     for(const cell of cells){
       const x=SEQUENCE_LABEL_WIDTH+(cell.step/CHOPPER_SEQUENCE_STEPS)*timelineWidth;
       ctx.fillText(String(cell.pad+1),x+4,18);
@@ -641,8 +680,11 @@ function drawSampleTimelinePlayhead(loopTime){
   const width=sampleTimelinePlayheadCanvas.width;
   const height=sampleTimelinePlayheadCanvas.height;
   const timelineWidth=Math.max(1,width-SEQUENCE_LABEL_WIDTH);
-  const duration=Math.max(.001,loopPlayheadState.duration);
-  const x=SEQUENCE_LABEL_WIDTH+(loopTime/duration)*timelineWidth;
+  const stepDur=loopPlayheadState.duration/CHOPPER_SEQUENCE_TOTAL_STEPS;
+  const pageStart=sequencePageOffset()*stepDur;
+  const pageDuration=CHOPPER_SEQUENCE_STEPS*stepDur;
+  if(loopTime<pageStart || loopTime>=pageStart+pageDuration)return;
+  const x=SEQUENCE_LABEL_WIDTH+((loopTime-pageStart)/pageDuration)*timelineWidth;
 
   sampleTimelinePlayhead2d.save();
   sampleTimelinePlayhead2d.strokeStyle="#e2ad5f";
@@ -827,11 +869,19 @@ async function previewSlice(i,button){
 
 function ensureGridEvents(){
   const old=loopGridEvents.slice();
-  loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
-  for(let i=0;i<Math.min(old.length,CHOPPER_SEQUENCE_STEPS);i++){
+  loopGridEvents=new Array(CHOPPER_SEQUENCE_TOTAL_STEPS).fill(0);
+  for(let i=0;i<Math.min(old.length,CHOPPER_SEQUENCE_TOTAL_STEPS);i++){
     const pad=Number(old[i])||0;
     loopGridEvents[i]=(pad>=1 && pad<=Math.max(1,markers.length-1))?pad:0;
   }
+}
+
+function sequencePageOffset(){
+  return chopperSequencePage*CHOPPER_SEQUENCE_STEPS;
+}
+
+function sequenceBarNumber(absoluteStep){
+  return Math.floor(absoluteStep/(CHOPPER_SEQUENCE_STEPS/2))+1;
 }
 
 function stepLabel(step){
@@ -839,22 +889,54 @@ function stepLabel(step){
   return step%2===0 ? String(beat) : "&";
 }
 
+function sequenceHeadLabel(step,absoluteStep){
+  const label=stepLabel(step);
+  return step%(CHOPPER_SEQUENCE_STEPS/2)===0
+    ? `M${sequenceBarNumber(absoluteStep)}·${label}`
+    : label;
+}
+
+function updateSequencePageUI(){
+  document.querySelectorAll("[data-sequence-page]").forEach(button=>{
+    const active=Number(button.dataset.sequencePage)===chopperSequencePage;
+    button.classList.toggle("active",active);
+    button.setAttribute("aria-pressed",active?"true":"false");
+  });
+  if(sampleTimelineCanvas){
+    const first=chopperSequencePage*2+1;
+    sampleTimelineCanvas.setAttribute("aria-label",`Timeline du sample, mesures ${first} à ${first+1}`);
+  }
+}
+
+function setSequencePage(page){
+  const next=clamp(Math.round(Number(page)||0),0,1);
+  if(next===chopperSequencePage){
+    updateSequencePageUI();
+    return;
+  }
+  chopperSequencePage=next;
+  renderLoopGrid();
+}
+
 function renderLoopGrid(){
   ensureGridEvents();
+  updateSequencePageUI();
   const grid=$("loopGrid");
   grid.textContent="";
+  const offset=sequencePageOffset();
 
   const corner=document.createElement("div");
   corner.className="matrixCorner";
   grid.appendChild(corner);
 
   for(let step=0;step<CHOPPER_SEQUENCE_STEPS;step++){
+    const absoluteStep=offset+step;
     const head=document.createElement("div");
     const beatStart=step%2===0;
     const barStart=step===0||step===CHOPPER_SEQUENCE_STEPS/2;
     head.className=`matrixHead${beatStart?" beatStart":""}${barStart?" barStart":""}`;
-    head.textContent=stepLabel(step);
-    head.title=`Bar ${step<CHOPPER_SEQUENCE_STEPS/2?1:2} • ${stepLabel(step)}`;
+    head.textContent=sequenceHeadLabel(step,absoluteStep);
+    head.title=`Mesure ${sequenceBarNumber(absoluteStep)} • ${stepLabel(step)}`;
     grid.appendChild(head);
   }
 
@@ -882,23 +964,25 @@ function renderLoopGrid(){
     grid.appendChild(label);
 
     for(let step=0;step<CHOPPER_SEQUENCE_STEPS;step++){
+      const absoluteStep=offset+step;
       const cell=document.createElement("button");
       const beatStart=step%2===0;
       const barStart=step===0||step===CHOPPER_SEQUENCE_STEPS/2;
-      const active=available && loopGridEvents[step]===pad;
+      const active=available && loopGridEvents[absoluteStep]===pad;
 
       cell.className=`matrixCell${beatStart?" beatStart":""}${barStart?" barStart":""}${active?" active":""}${available?"":" unavailable"}`;
       cell.disabled=!available;
       cell.title=available
-        ? `PAD ${pad} • Bar ${step<CHOPPER_SEQUENCE_STEPS/2?1:2} • ${stepLabel(step)}`
+        ? `PAD ${pad} • Mesure ${sequenceBarNumber(absoluteStep)} • ${stepLabel(step)}`
         : `PAD ${pad} indisponible`;
 
       if(available){
         cell.onclick=()=>{
           // Monophonic column. Clicking an already active cell does nothing,
           // so a browser double-click cannot erase it.
-          if(loopGridEvents[step]!==pad){
-            loopGridEvents[step]=pad;
+          if(loopGridEvents[absoluteStep]!==pad){
+            invalidatePreviewRender();
+            loopGridEvents[absoluteStep]=pad;
             renderLoopGrid();
           }
         };
@@ -908,8 +992,9 @@ function renderLoopGrid(){
         };
         cell.oncontextmenu=(ev)=>{
           ev.preventDefault();
-          if(loopGridEvents[step]===pad){
-            loopGridEvents[step]=0;
+          if(loopGridEvents[absoluteStep]===pad){
+            invalidatePreviewRender();
+            loopGridEvents[absoluteStep]=0;
             renderLoopGrid();
           }
         };
@@ -923,7 +1008,8 @@ function renderLoopGrid(){
 }
 
 function clearLoopGrid(){
-  loopGridEvents=new Array(CHOPPER_SEQUENCE_STEPS).fill(0);
+  if(loopGridEvents.some(Boolean))invalidatePreviewRender();
+  loopGridEvents=new Array(CHOPPER_SEQUENCE_TOTAL_STEPS).fill(0);
   renderLoopGrid();
 }
 

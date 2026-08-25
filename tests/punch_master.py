@@ -1,22 +1,19 @@
-from pathlib import Path
-import re, sys
+import sys
+
+from browser_fixture import inline_runtime_page
+
 try:
     from playwright.sync_api import sync_playwright
 except Exception:
     print("SKIP: playwright is not installed")
     sys.exit(0)
 
-ROOT=Path(__file__).resolve().parents[1]
-html=(ROOT/'index.html').read_text(encoding='utf-8')
-html=re.sub(r'<link rel="manifest"[^>]*>','',html)
-for rel in ['./css/base.css','./css/clean-ui.css','./css/chopper-drum-controls.css']:
-    css=(ROOT/rel[2:]).read_text(encoding='utf-8')
-    html=html.replace(f'<link rel="stylesheet" href="{rel}">',f'<style>{css}</style>')
-html=re.sub(r'src="assets/[^"]+"','src=""',html)
-for rel in ['./js/bootstrap.js','./js/core.js','./js/looper.js','./js/practice.js','./js/chopper.js','./js/drums.js','./js/events.js','./js/chopper-drum-controls.js']:
-    js=(ROOT/rel[2:]).read_text(encoding='utf-8')
-    html=html.replace(f'<script src="{rel}" defer></script>',f'<script>{js}</script>')
-    html=html.replace(f'<script src="{rel}"></script>',f'<script>{js}</script>')
+
+html=inline_runtime_page(
+    preload_before={
+        'js/chopper-wave-slices.js': ('js/sp1200.js', 'js/chopper-sp1200.js'),
+    }
+)
 
 chromium='/usr/bin/chromium'
 with sync_playwright() as p:
@@ -75,14 +72,6 @@ with sync_playwright() as p:
         }""")
         assert reverb_hit=='snareReverbMix', (width,reverb_hit)
 
-        page.locator('#masterVolume').scroll_into_view_if_needed()
-        page.wait_for_timeout(20)
-        master_hit=page.evaluate("""() => {
-          const r=document.querySelector('#masterVolume').getBoundingClientRect();
-          const e=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
-          return e&&e.id;
-        }""")
-        assert master_hit=='masterVolume', (width,master_hit)
         assert not errors, errors
         page.close()
 
@@ -93,7 +82,7 @@ with sync_playwright() as p:
     page.wait_for_function('window.__SP && window.__SP.ready === true',timeout=10000)
     page.click('[data-tab="chopper"]')
     assert page.locator('#masterVuVertical').count()==0
-    assert page.locator('#vu').count()==1
+    assert page.locator('#masterVolume,#masterDb,#vu,#looperVu').count()==0
 
     vinyl=page.locator('#vinylAmount')
     assert vinyl.get_attribute('type')=='range'
@@ -106,19 +95,8 @@ with sync_playwright() as p:
     assert settings['amount']==0, settings
 
     page.evaluate('ensureAudio()')
-    box=page.locator('#masterVolume').bounding_box()
-    assert box and box['width']>20 and box['height']>20
-    before=float(page.input_value('#masterVolume'))
-    y=box['y']+box['height']/2
-    page.mouse.move(box['x']+box['width']*.8,y)
-    page.mouse.down()
-    page.mouse.move(box['x']+box['width']*.2,y,steps=5)
-    page.mouse.up()
-    page.wait_for_timeout(100)
-    after=float(page.input_value('#masterVolume'))
-    assert after != before, (before,after)
     gain=page.evaluate('liveBus.gain.value')
-    assert abs(gain-after/100) < .015, (after,gain)
+    assert abs(gain-.85) < .001, gain
 
     result=page.evaluate("""async () => {
       await ensureAudio();
@@ -218,4 +196,4 @@ with sync_playwright() as p:
     page.close()
     browser.close()
 
-print('OK: PUNCH/MASTER/VINYL — compact knobs, real master gain, four PUNCH presets and deterministic boom-bap vinyl processing')
+print('OK: PUNCH/VINYL — compact knobs, fixed output gain, four PUNCH presets and deterministic boom-bap vinyl processing')

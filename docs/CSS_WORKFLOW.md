@@ -1,82 +1,180 @@
-# CSS workflow — current runtime
+# CSS workflow — current runtime and migration discipline
 
-The browser loads **two maintained runtime stylesheets**, in this order:
+This document describes the **current browser reality** on branch `230826` and the
+safe workflow for moving toward `docs/CSS_TARGET_ARCHITECTURE.md`.
+
+Accepted migration changes and score deltas are recorded in
+`docs/CSS_MIGRATION_LOG.md`.
+
+## Current runtime truth
+
+`index.html` is the single runtime CSS manifest. After P3 it loads, in order:
 
 ```text
+css/tokens.css
+css/shared.css
 css/base.css
+css/looper.css
 css/clean-ui.css
+css/chopper-drum-controls.css
+css/chopper-deck-texture.css
 ```
 
-There is **no CSS generator pipeline** and no hidden source directory. Edit the
-runtime stylesheet that owns the behavior directly.
+Application JavaScript injects no stylesheet. `tests/css_health.py` and
+`tests/css_redundancy.py` derive the runtime set from the local stylesheet links in
+`index.html`; they do not maintain a separate production list.
 
-## Ownership
+`base.css`, `clean-ui.css`, `chopper-drum-controls.css` and
+`chopper-deck-texture.css` are still transitional. In particular,
+`clean-ui.css` is a retiring legacy override layer: **it may only stay unchanged or
+shrink. It must not receive new product behavior.**
 
-### `css/base.css`
+## Established P3 owners
 
-Primary stylesheet for tokens, shared primitives, shell/layout and the Looper,
-Chopper, Drums and Practice component rules.
+P3 established three target owners:
 
-### `css/clean-ui.css`
+```text
+css/tokens.css  -> global tokens only
+css/shared.css  -> shared primitives / cross-domain structure
+css/looper.css  -> Looper-only layout, skin, interaction and responsive behavior
+```
 
-Existing late cascade for the intentional lean workstation presentation: compact
-header/workstation adjustments and a small set of deliberate visibility/layout
-overrides. It is part of the real production cascade, not generated output.
+The remaining target owners are:
 
-Do not add a third override, compatibility, polish or theme stylesheet. If a rule
-is replaced, remove the retired declaration in the same change instead of leaving
-an inert earlier copy.
+```text
+css/chopper-sampler.css
+css/chopper-sequence.css
+css/chopper-drums.css
+```
 
-## Safe edit loop
+The governing rule remains:
 
-1. Identify whether the rule belongs to the primary component/layout (`base.css`)
-   or the existing lean presentation layer (`clean-ui.css`).
-2. Make the smallest direct edit; remove declarations/selectors made obsolete by it.
-3. Run the focused component/layout test.
-4. Run `python3 tools/test_all.py` before merge.
+> A component has one CSS owner. Another stylesheet must not correct it later in
+> the cascade.
 
-Useful focused checks:
+Responsive rules live with the component owner. Do not create separate mobile,
+override, fix, polish, compatibility or versioned UI stylesheets.
+
+## Validation cadence
+
+Do **not** treat every CSS edit as a release candidate. Use three levels.
+
+### DEV — after each micro-change
+
+Run only the narrowest checks for the modified owner. Typical CSS checks are:
 
 ```bash
-python tests/css_layout.py
-python tests/header_responsive.py
-python tests/chopper_ui.py
-python tests/chopper_sampler_layout.py
-python tests/drum_ui.py
 python tests/css_health.py
 python tests/css_redundancy.py
-python tests/http_smoke.py
+python tests/css_layout.py
 python tests/browser_smoke.py
 ```
 
-## Full-cascade guards
+Use Chopper-specific browser tests only when Chopper CSS changed, and Looper
+render/layout tests only when Looper CSS changed. Do not rerun SP1200 DSP/audio
+browser suites for an unrelated small CSS move.
 
-`tests/css_health.py` and `tests/css_redundancy.py` analyze `base.css` followed by
-`clean-ui.css`, matching the browser order. They reject unreachable selectors,
-unused custom properties/keyframes and declarations that are fully shadowed by a
-later copy of the same selector.
+### FAST — at an ownership checkpoint
 
-`tests/css_health.py` treats physical source-line count as informational only.
-Formatting must not become a way to pass or fail maintenance. The growth guard is
-instead a structural budget on selector branches across the real two-file cascade,
-so readable multi-line rules cost exactly the same as minified one-line rules.
+Run static/unit checks plus the smoke/layout tests affected by the accumulated
+changes. Until a dedicated fast runner exists, select these commands explicitly;
+do not hide a second test manifest in another script.
 
-Browser/layout tests that inline CSS must inline **both** runtime stylesheets in the
-same order. `tests/css_health.py` enforces that contract.
+### FULL — end of phase / before merge
 
-`tests/dead_code.py` also rejects references to the retired CSS generator/source
-layout in current maintenance documentation, so the old workflow cannot silently
-become the documented source of truth again.
+Run once after the whole coherent lot is ready:
 
-## Maintenance rules
+```bash
+python3 tools/test_all.py
+```
+
+A failed FULL is fixed at its first relevant failure, then rerun only after the
+fix. Do not run FULL after every micro-change.
+
+## Safe micro-change loop
+
+1. State one ownership/cascade problem.
+2. Record the architecture score before the change.
+3. Identify the intended owner and the narrowest affected check.
+4. Move or edit the smallest coherent rule set.
+5. Delete retired source declarations in the **same change**.
+6. Run DEV checks.
+7. Audit for duplicate ownership, specificity escalation and new `!important`.
+8. Use FAST at a checkpoint and FULL once at phase completion.
+9. Rescore every category; no category and no total may decrease.
+
+If a regression appears, fix the owner or revert. Do not stack a compensating
+late override.
+
+## Runtime-manifest rule
+
+Any change to the runtime CSS set must update `index.html`. Runtime-aware tests
+should derive the list from that manifest or serve the real page. Do not add
+another hand-written global runtime CSS list.
+
+Manifest-driven inline fixtures may share `tests/browser_fixture.py`; tests that
+can serve the real application should prefer that. Do not grow a second fixture
+framework around this helper.
+
+`tests/chopper_runtime_css.py` deliberately does **not** freeze the global
+stylesheet count or the complete ordered manifest. It serves the real page,
+requires every declared stylesheet link it observes to be loaded without
+duplication, verifies the current Chopper owners exactly once and in their required
+relative order, then asserts Chopper geometry/material behavior across the four
+maintained viewports. A legitimate unrelated extraction may therefore add another
+runtime stylesheet without breaking the Chopper gate merely because the global
+file count changed.
+
+## Specificity discipline
+
+Do not solve a conflict by adding:
+
+- another parent ID;
+- another class to a selector chain;
+- another later stylesheet;
+- another duplicate media rule;
+- a new `!important`.
+
+Existing `!important` declarations are migration debt. They may move with their
+owner during a behavior-preserving extraction, but ownership work must not create
+new ones merely to win cascade order.
+
+## Dead-code discipline
 
 - Prefer deletion over another specificity layer.
+- Do not keep the old declaration after moving it to its owner.
+- Do not keep retired responsive selectors.
+- Do not keep an empty/forwarding compatibility stylesheet.
 - Do not use `display:none` as a substitute for deleting a retired component path.
-- Do not keep responsive selectors for a component that no longer exists.
-- Do not introduce CSS ordering hacks when DOM order can express the intended structure.
-- Keep Practice frozen unless the requested change explicitly concerns Practice.
-- Treat `index.html` as the runtime manifest: every maintained runtime CSS file must
-  be loaded there, and dead runtime stylesheets must be deleted.
+- Do not optimize physical line count; readable formatting is not debt.
 
-The goal is a truthful two-file cascade with no dormant compatibility layer, not a
-perfectly flat stylesheet or a new build system.
+`tests/dead_code.py`, CSS health and redundancy remain hard gates.
+
+## Current P3 completion state
+
+The P3 runtime extraction was fully validated on commit
+`8d941cd1a61c7ea06f24fd021b10c13459da018b` (run #186):
+
+```text
+runtime stylesheets: 7
+selector branches: 749 / 750
+unreachable selector branches: 0
+unused keyframes: 0
+fully-shadowed declarations: 0
+ALL PROJECT CHECKS PASSED
+```
+
+The final manifest-test decoupling commit
+`da353194c968efbb41e95c13f728e43638f0a431` also passed the complete project
+workflow (run #188). It changed no production CSS or runtime behavior.
+
+Architecture score at P3 completion: **75 / 100**. The score is a migration
+safety measure, not a visual-quality score; exact category deltas are recorded in
+`docs/CSS_MIGRATION_LOG.md`.
+
+## Maintenance goal
+
+The desired end state is a small set of human-editable component owners where a
+maintainer can answer “where do I change this?” without searching through later
+override layers. `clean-ui.css` disappears once its remaining responsibilities
+have moved to real owners.
