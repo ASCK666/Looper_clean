@@ -33,6 +33,23 @@ runtime_order=[
 positions=[html.index(f'src="{path}"') for path in runtime_order]
 assert positions==sorted(positions),'Chopper feature scripts must stay explicit and ordered in index.html'
 
+default_kit=(ROOT/'js/default-drum-kit.js').read_text(encoding='utf-8')
+for invariant in [
+    'encoding:"pcm16be"',
+    'function decodePcm16BeMono(bytes,sampleRate)',
+    'view.getInt16(i*2,false)/32768',
+    'encoding:"wav"',
+    'priority:"user-library > embedded-default"',
+    'DEFAULT DRUM KIT • ${kind.toUpperCase()} unavailable',
+]:
+    assert invariant in default_kit,f'Missing default drum-kit invariant: {invariant}'
+for retired in [
+    'using synth fallback',
+    'buffer:makeSynthBuffer(kind,rate)',
+    'name:`SYNTH-',
+]:
+    assert retired not in default_kit,f'Default kit must not fall back to synth: {retired}'
+
 chopper=(ROOT/'js/chopper.js').read_text(encoding='utf-8')
 assert 'function buildSequencePlan(events,bpm,padCount)' in chopper
 
