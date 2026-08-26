@@ -7,9 +7,20 @@ assert '.addEventListener("click",requestDefaultSample,{once:true})' in loader
 assert 'if(chopper?.classList.contains("active"))' in loader
 assert './js/chopper-banks.js' in loader
 core_pos=loader.index('./js/chopper-wave-slices-core.js')
+perf_pos=loader.index('    installWaveformPerf();')
 banks_pos=loader.index('./js/chopper-banks.js')
 default_call_pos=loader.rindex('    loadDefaultSampleOnChopperOpen();')
-assert core_pos < banks_pos < default_call_pos
+assert core_pos < perf_pos < banks_pos < default_call_pos
+for invariant in [
+    'const WAVE_PEAK_BASE_BUCKET=16;',
+    'const peakCache=new WeakMap();',
+    'function buildPeakPyramid(buffer)',
+    'samplesPerColumn<WAVE_PEAK_BASE_BUCKET',
+    'scheduledFrame=requestAnimationFrame(()=>{',
+    'if(!pointerMoveDraw)return drawWaveImmediate(...args);',
+    'globalThis.ChopperWavePerf=Object.freeze({',
+]:
+    assert invariant in loader,f'Missing Chopper waveform perf invariant: {invariant}'
 
 html=(ROOT/'index.html').read_text(encoding='utf-8')
 runtime_order=[
