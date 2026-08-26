@@ -9,17 +9,22 @@
     kick:Object.freeze({
       url:"./assets/drums/default/kick.wav",
       name:"LOOPER_BB90_V2_KICK",
-      compensationDb:1.5
+      compensationDb:1.5,
+      encoding:"pcm16be",
+      sampleRate:44100
     }),
     snare:Object.freeze({
       url:"./assets/drums/default/snare.wav",
       name:"LOOPER_BB90_V2_SNARE",
-      compensationDb:2.0
+      compensationDb:2.0,
+      encoding:"pcm16be",
+      sampleRate:44100
     }),
     hat:Object.freeze({
       url:"./assets/drums/default/hat.wav",
       name:"LOOPER_BB90_V2_HAT",
-      compensationDb:4.0
+      compensationDb:4.0,
+      encoding:"wav"
     })
   });
 
@@ -38,30 +43,54 @@
     return {buffer:drumDecodeCache.get(key),name:file.name};
   }
 
+  function decodePcm16BeMono(bytes,sampleRate){
+    if(bytes.byteLength<2 || bytes.byteLength%2!==0){
+      throw new Error(`invalid PCM16-BE asset length ${bytes.byteLength}`);
+    }
+    const frameCount=bytes.byteLength/2;
+    const buffer=ctx.createBuffer(1,frameCount,sampleRate);
+    const channel=buffer.getChannelData(0);
+    const view=new DataView(bytes);
+    for(let i=0;i<frameCount;i++){
+      channel[i]=view.getInt16(i*2,false)/32768;
+    }
+    return buffer;
+  }
+
+  async function decodeEmbeddedAsset(bytes,spec){
+    if(spec.encoding==="pcm16be"){
+      return decodePcm16BeMono(bytes,spec.sampleRate||44100);
+    }
+    return await ctx.decodeAudioData(bytes.slice(0));
+  }
+
   async function loadEmbeddedDrum(kind){
     const spec=ASSETS[kind];
-    if(!spec)return null;
+    if(!spec)throw new Error(`Unknown default drum lane: ${kind}`);
 
     if(!embeddedLoads.has(kind)){
-      embeddedLoads.set(kind,(async()=>{
+      const load=(async()=>{
         const response=await fetch(spec.url,{cache:"no-store"});
         if(!response.ok){
           throw new Error(`${kind.toUpperCase()} default asset HTTP ${response.status}`);
         }
         const bytes=await response.arrayBuffer();
-        const buffer=await ctx.decodeAudioData(bytes.slice(0));
+        const buffer=await decodeEmbeddedAsset(bytes,spec);
         embeddedBufferCompensation.set(buffer,spec.compensationDb);
         return {buffer,name:spec.name};
-      })());
+      })();
+      load.catch(()=>embeddedLoads.delete(kind));
+      embeddedLoads.set(kind,load);
     }
 
-    return embeddedLoads.get(kind);
+    return await embeddedLoads.get(kind);
   }
 
   if(typeof loadSelectedDrum!=="function" ||
-     typeof randomAudioFileFromDirectory!=="function" ||
-     typeof makeSynthBuffer!=="function"){
-    console.warn("Default drum kit v2: drum engine unavailable");
+     typeof randomAudioFileFromDirectory!=="function"){
+    const error=new Error("Default drum kit v2: drum engine unavailable");
+    console.error(error);
+    globalThis.__SP?.report?.("DEFAULT DRUM KIT",error);
     return;
   }
 
@@ -70,16 +99,12 @@
     if(file)return await decodeUserDrum(kind,file);
 
     try{
-      const embedded=await loadEmbeddedDrum(kind);
-      if(embedded)return embedded;
+      return await loadEmbeddedDrum(kind);
     }catch(error){
-      console.warn(`Default ${kind} one-shot unavailable; using synth fallback`,error);
+      throw new Error(
+        `DEFAULT DRUM KIT • ${kind.toUpperCase()} unavailable • ${error?.message||String(error)}`
+      );
     }
-
-    return {
-      buffer:makeSynthBuffer(kind,rate),
-      name:`SYNTH-${Math.floor(performance.now())}-${randomIndex(999)}`
-    };
   };
 
   if(typeof drumAutoGain==="function"){
@@ -91,12 +116,20 @@
     };
   }
 
+  if(typeof currentDrumSelection!=="undefined" && currentDrumSelection){
+    const parts=[currentDrumSelection.kick,currentDrumSelection.snare,currentDrumSelection.hat];
+    if(parts.some(part=>String(part?.name||"").startsWith("SYNTH-"))){
+      currentDrumSelection=null;
+      if(typeof updateDrumSelectionUI==="function")updateDrumSelectionUI();
+    }
+  }
+
   globalThis.LooperDefaultDrumKit=Object.freeze({
     installed:true,
     name:KIT_NAME,
     version:KIT_VERSION,
-    source:"bundled-wav-one-shots",
-    priority:"user-library > embedded-default > synth-fallback",
+    source:"bundled-one-shots",
+    priority:"user-library > embedded-default",
     dry:true,
     snareReverbReady:true,
     gainCompensationDb:Object.freeze({kick:1.5,snare:2.0,hat:4.0}),
@@ -104,6 +137,7 @@
       kick:ASSETS.kick.url,
       snare:ASSETS.snare.url,
       hat:ASSETS.hat.url
-    })
+    }),
+    loadEmbeddedDrum
   });
 })();
