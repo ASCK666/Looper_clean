@@ -1,0 +1,21 @@
+name: Asset shuttle
+
+on:
+  push:
+    branches:
+      - feat/beat-crate-digger
+    paths:
+      - .github/workflows/asset-shuttle.yml
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: looper-source-assets
+          path: |
+            assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp
+            assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp
+          if-no-files-found: error
