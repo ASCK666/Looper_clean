@@ -1,0 +1,29 @@
+name: Crate disabled visibility
+on:
+  push:
+    branches: [feat/beat-crate-digger]
+    paths: [.github/workflows/crate-disabled-visibility.yml]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/beat-crate-digger
+      - run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('css/looper.css')
+          s=p.read_text()
+          old='#looper #cratePlayBeat:disabled { opacity:.34;filter:grayscale(.75);cursor:not-allowed; }'
+          new='#looper #cratePlayBeat:disabled { opacity:.58;filter:grayscale(.75);cursor:not-allowed; }'
+          assert old in s
+          p.write_text(s.replace(old,new,1))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add css/looper.css
+          git commit -m "fix(looper): keep disabled crate play visible"
+          git push origin HEAD:feat/beat-crate-digger
