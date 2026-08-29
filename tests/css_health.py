@@ -51,7 +51,7 @@ def impossible(selector):
     return any(not known(token) for token in required)
 
 
-assert not impossible('.trackSource:not(.class-that-does-not-exist)')
+assert not impossible('.crateBeatSource:not(.class-that-does-not-exist)')
 assert impossible('.class-that-does-not-exist')
 
 # Preserve the existing inline-fixture safety gate during P1: any test that
