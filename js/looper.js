@@ -500,11 +500,13 @@ function pruneBeatCrateState(rows){
   const available=new Set(rows.map(beatCrateKey));
   let favChanged=false;
   let setChanged=false;
+  // Local-library membership must survive sessions where only part of the
+  // folder cache is available before the user reconnects the real directory.
   for(const key of [...beatCrateFavoritesState]){
-    if(!available.has(key)){ beatCrateFavoritesState.delete(key); favChanged=true; }
+    if(key.startsWith("import:") && !available.has(key)){ beatCrateFavoritesState.delete(key); favChanged=true; }
   }
   for(const key of [...beatCrateSetState]){
-    if(!available.has(key)){ beatCrateSetState.delete(key); setChanged=true; }
+    if(key.startsWith("import:") && !available.has(key)){ beatCrateSetState.delete(key); setChanged=true; }
   }
   if(favChanged)persistBeatCrateKeySet(BEAT_CRATE_FAVORITES_KEY,beatCrateFavoritesState);
   if(setChanged)persistBeatCrateKeySet(BEAT_CRATE_SET_KEY,beatCrateSetState);
