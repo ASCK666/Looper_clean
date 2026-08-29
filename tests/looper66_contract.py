@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lock the approved Looper66 v2 visual and interaction contract."""
+"""Lock the approved Looper66 visual, transport and Beat Crate contract."""
 
 from pathlib import Path
 import hashlib
@@ -39,6 +39,7 @@ assert 'class="deckTransportVisual"' in HTML
 
 crate=HTML[HTML.index('<section class="panel beatCratePanel">'):]
 assert crate.index('id="prevBeat"') < crate.index('id="nextBeat"')
+assert 'id="librarySearch"' in crate and 'id="libraryOrder"' in crate
 
 ordered=['cassetteReelLeft','cassetteReelRight','cassetteBeatName','cassetteBayForeground','cassetteCssLight','cassetteGlass']
 positions=[HTML.index(token) for token in ordered]
@@ -54,7 +55,6 @@ assert 'autoLooperSpeedPercent+looperSpeedRateLevel' in LOOPER
 assert 'const AUTO_LOOP_BATCH=8' in LOOPER
 assert 'Math.max(-8,Math.min(8' in LOOPER
 assert 'looperSpeedRateLevel=0' in LOOPER and 'looperPitchPercent=0' in LOOPER
-assert 'const RACK_SLOTS_PER_COLUMN=3' in LOOPER
 assert 'animation-play-state:paused' in CSS
 assert '.cassetteDeck.playing .cassetteReel { animation-play-state:running; }' in CSS
 assert '@keyframes looper66ReelSpin' in CSS
@@ -108,7 +108,46 @@ assert re.search(r'\.deckPitchModule\s*\{[^}]*border:0;[^}]*box-shadow:none;',CS
 assert '.deckPitchModule::before' not in CSS
 assert '#looper #deckPitch:focus { outline:0!important;' in CSS
 assert 'filter:none!important;-webkit-tap-highlight-color:transparent' in CSS
-assert 'grid-template-columns:repeat(var(--rack-columns,3),calc((100% - .9%)/3))' in CSS
+
+# Beat Crate Digger is the only crate rendering path.
+for required in (
+    'BEAT_CRATE_FAVORITES_KEY',
+    'BEAT_CRATE_SET_KEY',
+    'beatCrateViewState',
+    'toggleBeatCrateFlag',
+    'createBeatCrateToolbar',
+    'createCrateBeat',
+    'digBeatCrate',
+):
+    assert required in LOOPER,required
+for required in (
+    '.beatCrateToolbar',
+    '.crateModeButton',
+    '.crateDigButton',
+    '.beatCrateGrid',
+    '.crateBeat.active',
+    '.crateFavorite',
+    '.crateSetFlag',
+):
+    assert required in CSS,required
+assert 'looper66-crate-cassettes.webp' in CSS
+assert '#looper .beatCrateControls { display:none!important; }' not in CSS
+for retired in (
+    'MIN_RACK_COLUMNS',
+    'RACK_SLOTS_PER_COLUMN',
+    'createBeatSpine',
+    'createCassetteRackColumn',
+    'cassetteRackColumn',
+    'cassetteRackSlot',
+    'trackMeta',
+    '--rack-columns',
+):
+    assert retired not in LOOPER+CSS,retired
+
+dig_body=LOOPER[LOOPER.index('async function digBeatCrate()'):LOOPER.index('async function decodeTrackAudio')]
+assert 'await switchTrack(row);' in dig_body
+assert 'playDeck(' not in dig_body
+assert 'BEAT_CRATE_DIG_HISTORY_LIMIT=4' in LOOPER
 
 retired=('deckFaceplate','crateFaceplate','tapeCounter','cassetteDoorEject','cassetteCavity','cassetteTapePath')
 for name in retired:
@@ -128,4 +167,4 @@ for name,(expected_size,expected_sha) in references.items():
     assert Image.open(path).size==expected_size,(name,Image.open(path).size)
     assert hashlib.sha256(path.read_bytes()).hexdigest()==expected_sha,name
 
-print('OK: Looper66 v2 uses responsive production skins, native controls, separate animated reels and CSS-only state lights')
+print('OK: Looper66 keeps its deck contract and uses one local-first Beat Crate Digger path')
