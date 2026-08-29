@@ -1,0 +1,22 @@
+name: Beat Crate browser smoke
+on:
+  push:
+    branches: [feat/beat-crate-digger]
+    paths: [.github/workflows/crate-browser-smoke.yml]
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/beat-crate-digger
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          python -m pip install playwright pillow
+          python -m playwright install --with-deps chromium
+          python tests/browser_smoke.py
