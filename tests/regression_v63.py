@@ -122,7 +122,7 @@ with tempfile.TemporaryDirectory() as td:
 
         # Import two LOOPER beats.
         page.set_input_files('#beatFiles',[str(beat_a),str(beat_b)])
-        page.wait_for_function("document.querySelectorAll('#library .track .danger').length >= 2 && deckBuffer !== null",timeout=10000)
+        page.wait_for_function("document.querySelectorAll('#library .crateBeat .crateBeatDelete').length >= 2 && deckBuffer !== null",timeout=10000)
 
         # 5) NEXT/PREV preserves transport state. This inline fixture owns the
         # state contract; the served-page smoke test owns physical hit-testing.
@@ -162,8 +162,8 @@ with tempfile.TemporaryDirectory() as td:
         # 7) Deleting the currently loaded imported beat fully unloads the deck.
         # The inline fixture owns the unload behavior; served-page smoke/layout
         # tests own the physical hit target.
-        page.wait_for_function("document.querySelector('#library .track.active .danger') !== null")
-        page.evaluate("document.querySelector('#library .track.active .danger').click()")
+        page.wait_for_function("document.querySelector('#library .crateBeat.active .crateBeatDelete') !== null")
+        page.evaluate("document.querySelector('#library .crateBeat.active .crateBeatDelete').click()")
         page.wait_for_function('currentTrack === null && deckBuffer === null')
         assert page.locator('#deckTrack').inner_text() == 'Aucun beat chargé'
         page.click('#playBeat')
