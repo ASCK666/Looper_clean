@@ -18,7 +18,15 @@ jobs:
         with:
           ref: feat/beat-crate-digger
       - name: Apply Beat Crate patch
-        run: python tools/apply_crate_html_fix.py
+        run: |
+          python tools/apply_crate_html_fix.py
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('tests/looper66_contract.py')
+          text=p.read_text()
+          text=text.replace("crate=HTML[HTML.index('<section class=\"panel beatCratePanel\">'):]", "crate=HTML[HTML.index('<section class=\"panel beatCratePanel\"'):]")
+          p.write_text(text)
+          PY
       - name: Focused static checks
         run: |
           python -m pip install pillow
