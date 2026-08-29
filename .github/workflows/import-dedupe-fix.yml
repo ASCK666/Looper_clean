@@ -1,0 +1,324 @@
+name: Beat import dedupe fix
+
+on:
+  push:
+    branches: [feat/beat-crate-digger]
+    paths: [.github/workflows/import-dedupe-fix.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/beat-crate-digger
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Apply import dedupe fix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p=Path('js/looper.js')
+          text=p.read_text()
+
+          old='''async function dbDelete(id){
+            memoryBeatStore.delete(id);
+            if(dbFallbackMode)return;
+            try{
+              await runBeatStoreTransaction("readwrite",store=>store.delete(id));
+            }catch(e){
+              console.warn("Scratch Practice: persistent delete failed",e);
+            }
+          }
+          '''
+          new='''async function dbDeleteMany(ids){
+            const uniqueIds=[...new Set((ids||[]).filter(Boolean))];
+            for(const id of uniqueIds)memoryBeatStore.delete(id);
+            if(dbFallbackMode || !uniqueIds.length)return;
+            try{
+              await runBeatStoreTransaction("readwrite",store=>{
+                for(const id of uniqueIds)store.delete(id);
+              });
+            }catch(e){
+              console.warn("Scratch Practice: persistent delete failed",e);
+            }
+          }
+
+          async function dbDelete(id){
+            await dbDeleteMany([id]);
+          }
+          '''
+          assert old in text
+          text=text.replace(old,new,1)
+
+          marker='''function beatCacheId(name){
+          '''
+          identity=r'''function beatImportIdentity(value){
+            const blob=value?.blob||value;
+            const name=String(value?.name||blob?.name||"").trim().toLowerCase();
+            if(!name)return "";
+            const size=Number(value?.fileSize??blob?.size??value?.size??0);
+            const lastModified=Number(value?.fileLastModified??blob?.lastModified??value?.lastModified??0);
+            return `${name}\u0000${size}\u0000${lastModified}`;
+          }
+
+          function beatCacheId(name){
+          '''
+          assert marker in text
+          text=text.replace(marker,identity,1)
+
+          start=text.index('async function importBeatFiles(files){')
+          end=text.index('\n\nfunction isFolderBeat(row){',start)
+          new_import=r'''async function importBeatFiles(files){
+            const selected=[...(files||[])];
+            const items=selected.filter(isAudioFile);
+            const loadRequest=++trackLoadSequence;
+            const storedRows=await dedupeStoredImportedBeats(await dbAll());
+            const importedByIdentity=new Map();
+            for(const row of storedRows){
+              if(row.source!=="user-import")continue;
+              const identity=beatImportIdentity(row);
+              if(identity && !importedByIdentity.has(identity))importedByIdentity.set(identity,row);
+            }
+
+            let firstImported=null;
+            let imported=0;
+            let skipped=selected.length-items.length;
+            let tooLarge=0;
+            let decodeErrors=0;
+            let duplicates=0;
+
+            for(const file of items){
+              if(file.size>MAX_BEAT_FILE_BYTES){ tooLarge++; continue; }
+
+              const identity=beatImportIdentity(file);
+              const existing=identity?importedByIdentity.get(identity):null;
+              if(existing){
+                duplicates++;
+                if(!firstImported){
+                  try{
+                    const buffer=await decodeFile(file);
+                    firstImported={row:existing,buffer};
+                  }catch(e){
+                    decodeErrors++;
+                    console.warn("Import duplicate decode skip",file.name,e);
+                  }
+                }
+                continue;
+              }
+
+              try{
+                const buffer=await decodeFile(file);
+                const row={
+                  id:localId(),
+                  name:file.name,
+                  blob:file,
+                  fileSize:file.size,
+                  fileLastModified:file.lastModified||0,
+                  created:Date.now(),
+                  duration:buffer.duration,
+                  source:"user-import"
+                };
+                await dbPut(row);
+                imported++;
+                if(identity)importedByIdentity.set(identity,row);
+                if(!firstImported)firstImported={row,buffer};
+              }catch(e){
+                decodeErrors++;
+                console.warn("Import skip",file.name,e);
+              }
+            }
+
+            // LOAD -> ready immediately. Re-selecting an existing beat loads it
+            // without creating another IndexedDB row.
+            if(firstImported && loadRequest===trackLoadSequence){
+              if(deckSource)stopDeck();
+              commitLoadedTrack(firstImported.row,firstImported.buffer);
+            }
+            await refreshLibrary(false);
+            return {imported,skipped,tooLarge,decodeErrors,duplicates,total:selected.length};
+          }'''
+          text=text[:start]+new_import+text[end:]
+
+          marker='''function beatCrateTone(row){
+          '''
+          helpers=r'''function importedBeatDuplicateGroups(rows,currentId=null){
+            const rowsByIdentity=new Map();
+            for(const row of rows){
+              if(row.source!=="user-import")continue;
+              const identity=beatImportIdentity(row);
+              if(!identity)continue;
+              if(!rowsByIdentity.has(identity))rowsByIdentity.set(identity,[]);
+              rowsByIdentity.get(identity).push(row);
+            }
+
+            const groups=[];
+            for(const members of rowsByIdentity.values()){
+              if(members.length<2)continue;
+              let keeper=currentId?members.find(row=>row.id===currentId):null;
+              if(!keeper){
+                keeper=[...members].sort((a,b)=>(a.created||0)-(b.created||0)||String(a.id||"").localeCompare(String(b.id||"")))[0];
+              }
+              groups.push({keeper,duplicates:members.filter(row=>row.id!==keeper.id)});
+            }
+            return groups;
+          }
+
+          async function dedupeStoredImportedBeats(rows){
+            const groups=importedBeatDuplicateGroups(rows,currentTrack?.id||null);
+            if(!groups.length)return rows;
+
+            const duplicateIds=[];
+            let favoritesChanged=false;
+            let setChanged=false;
+
+            for(const {keeper,duplicates} of groups){
+              const members=[keeper,...duplicates];
+              const keeperKey=beatCrateKey(keeper);
+              const keepFavorite=members.some(row=>beatCrateFavoritesState.has(beatCrateKey(row)));
+              const keepSet=members.some(row=>beatCrateSetState.has(beatCrateKey(row)));
+
+              for(const duplicate of duplicates){
+                duplicateIds.push(duplicate.id);
+                const duplicateKey=beatCrateKey(duplicate);
+                if(beatCrateFavoritesState.delete(duplicateKey))favoritesChanged=true;
+                if(beatCrateSetState.delete(duplicateKey))setChanged=true;
+              }
+
+              if(keepFavorite && !beatCrateFavoritesState.has(keeperKey)){
+                beatCrateFavoritesState.add(keeperKey);
+                favoritesChanged=true;
+              }
+              if(keepSet && !beatCrateSetState.has(keeperKey)){
+                beatCrateSetState.add(keeperKey);
+                setChanged=true;
+              }
+            }
+
+            if(favoritesChanged)persistBeatCrateKeySet(BEAT_CRATE_FAVORITES_KEY,beatCrateFavoritesState);
+            if(setChanged)persistBeatCrateKeySet(BEAT_CRATE_SET_KEY,beatCrateSetState);
+            await dbDeleteMany(duplicateIds);
+
+            const removed=new Set(duplicateIds);
+            return rows.filter(row=>!removed.has(row.id));
+          }
+
+          function beatCrateTone(row){
+          '''
+          assert marker in text
+          text=text.replace(marker,helpers,1)
+
+          old='''async function refreshLibrary(rescanDirectory=true){
+            let dbRows=await dbAll();
+
+            if(rescanDirectory && beatDirectoryHandle && await beatFolderPermission("read")==="granted"){
+              await scanBeatDirectory();
+              dbRows=await dbAll();
+            }
+
+            const mergedRows=mergeLibraryRows(dbRows);
+          '''
+          new='''async function refreshLibrary(rescanDirectory=true){
+            let dbRows=await dedupeStoredImportedBeats(await dbAll());
+
+            if(rescanDirectory && beatDirectoryHandle && await beatFolderPermission("read")==="granted"){
+              await scanBeatDirectory();
+              dbRows=await dedupeStoredImportedBeats(await dbAll());
+            }
+
+            const mergedRows=mergeLibraryRows(dbRows);
+          '''
+          assert old in text
+          text=text.replace(old,new,1)
+          p.write_text(text)
+
+          p=Path('js/events.js')
+          text=p.read_text()
+          old='''function beatImportSummary(label,result){
+            const issues=result.tooLarge+result.decodeErrors+result.skipped;
+            const beatLabel=label==="IMPORT" ? ` beat${result.total>1?"s":""}` : "";
+            const ignored=issues ? ` • ${issues} ignoré${issues>1?"s":""}` : "";
+            return `${label} • ${result.imported}/${result.total}${beatLabel}${ignored}`;
+          }
+          '''
+          new='''function beatImportSummary(label,result){
+            const issues=result.tooLarge+result.decodeErrors+result.skipped;
+            const duplicates=result.duplicates||0;
+            const beatLabel=label==="IMPORT" ? ` beat${result.total>1?"s":""}` : "";
+            const duplicateNote=duplicates ? ` • ${duplicates} déjà présent${duplicates>1?"s":""}` : "";
+            const ignored=issues ? ` • ${issues} ignoré${issues>1?"s":""}` : "";
+            return `${label} • ${result.imported}/${result.total}${beatLabel}${duplicateNote}${ignored}`;
+          }
+          '''
+          assert old in text
+          text=text.replace(old,new,1)
+          p.write_text(text)
+
+          p=Path('tests/core_unit.js')
+          text=p.read_text()
+          anchor='''assert.equal(evaluate("beatCrateKey({id:'abc',name:'TRACK.WAV',source:'user-import'})"),"import:abc");
+          '''
+          addition='''assert.equal(evaluate("beatCrateKey({id:'abc',name:'TRACK.WAV',source:'user-import'})"),"import:abc");
+          assert.equal(evaluate("beatImportIdentity({name:'TRACK.WAV',fileSize:10,fileLastModified:20})===beatImportIdentity({name:'track.wav',blob:{size:10,lastModified:20}})"),true);
+          assert.equal(evaluate("beatImportIdentity({name:'TRACK.WAV',fileSize:10,fileLastModified:20})===beatImportIdentity({name:'track.wav',blob:{size:10,lastModified:21}})"),false);
+          assert.equal(evaluate("importedBeatDuplicateGroups([{id:'old',name:'A.wav',source:'user-import',created:1,blob:{size:8,lastModified:9}},{id:'new',name:'A.wav',source:'user-import',created:2,blob:{size:8,lastModified:9}}],'new')[0].keeper.id"),"new");
+          '''
+          assert anchor in text
+          text=text.replace(anchor,addition,1)
+          p.write_text(text)
+
+          p=Path('tests/browser_smoke.py')
+          text=p.read_text()
+          anchor='''        assert page.locator('#library .crateBeat').count()==1
+          assert not page.locator('#cratePlayBeat').is_disabled()
+          page.click('#cratePlayBeat'); page.wait_for_function('deckSource !== null')
+          '''
+          addition='''        assert page.locator('#library .crateBeat').count()==1
+          assert page.evaluate("dbAll().then(rows=>rows.filter(row=>row.source==='user-import' && row.name==='test-beat.wav').length)")==1
+
+          # A legacy duplicate already in IndexedDB is consolidated on refresh,
+          # keeping the current beat instead of leaving duplicate crate rows.
+          page.evaluate("""async()=>{const rows=await dbAll();const row=rows.find(item=>item.source==='user-import'&&item.name==='test-beat.wav');await dbPut({...row,id:'legacy-duplicate',created:(row.created||0)+1});await refreshLibrary(false)}""")
+          assert page.locator('#library .crateBeat').count()==1
+          assert page.evaluate("dbAll().then(rows=>rows.filter(row=>row.source==='user-import' && row.name==='test-beat.wav').length)")==1
+
+          # Selecting the same file again loads the existing beat but must not
+          # append another persistent row.
+          page.set_input_files('#beatFiles',str(beat)); page.wait_for_timeout(250)
+          assert page.locator('#library .crateBeat').count()==1
+          assert page.evaluate("dbAll().then(rows=>rows.filter(row=>row.source==='user-import' && row.name==='test-beat.wav').length)")==1
+          assert not page.locator('#cratePlayBeat').is_disabled()
+          page.click('#cratePlayBeat'); page.wait_for_function('deckSource !== null')
+          '''
+          assert anchor in text
+          text=text.replace(anchor,addition,1)
+          p.write_text(text)
+          PY
+
+      - name: Focused unit and contract checks
+        run: |
+          node tests/core_unit.js
+          python tests/looper66_contract.py
+          git diff --check
+
+      - name: Browser regression
+        run: |
+          python -m pip install playwright pillow
+          python -m playwright install --with-deps chromium
+          python tests/browser_smoke.py
+
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/looper.js js/events.js tests/core_unit.js tests/browser_smoke.py
+          git commit -m "fix(looper): dedupe repeated beat imports"
+          git push origin HEAD:feat/beat-crate-digger
