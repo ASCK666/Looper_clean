@@ -21,6 +21,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install focused test dependency
+        run: python -m pip install pillow
+
       - name: Apply import dedupe fix
         run: python tools/apply_import_dedupe_fix.py
 
@@ -32,7 +35,7 @@ jobs:
 
       - name: Browser regression
         run: |
-          python -m pip install playwright pillow
+          python -m pip install playwright
           python -m playwright install --with-deps chromium
           python tests/browser_smoke.py
 
