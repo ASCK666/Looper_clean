@@ -51,18 +51,19 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert page.locator('.cassetteCssLight').count()==1
         assert page.locator('.cassetteGlass').count()==1
         assert page.locator('.cassetteReel').count()==2
-        assert page.locator('#library .track').count()==0
+        assert page.locator('#library .crateBeat').count()==0
 
-        for rid in ['playBeat','stopBeat','prevBeat','nextBeat','importBeatsBtn','importFolderBtn','loadSampleBtn','kickFolderBtn','snareFolderBtn','hatFolderBtn','autoLooperToggle','deckAutoToggle','deckPitch','deckTransportState','deckSpeedReadout']:
+        for rid in ['playBeat','stopBeat','prevBeat','nextBeat','cratePlayBeat','importBeatsBtn','importFolderBtn','loadSampleBtn','kickFolderBtn','snareFolderBtn','hatFolderBtn','autoLooperToggle','deckAutoToggle','deckPitch','deckTransportState','deckSpeedReadout']:
             assert page.locator('#'+rid).count()==1,rid
-        handlers=page.evaluate('''() => ['playBeat','stopBeat','loadSampleBtn','kickFolderBtn','autoLooperToggle','deckAutoToggle','importBeatsBtn','importFolderBtn'].map(id=>typeof document.getElementById(id).onclick)''')
+        handlers=page.evaluate('''() => ['playBeat','cratePlayBeat','stopBeat','loadSampleBtn','kickFolderBtn','autoLooperToggle','deckAutoToggle','importBeatsBtn','importFolderBtn'].map(id=>typeof document.getElementById(id).onclick)''')
         assert all(v=='function' for v in handlers),handlers
         assert page.evaluate("typeof document.getElementById('deckPitch').oninput")=='function'
         assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='looper66EmptyPlayPulse'
         assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationDuration")=='6s'
 
-        visible=page.evaluate('''() => ['playBeat','stopBeat','prevBeat','nextBeat','autoLooperToggle','deckAutoToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect(),c=getComputedStyle(e);return [id,r.width,r.height,c.display,c.visibility,parseFloat(c.opacity)]})''')
+        visible=page.evaluate('''() => ['playBeat','stopBeat','prevBeat','nextBeat','cratePlayBeat','autoLooperToggle','deckAutoToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect(),c=getComputedStyle(e);return [id,r.width,r.height,c.display,c.visibility,parseFloat(c.opacity)]})''')
         assert all(v[1]>=44 and v[2]>=44 and v[3]!='none' and v[4]=='visible' and v[5]>.5 for v in visible),visible
+        assert page.locator('#cratePlayBeat').is_disabled()
 
         page.set_input_files('#beatFiles',str(beat))
         # The cassette display intentionally uppercases its physical label while
@@ -70,8 +71,22 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.wait_for_function("document.getElementById('cassetteBeatName').textContent === 'TEST-BEAT.WAV'",timeout=10000)
         assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='none'
         assert page.evaluate("document.getElementById('deckTrack').textContent === 'test-beat.wav'") is True
-        assert page.locator('#library .track').count()==1
-        page.click('#playBeat'); page.wait_for_function('deckSource !== null')
+        assert page.locator('#library .crateBeat').count()==1
+        assert page.evaluate("dbAll().then(rows=>rows.filter(row=>row.source==='user-import' && row.name==='test-beat.wav').length)")==1
+
+        # A legacy duplicate already in IndexedDB is consolidated on refresh,
+        # keeping the current beat instead of leaving duplicate crate rows.
+        page.evaluate("""async()=>{const rows=await dbAll();const row=rows.find(item=>item.source==='user-import'&&item.name==='test-beat.wav');await dbPut({...row,id:'legacy-duplicate',created:(row.created||0)+1});await refreshLibrary(false)}""")
+        assert page.locator('#library .crateBeat').count()==1
+        assert page.evaluate("dbAll().then(rows=>rows.filter(row=>row.source==='user-import' && row.name==='test-beat.wav').length)")==1
+
+        # Selecting the same file again loads the existing beat but must not
+        # append another persistent row.
+        page.set_input_files('#beatFiles',str(beat)); page.wait_for_timeout(250)
+        assert page.locator('#library .crateBeat').count()==1
+        assert page.evaluate("dbAll().then(rows=>rows.filter(row=>row.source==='user-import' && row.name==='test-beat.wav').length)")==1
+        assert not page.locator('#cratePlayBeat').is_disabled()
+        page.click('#cratePlayBeat'); page.wait_for_function('deckSource !== null')
         page.wait_for_function("document.getElementById('deckTransportState').textContent === 'PLAYING'",timeout=5000)
         assert page.evaluate("getComputedStyle(document.querySelector('.cassetteReel')).animationPlayState")=='running'
         page.click('#stopBeat'); page.wait_for_function('deckSource === null')

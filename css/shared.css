@@ -161,12 +161,6 @@ input[type=range] {
   background: #49351f;
 }
 
-.btn.danger {
-  color: #ffd4d0;
-  background: #2a1515;
-  border-color: #69312e;
-}
-
 .btn:disabled {
   opacity: .36;
   cursor: not-allowed;

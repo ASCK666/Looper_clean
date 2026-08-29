@@ -59,9 +59,11 @@ function openFilePicker(id){
 
 function beatImportSummary(label,result){
   const issues=result.tooLarge+result.decodeErrors+result.skipped;
+  const duplicates=result.duplicates||0;
   const beatLabel=label==="IMPORT" ? ` beat${result.total>1?"s":""}` : "";
+  const duplicateNote=duplicates ? ` • ${duplicates} déjà présent${duplicates>1?"s":""}` : "";
   const ignored=issues ? ` • ${issues} ignoré${issues>1?"s":""}` : "";
-  return `${label} • ${result.imported}/${result.total}${beatLabel}${ignored}`;
+  return `${label} • ${result.imported}/${result.total}${beatLabel}${duplicateNote}${ignored}`;
 }
 
 async function handleBeatImport(files,label){
@@ -95,7 +97,7 @@ $("beatFiles").onchange=()=>handleBeatImport($("beatFiles").files,"IMPORT");
 $("beatFolder").onchange=()=>handleBeatImport($("beatFolder").files,"FOLDER IMPORT");
 $("librarySearch").oninput=()=>refreshLibrary(false);
 $("libraryOrder").onchange=()=>refreshLibrary(false);
-const deckTransportControlIds=["prevBeat","playBeat","stopBeat","nextBeat","autoLooperToggle","deckAutoToggle","deckPitch"];
+const deckTransportControlIds=["prevBeat","cratePlayBeat","playBeat","stopBeat","nextBeat","autoLooperToggle","deckAutoToggle","deckPitch"];
 deckTransportControlIds.forEach(id=>{
   $(id)?.addEventListener("click",ev=>ev.stopPropagation());
 });
@@ -116,6 +118,7 @@ $("autoLooperToggle").onclick=toggleAutoLooper;
 $("deckAutoToggle").onclick=toggleDeckAuto;
 $("deckPitch").oninput=event=>setLooperPitch(event.currentTarget.value);
 $("playBeat").onclick=()=>runLooperAction("PLAY",playDeck);
+$("cratePlayBeat").onclick=()=>runLooperAction("CRATE PLAY",playDeck);
 $("stopBeat").onclick=()=>stopDeck();
 $("prevBeat").onclick=()=>runLooperAction("PREV",()=>selectRelative(-1));
 $("nextBeat").onclick=()=>runLooperAction("NEXT",()=>selectRelative(1));

@@ -9,8 +9,8 @@ ASSETS = ROOT / "assets"
 EXPECTED_VISUALS = {
     "deck-black-ui-texture.png",
     "looper-ui/chopper-looper-button-off-alpha-6920266c.webp",
-    "looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp",
-    "looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp",
+    "looper-ui/looper66-desktop-pitch-clean-no-crate-7907d094.webp",
+    "looper-ui/looper66-mobile-pitch-clean-no-crate-933411c6.webp",
     "looper-ui/looper66-mobile-transport-fbd6a0d3.webp",
     "looper-ui/looper66-desktop-transport-square-3d62809d.webp",
     "looper-ui/looper66-crate-cassettes.webp",
