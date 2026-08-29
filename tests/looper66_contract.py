@@ -117,6 +117,7 @@ for required in (
     'toggleBeatCrateFlag',
     'createBeatCrateToolbar',
     'createCrateBeat',
+    'crateSetFlag',
     'digBeatCrate',
 ):
     assert required in LOOPER,required
@@ -127,7 +128,6 @@ for required in (
     '.beatCrateGrid',
     '.crateBeat.active',
     '.crateFavorite',
-    '.crateSetFlag',
 ):
     assert required in CSS,required
 assert 'looper66-crate-cassettes.webp' in CSS
@@ -148,6 +148,7 @@ dig_body=LOOPER[LOOPER.index('async function digBeatCrate()'):LOOPER.index('asyn
 assert 'await switchTrack(row);' in dig_body
 assert 'playDeck(' not in dig_body
 assert 'BEAT_CRATE_DIG_HISTORY_LIMIT=4' in LOOPER
+assert 'key.startsWith("import:")' in LOOPER
 
 retired=('deckFaceplate','crateFaceplate','tapeCounter','cassetteDoorEject','cassetteCavity','cassetteTapePath')
 for name in retired:
