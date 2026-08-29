@@ -168,7 +168,7 @@
 #looper .beatCrateTransport button { min-width:0;min-height:44px;padding:0 10px;border:1px solid #513820;border-radius:3px;color:#d79a48;background:linear-gradient(#18110a,#090604);box-shadow:inset 0 1px #302216,0 2px 5px rgba(0,0,0,.45);font:800 clamp(8px,.9vw,13px)/1 var(--font-mono);letter-spacing:.06em;cursor:pointer; }
 #looper .beatCrateTransport button:is(:hover,:focus-visible) { border-color:#b66e1d;color:#ffe0a0; }
 #looper #cratePlayBeat { border-color:#a76516;color:#1b1003;background:linear-gradient(#ffbd55,#c87518);text-shadow:0 1px rgba(255,255,255,.24); }
-#looper #cratePlayBeat:disabled { opacity:.34;filter:grayscale(.75);cursor:not-allowed; }
+#looper #cratePlayBeat:disabled { opacity:.58;filter:grayscale(.75);cursor:not-allowed; }
 
 #looper button:focus-visible,#looper input:focus-visible,#looper select:focus-visible { outline:2px solid #ffac35!important;outline-offset:2px; }
 #looper .deckHotspot:focus-visible,#looper .deckLoadKey:focus-visible,#looper .deckAutoKey:focus-visible,#looper .beatCrateTransport button:focus-visible,#looper #deckPitch:focus { outline:0!important;outline-offset:0!important;border-color:transparent!important;box-shadow:none!important; }
