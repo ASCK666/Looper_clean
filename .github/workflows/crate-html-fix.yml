@@ -26,6 +26,13 @@ jobs:
           text=p.read_text()
           text=text.replace("crate=HTML[HTML.index('<section class=\"panel beatCratePanel\">'):]", "crate=HTML[HTML.index('<section class=\"panel beatCratePanel\"'):]")
           p.write_text(text)
+
+          p=Path('css/looper.css')
+          css=p.read_text()
+          anchor='#looper .crateFlag[aria-pressed="true"] { border-color:#b86d17;color:#ffe0a2;background:#321d05; }\n'
+          assert anchor in css
+          css=css.replace(anchor,anchor+'#looper .crateFavorite { font-size:13px; }\n',1)
+          p.write_text(css)
           PY
       - name: Focused static checks
         run: |
