@@ -33,6 +33,12 @@ jobs:
           assert anchor in css
           css=css.replace(anchor,anchor+'#looper .crateFavorite { font-size:13px; }\n',1)
           p.write_text(css)
+
+          p=Path('tests/validate.py')
+          text=p.read_text()
+          text=text.replace('assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp','assets/looper-ui/looper66-desktop-pitch-clean-no-crate-7907d094.webp')
+          text=text.replace('assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp','assets/looper-ui/looper66-mobile-pitch-clean-no-crate-933411c6.webp')
+          p.write_text(text)
           PY
       - name: Focused static checks
         run: |
@@ -47,6 +53,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html css/looper.css js/looper.js js/events.js tests/assets_health.py tests/looper66_contract.py tests/browser_smoke.py
+          git add index.html css/looper.css js/looper.js js/events.js tests/assets_health.py tests/looper66_contract.py tests/browser_smoke.py tests/validate.py
           git commit -m "fix(looper): make Beat Crate real HTML controls"
           git push origin HEAD:feat/beat-crate-digger
