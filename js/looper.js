@@ -170,14 +170,21 @@ async function dbPut(row){
   }
 }
 
-async function dbDelete(id){
-  memoryBeatStore.delete(id);
-  if(dbFallbackMode)return;
+async function dbDeleteMany(ids){
+  const uniqueIds=[...new Set((ids||[]).filter(Boolean))];
+  for(const id of uniqueIds)memoryBeatStore.delete(id);
+  if(dbFallbackMode || !uniqueIds.length)return;
   try{
-    await runBeatStoreTransaction("readwrite",store=>store.delete(id));
+    await runBeatStoreTransaction("readwrite",store=>{
+      for(const id of uniqueIds)store.delete(id);
+    });
   }catch(e){
     console.warn("Scratch Practice: persistent delete failed",e);
   }
+}
+
+async function dbDelete(id){
+  await dbDeleteMany([id]);
 }
 
 async function dbAll(){
@@ -192,6 +199,15 @@ async function dbAll(){
     enableDbFallback(e);
     return [...memoryBeatStore.values()];
   }
+}
+
+function beatImportIdentity(value){
+  const blob=value?.blob||value;
+  const name=String(value?.name||blob?.name||"").trim().toLowerCase();
+  if(!name)return "";
+  const size=Number(value?.fileSize??blob?.size??value?.size??0);
+  const lastModified=Number(value?.fileLastModified??blob?.lastModified??value?.lastModified??0);
+  return `${name}\u0000${size}\u0000${lastModified}`;
 }
 
 function beatCacheId(name){
@@ -432,26 +448,55 @@ async function importBeatFiles(files){
   const selected=[...(files||[])];
   const items=selected.filter(isAudioFile);
   const loadRequest=++trackLoadSequence;
+  const storedRows=await dedupeStoredImportedBeats(await dbAll());
+  const importedByIdentity=new Map();
+  for(const row of storedRows){
+    if(row.source!=="user-import")continue;
+    const identity=beatImportIdentity(row);
+    if(identity && !importedByIdentity.has(identity))importedByIdentity.set(identity,row);
+  }
+
   let firstImported=null;
   let imported=0;
   let skipped=selected.length-items.length;
   let tooLarge=0;
   let decodeErrors=0;
+  let duplicates=0;
 
   for(const file of items){
+    if(file.size>MAX_BEAT_FILE_BYTES){ tooLarge++; continue; }
+
+    const identity=beatImportIdentity(file);
+    const existing=identity?importedByIdentity.get(identity):null;
+    if(existing){
+      duplicates++;
+      if(!firstImported){
+        try{
+          const buffer=await decodeFile(file);
+          firstImported={row:existing,buffer};
+        }catch(e){
+          decodeErrors++;
+          console.warn("Import duplicate decode skip",file.name,e);
+        }
+      }
+      continue;
+    }
+
     try{
-      if(file.size>MAX_BEAT_FILE_BYTES){ tooLarge++; continue; }
       const buffer=await decodeFile(file);
       const row={
         id:localId(),
         name:file.name,
         blob:file,
+        fileSize:file.size,
+        fileLastModified:file.lastModified||0,
         created:Date.now(),
         duration:buffer.duration,
         source:"user-import"
       };
       await dbPut(row);
       imported++;
+      if(identity)importedByIdentity.set(identity,row);
       if(!firstImported)firstImported={row,buffer};
     }catch(e){
       decodeErrors++;
@@ -459,13 +504,14 @@ async function importBeatFiles(files){
     }
   }
 
-  // LOAD -> ready immediately. Do not autoplay: user still decides with PLAY.
+  // LOAD -> ready immediately. Re-selecting an existing beat loads it
+  // without creating another IndexedDB row.
   if(firstImported && loadRequest===trackLoadSequence){
     if(deckSource)stopDeck();
     commitLoadedTrack(firstImported.row,firstImported.buffer);
   }
   await refreshLibrary(false);
-  return {imported,skipped,tooLarge,decodeErrors,total:selected.length};
+  return {imported,skipped,tooLarge,decodeErrors,duplicates,total:selected.length};
 }
 
 function isFolderBeat(row){
@@ -488,6 +534,67 @@ function persistBeatCrateKeySet(storageKey,keySet){
 function beatCrateKey(row){
   if(isFolderBeat(row))return `library:${String(row.name||"").toLowerCase()}`;
   return `import:${String(row.id||row.name||"")}`;
+}
+
+function importedBeatDuplicateGroups(rows,currentId=null){
+  const rowsByIdentity=new Map();
+  for(const row of rows){
+    if(row.source!=="user-import")continue;
+    const identity=beatImportIdentity(row);
+    if(!identity)continue;
+    if(!rowsByIdentity.has(identity))rowsByIdentity.set(identity,[]);
+    rowsByIdentity.get(identity).push(row);
+  }
+
+  const groups=[];
+  for(const members of rowsByIdentity.values()){
+    if(members.length<2)continue;
+    let keeper=currentId?members.find(row=>row.id===currentId):null;
+    if(!keeper){
+      keeper=[...members].sort((a,b)=>(a.created||0)-(b.created||0)||String(a.id||"").localeCompare(String(b.id||"")))[0];
+    }
+    groups.push({keeper,duplicates:members.filter(row=>row.id!==keeper.id)});
+  }
+  return groups;
+}
+
+async function dedupeStoredImportedBeats(rows){
+  const groups=importedBeatDuplicateGroups(rows,currentTrack?.id||null);
+  if(!groups.length)return rows;
+
+  const duplicateIds=[];
+  let favoritesChanged=false;
+  let setChanged=false;
+
+  for(const {keeper,duplicates} of groups){
+    const members=[keeper,...duplicates];
+    const keeperKey=beatCrateKey(keeper);
+    const keepFavorite=members.some(row=>beatCrateFavoritesState.has(beatCrateKey(row)));
+    const keepSet=members.some(row=>beatCrateSetState.has(beatCrateKey(row)));
+
+    for(const duplicate of duplicates){
+      duplicateIds.push(duplicate.id);
+      const duplicateKey=beatCrateKey(duplicate);
+      if(beatCrateFavoritesState.delete(duplicateKey))favoritesChanged=true;
+      if(beatCrateSetState.delete(duplicateKey))setChanged=true;
+    }
+
+    if(keepFavorite && !beatCrateFavoritesState.has(keeperKey)){
+      beatCrateFavoritesState.add(keeperKey);
+      favoritesChanged=true;
+    }
+    if(keepSet && !beatCrateSetState.has(keeperKey)){
+      beatCrateSetState.add(keeperKey);
+      setChanged=true;
+    }
+  }
+
+  if(favoritesChanged)persistBeatCrateKeySet(BEAT_CRATE_FAVORITES_KEY,beatCrateFavoritesState);
+  if(setChanged)persistBeatCrateKeySet(BEAT_CRATE_SET_KEY,beatCrateSetState);
+  await dbDeleteMany(duplicateIds);
+
+  const removed=new Set(duplicateIds);
+  return rows.filter(row=>!removed.has(row.id));
 }
 
 function beatCrateTone(row){
@@ -737,11 +844,11 @@ function renderLibraryRows(rows,allRows){
 }
 
 async function refreshLibrary(rescanDirectory=true){
-  let dbRows=await dbAll();
+  let dbRows=await dedupeStoredImportedBeats(await dbAll());
 
   if(rescanDirectory && beatDirectoryHandle && await beatFolderPermission("read")==="granted"){
     await scanBeatDirectory();
-    dbRows=await dbAll();
+    dbRows=await dedupeStoredImportedBeats(await dbAll());
   }
 
   const mergedRows=mergeLibraryRows(dbRows);

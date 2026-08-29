@@ -59,9 +59,11 @@ function openFilePicker(id){
 
 function beatImportSummary(label,result){
   const issues=result.tooLarge+result.decodeErrors+result.skipped;
+  const duplicates=result.duplicates||0;
   const beatLabel=label==="IMPORT" ? ` beat${result.total>1?"s":""}` : "";
+  const duplicateNote=duplicates ? ` • ${duplicates} déjà présent${duplicates>1?"s":""}` : "";
   const ignored=issues ? ` • ${issues} ignoré${issues>1?"s":""}` : "";
-  return `${label} • ${result.imported}/${result.total}${beatLabel}${ignored}`;
+  return `${label} • ${result.imported}/${result.total}${beatLabel}${duplicateNote}${ignored}`;
 }
 
 async function handleBeatImport(files,label){

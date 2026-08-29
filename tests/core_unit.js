@@ -62,6 +62,9 @@ assert.equal(evaluate("beatCrateTone({id:'same',source:'user-import'})===beatCra
 assert.equal(evaluate("beatCrateTone({id:'same',source:'user-import'})>=0 && beatCrateTone({id:'same',source:'user-import'})<5"),true);
 assert.equal(evaluate("beatCrateKey({name:'TRACK.WAV',source:'beat-folder'})"),"library:track.wav");
 assert.equal(evaluate("beatCrateKey({id:'abc',name:'TRACK.WAV',source:'user-import'})"),"import:abc");
+assert.equal(evaluate("beatImportIdentity({name:'TRACK.WAV',fileSize:10,fileLastModified:20})===beatImportIdentity({name:'track.wav',blob:{size:10,lastModified:20}})"),true);
+assert.equal(evaluate("beatImportIdentity({name:'TRACK.WAV',fileSize:10,fileLastModified:20})===beatImportIdentity({name:'track.wav',blob:{size:10,lastModified:21}})"),false);
+assert.equal(evaluate("importedBeatDuplicateGroups([{id:'old',name:'A.wav',source:'user-import',created:1,blob:{size:8,lastModified:9}},{id:'new',name:'A.wav',source:'user-import',created:2,blob:{size:8,lastModified:9}}],'new')[0].keeper.id"),"new");
 assert.equal(evaluate("isFolderBeat({source:'beat-folder-cache'})"),true);
 assert.equal(evaluate("isFolderBeat({source:'user-import'})"),false);
 assert.equal(evaluate("BEAT_CRATE_DIG_HISTORY_LIMIT"),4);

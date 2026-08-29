@@ -72,6 +72,19 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='none'
         assert page.evaluate("document.getElementById('deckTrack').textContent === 'test-beat.wav'") is True
         assert page.locator('#library .crateBeat').count()==1
+        assert page.evaluate("dbAll().then(rows=>rows.filter(row=>row.source==='user-import' && row.name==='test-beat.wav').length)")==1
+
+        # A legacy duplicate already in IndexedDB is consolidated on refresh,
+        # keeping the current beat instead of leaving duplicate crate rows.
+        page.evaluate("""async()=>{const rows=await dbAll();const row=rows.find(item=>item.source==='user-import'&&item.name==='test-beat.wav');await dbPut({...row,id:'legacy-duplicate',created:(row.created||0)+1});await refreshLibrary(false)}""")
+        assert page.locator('#library .crateBeat').count()==1
+        assert page.evaluate("dbAll().then(rows=>rows.filter(row=>row.source==='user-import' && row.name==='test-beat.wav').length)")==1
+
+        # Selecting the same file again loads the existing beat but must not
+        # append another persistent row.
+        page.set_input_files('#beatFiles',str(beat)); page.wait_for_timeout(250)
+        assert page.locator('#library .crateBeat').count()==1
+        assert page.evaluate("dbAll().then(rows=>rows.filter(row=>row.source==='user-import' && row.name==='test-beat.wav').length)")==1
         assert not page.locator('#cratePlayBeat').is_disabled()
         page.click('#cratePlayBeat'); page.wait_for_function('deckSource !== null')
         page.wait_for_function("document.getElementById('deckTransportState').textContent === 'PLAYING'",timeout=5000)
