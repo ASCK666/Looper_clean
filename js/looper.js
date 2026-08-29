@@ -49,6 +49,8 @@ function refreshCassetteUI(){
   const speedReadout=$("deckSpeedReadout");
   const speedEcho=$("deckSpeedEcho");
   const autoReadout=$("deckAutoReadout");
+  const cratePlay=$("cratePlayBeat");
+  const crateState=$("crateDeckState");
   if(!zone || !name) return;
 
   const currentName=($("deckTrack")?.textContent || "NO BEAT LOADED").trim();
@@ -66,6 +68,13 @@ function refreshCassetteUI(){
   if(speedReadout)speedReadout.textContent=formattedRate;
   if(speedEcho)speedEcho.textContent=formattedRate;
   if(autoReadout)autoReadout.textContent=autoLooperEnabledState ? "ON" : "OFF";
+  if(cratePlay){
+    cratePlay.disabled=!loaded;
+    cratePlay.textContent=playing ? "↻ RESTART" : "▶ PLAY";
+  }
+  if(crateState){
+    crateState.textContent=!loaded ? "SELECT A BEAT" : playing ? `PLAYING • ${displayName}` : `READY • ${displayName}`;
+  }
 }
 
 // V61 stability: IndexedDB can be blocked by browser/privacy context. In that
@@ -625,7 +634,7 @@ function createCrateBeat(row){
   const active=!!currentTrack && beatCrateKey(currentTrack)===key;
   const el=document.createElement("article");
   el.className=`crateBeat${active?" active":""}`;
-  el.dataset.crateTone=String(beatCrateTone(row));
+  const tone=beatCrateTone(row);
 
   const load=document.createElement("button");
   load.className="crateBeatLoad";
@@ -634,6 +643,7 @@ function createCrateBeat(row){
 
   const art=document.createElement("span");
   art.className="crateBeatArt";
+  art.style.backgroundPosition=`${tone*25}% 50%`;
   art.setAttribute("aria-hidden","true");
 
   const copy=document.createElement("span");
@@ -641,7 +651,7 @@ function createCrateBeat(row){
   const title=document.createElement("strong");
   title.textContent=row.label||shortName(row.name,28);
   const meta=document.createElement("small");
-  meta.textContent=`${folderSource?"LOCAL LIBRARY":"USER IMPORT"} • ${row.duration?row.duration.toFixed(1):"?"} s`;
+  meta.textContent=`LOAD • ${folderSource?"LOCAL LIBRARY":"USER IMPORT"} • ${row.duration?row.duration.toFixed(1):"?"} s`;
   copy.append(title,meta);
   load.append(art,copy);
 

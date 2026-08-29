@@ -102,16 +102,20 @@
           </div>
         </section>
 
-        <section class="panel beatCratePanel">
-          <div class="title stableTitle compatHidden"><span>BEAT CRATE</span></div>
+        <section class="panel beatCratePanel" aria-label="Beat Crate">
+          <header class="beatCrateHeader">
+            <div><strong>BEAT CRATE</strong><span>LOCAL BEATS</span></div>
+            <span id="crateDeckState">SELECT A BEAT</span>
+          </header>
           <div class="grid2 beatCrateControls">
             <div><label for="librarySearch">SEARCH</label><input id="librarySearch" placeholder="SEARCH BEATS…"></div>
             <div><label for="libraryOrder">SORT</label><select id="libraryOrder"><option value="name">NAME</option><option value="recent">RECENT</option></select></div>
           </div>
           <div id="library" class="library"></div>
-          <div class="beatCrateTransport" role="group" aria-label="Navigation dans le Beat Crate">
-            <button id="prevBeat" type="button" aria-label="Beat précédent"><span aria-hidden="true">◀</span> PREVIOUS</button>
-            <button id="nextBeat" type="button" aria-label="Beat suivant">NEXT <span aria-hidden="true">▶</span></button>
+          <div class="beatCrateTransport" role="group" aria-label="Transport du Beat Crate">
+            <button id="prevBeat" type="button" aria-label="Beat précédent">◀ PREV</button>
+            <button id="cratePlayBeat" type="button" aria-label="Lire le beat sélectionné" disabled>▶ PLAY</button>
+            <button id="nextBeat" type="button" aria-label="Beat suivant">NEXT ▶</button>
           </div>
         </section>
       </div>

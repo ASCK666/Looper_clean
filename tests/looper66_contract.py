@@ -24,8 +24,8 @@ assert 'class="looper66Skin"' in HTML
 assert './css/base.css?v=looper66-tabs-210826-5' in HTML
 assert './css/looper.css' in HTML
 assert './css/clean-ui.css' in HTML
-assert 'assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp' in HTML
-assert 'assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp' in HTML
+assert 'assets/looper-ui/looper66-desktop-pitch-clean-no-crate-7907d094.webp' in HTML
+assert 'assets/looper-ui/looper66-mobile-pitch-clean-no-crate-933411c6.webp' in HTML
 assert '>LOAD LIBRARY<' in HTML and '>LOAD BEAT<' in HTML
 assert re.search(r'id="autoLooperToggle"[^>]*aria-label="Speed Up, plus un pour cent toutes les huit boucles"',HTML)
 assert '>SPEED RATE<' not in HTML and '>+1%<' not in HTML
@@ -37,7 +37,7 @@ assert transport.index('id="stopBeat"') < transport.index('id="playBeat"') < tra
 assert 'deckTransportFaceplate' not in HTML+CSS
 assert 'class="deckTransportVisual"' in HTML
 
-crate=HTML[HTML.index('<section class="panel beatCratePanel">'):]
+crate=HTML[HTML.index('<section class="panel beatCratePanel"'):]
 assert crate.index('id="prevBeat"') < crate.index('id="nextBeat"')
 assert 'id="librarySearch"' in crate and 'id="libraryOrder"' in crate
 
@@ -132,6 +132,10 @@ for required in (
     assert required in CSS,required
 assert 'looper66-crate-cassettes.webp' in CSS
 assert '#looper .beatCrateControls { display:none!important; }' not in CSS
+assert 'id="cratePlayBeat"' in HTML and 'id="crateDeckState"' in HTML
+assert '.beatCratePanel::before' in CSS and '.beatCrateHeader' in CSS
+assert '.deckLoadKey,#looper .beatCrateTransport button' not in CSS
+assert '$("cratePlayBeat").onclick=()=>runLooperAction("CRATE PLAY",playDeck);' in EVENTS
 for retired in (
     'MIN_RACK_COLUMNS',
     'RACK_SLOTS_PER_COLUMN',
@@ -155,8 +159,8 @@ for name in retired:
     assert name not in HTML+CSS+LOOPER+EVENTS,name
 
 references={
-    'looper66-desktop-pitch-clean-1e6d4f36.webp':((1086,1009),'1e6d4f360d7b6382a6bfeab0559aaaf505080ff6ef6e6bff7467175dd696e548'),
-    'looper66-mobile-pitch-clean-c034fcbb.webp':((441,849),'c034fcbb8d60de005240f9a339af9a51d5dd25f66c6fdb81209c2d93052ef02b'),
+    'looper66-desktop-pitch-clean-no-crate-7907d094.webp':((1086,1009),'7907d0941046a02363c712489f4f6008295ffe6f4fc036285ea4b51cd1c2d3d4'),
+    'looper66-mobile-pitch-clean-no-crate-933411c6.webp':((441,849),'933411c6e66828875d74709c1c359412ef3722f8662bdf49439caab9bc0ef1da'),
     'looper66-mobile-transport-fbd6a0d3.webp':((379,215),'fbd6a0d378eb43526ffbb1c9b6109c6894522d516310d003abe3f47edfd51bc5'),
     'looper66-desktop-transport-square-3d62809d.webp':((750,224),'3d62809d2fd4dd16021e166ec8b648cb0b6304987354da52f58673c718fdafd7'),
     'looper66-crate-cassettes.webp':((560,62),'12256e2ec27d0a2976ce0a15184f578a04034c5318bbff8819deab05d0d6e3c9'),
