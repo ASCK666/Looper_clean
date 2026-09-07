@@ -80,31 +80,29 @@
       Numpad7:6,
       Numpad8:7
     };
-    let leftShiftDown=false;
+    let bank=0;
 
     document.addEventListener("keydown",event=>{
-      if(event.code==="ShiftLeft"){
-        leftShiftDown=true;
-        return;
-      }
       if(event.repeat)return;
-
-      const localPad=pads[event.code];
-      if(localPad===undefined)return;
       if(!document.getElementById("chopper")?.classList.contains("active"))return;
 
       const target=event.target;
       const tag=target?.tagName?.toLowerCase();
       if(tag==="input" || tag==="textarea" || tag==="select" || target?.isContentEditable)return;
 
-      event.preventDefault();
-      void previewSlice(localPad+(leftShiftDown?8:0));
-    });
+      if(event.code==="ShiftLeft"){
+        bank=bank?0:1;
+        const status=document.getElementById("chopStatus");
+        if(status)status.textContent=bank?"NUMPAD BANK • PADS 9–16":"NUMPAD BANK • PADS 1–8";
+        return;
+      }
 
-    document.addEventListener("keyup",event=>{
-      if(event.code==="ShiftLeft")leftShiftDown=false;
+      const localPad=pads[event.code];
+      if(localPad===undefined)return;
+
+      event.preventDefault();
+      void previewSlice(localPad+bank*8);
     });
-    window.addEventListener("blur",()=>{leftShiftDown=false;});
   }
 
   async function boot(){
