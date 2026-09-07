@@ -69,6 +69,14 @@
       ?.addEventListener("click",requestDefaultSample,{once:true});
   }
 
+  function configureChopperPitchRange(){
+    const pitch=document.getElementById("samplePitch");
+    if(!pitch)return;
+    pitch.min="-10";
+    pitch.max="10";
+    pitch.setAttribute("aria-label","Pitch du sample, moins dix à plus dix demi-tons");
+  }
+
   function installChopperNumpadPads(){
     const pads={
       Numpad1:0,
@@ -108,6 +116,7 @@
   async function boot(){
     const sampleInput=document.getElementById("sampleFile");
     sampleInput?.addEventListener("change",()=>{defaultSampleCancelled=true;},{once:true});
+    configureChopperPitchRange();
 
     if(!globalThis.ChopperWaveSlices){
       await loadScript("./js/chopper-wave-slices-core.js","chopperWaveSlicesCore","CHOPPER WAVE SLICES CORE");
