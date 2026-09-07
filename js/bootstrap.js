@@ -11,6 +11,14 @@ window.__SP.report=(scope,error)=>{
 window.addEventListener("error",event=>window.__SP.report("RUNTIME",event.error||event.message));
 window.addEventListener("unhandledrejection",event=>window.__SP.report("PROMISE",event.reason));
 
+// Configure the Chopper pitch range before the knob system reads min/max.
+const chopperPitch=document.getElementById("samplePitch");
+if(chopperPitch){
+  chopperPitch.min="-10";
+  chopperPitch.max="10";
+  chopperPitch.setAttribute("aria-label","Pitch du sample, moins dix à plus dix demi-tons");
+}
+
 document.querySelectorAll("[data-range-knob]").forEach(knob=>{
   const input=document.getElementById(knob.dataset.rangeKnob);
   if(!input)return;
