@@ -69,6 +69,44 @@
       ?.addEventListener("click",requestDefaultSample,{once:true});
   }
 
+  function installChopperNumpadPads(){
+    const pads={
+      Numpad1:0,
+      Numpad2:1,
+      Numpad3:2,
+      Numpad4:3,
+      Numpad5:4,
+      Numpad6:5,
+      Numpad7:6,
+      Numpad8:7
+    };
+    let leftShiftDown=false;
+
+    document.addEventListener("keydown",event=>{
+      if(event.code==="ShiftLeft"){
+        leftShiftDown=true;
+        return;
+      }
+      if(event.repeat)return;
+
+      const localPad=pads[event.code];
+      if(localPad===undefined)return;
+      if(!document.getElementById("chopper")?.classList.contains("active"))return;
+
+      const target=event.target;
+      const tag=target?.tagName?.toLowerCase();
+      if(tag==="input" || tag==="textarea" || tag==="select" || target?.isContentEditable)return;
+
+      event.preventDefault();
+      void previewSlice(localPad+(leftShiftDown?8:0));
+    });
+
+    document.addEventListener("keyup",event=>{
+      if(event.code==="ShiftLeft")leftShiftDown=false;
+    });
+    window.addEventListener("blur",()=>{leftShiftDown=false;});
+  }
+
   async function boot(){
     const sampleInput=document.getElementById("sampleFile");
     sampleInput?.addEventListener("change",()=>{defaultSampleCancelled=true;},{once:true});
@@ -95,6 +133,7 @@
       await loadScript("./js/chopper-sp1200.js","chopperSp1200","CHOPPER SP1200");
     }
 
+    installChopperNumpadPads();
     loadDefaultSampleOnChopperOpen();
   }
 
