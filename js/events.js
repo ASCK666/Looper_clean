@@ -257,8 +257,20 @@ $("stopFlip").onclick=()=>{
   stopCurrentBeat();
   $("chopStatus").textContent="STOP";
 };
+
+const chopperNumpadPads={
+  Numpad1:0,
+  Numpad2:1,
+  Numpad3:2,
+  Numpad4:3,
+  Numpad5:4,
+  Numpad6:5,
+  Numpad7:6,
+  Numpad8:7
+};
+
 document.addEventListener("keydown",async ev=>{
-  if(ev.code!=="Space" || ev.repeat)return;
+  if(ev.repeat)return;
 
   const target=ev.target;
   const tag=target?.tagName?.toLowerCase();
@@ -267,6 +279,16 @@ document.addEventListener("keydown",async ev=>{
     target?.isContentEditable || target?.closest?.('[role="button"],[role="slider"]');
   if(interactive)return;
 
+  if($("chopper")?.classList.contains("active")){
+    const localPad=chopperNumpadPads[ev.code];
+    if(localPad!==undefined){
+      ev.preventDefault();
+      await previewSlice(localPad+(ev.shiftKey?8:0));
+      return;
+    }
+  }
+
+  if(ev.code!=="Space")return;
   ev.preventDefault();
 
   if($("looper")?.classList.contains("active")){
