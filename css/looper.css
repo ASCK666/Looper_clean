@@ -161,7 +161,7 @@
   .looper66Workspace::after { content:"";position:absolute;z-index:0;top:75.8%;right:0;bottom:calc(0px - var(--crate-extension));left:0;border-right:9px solid #16130f;border-left:9px solid #16130f;background:linear-gradient(180deg,#0b0b09,#060605),var(--deck-texture);background-size:auto,256px 256px;box-shadow:inset 0 0 0 2px #33291f; }
 
   .looper66Shell .deckReadout { top:6.6%;left:8%;width:84%;height:6.1%;border:0;background:#030302;box-shadow:none; }
-  .deckReadoutTrack { top:0;left:4%;width:62%;min-height:44px;max-height:65%;font-size:clamp(10px,3.2vw,14px);line-height:1.15; }
+  .deckReadoutTrack { top:0;left:4%;width:62%;min-height:44px;max-height:65%;font-size:clamp(10px,3.2vw,14px);line-height:1.15;white-space:nowrap;text-overflow:ellipsis; }
   .deckReadoutProgress { top:65%;left:4%;width:62%;font-size:clamp(7px,2.2vw,10px);line-height:1.1; }
   .deckReadoutRate { top:20%;right:4%;bottom:auto;left:auto;font-size:clamp(20px,8.7vw,39px); }
   .deckReadoutState,.deckReadoutSpeed { display:none; }

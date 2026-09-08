@@ -208,6 +208,11 @@ with contextlib.ExitStack() as stack:
                     assert abs(page.evaluate('scrollY')-before_scroll)<2
                 if width<=680:
                     assert page.locator('#library').bounding_box()['height']>=360
+                    assert page.evaluate('''() => {
+                      const range=document.createRange();
+                      range.selectNodeContents(document.querySelector('#deckReadoutTrack'));
+                      return range.getBoundingClientRect().bottom<=document.querySelector('#deckReadoutHint').getBoundingClientRect().top;
+                    }'''),'Mobile title overlaps playback status'
                     page.locator('#library').screenshot(path=str(ARTIFACTS/'crate-mobile-navigation.png'))
             assert not page_errors,page_errors
         browser.close()
