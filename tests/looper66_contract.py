@@ -90,12 +90,12 @@ assert 'pitchModule.style.setProperty("--pitch-y"' in LOOPER
 assert 'pitchControl.setAttribute("aria-valuetext"' in LOOPER
 assert 'cassetteShell' not in HTML+CSS
 assert HTML.count('class="cassetteBayForeground"')==1
-assert re.search(r'<img\b[^>]*class="cassetteBayForeground"[^>]*src="assets/looper-ui/looper66-cassette-bay-b10ab679\.png"',HTML)
+assert re.search(r'<img\b[^>]*class="cassetteBayForeground"[^>]*src="assets/looper-ui/looper66-cassette-bay-d7d5e6d4\.png"',HTML)
 assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
 assert '.cassetteGlass { position:absolute;z-index:4;' in CSS
 assert '.cassetteBayForeground { position:absolute;z-index:5;inset:0;' in CSS
 assert re.search(r'\.cassetteBayForeground\s*\{[^}]*display:block;[^}]*width:100%;[^}]*height:100%;[^}]*object-fit:fill;',CSS)
-assert 'looper66-cassette-bay-b10ab679.png' not in CSS
+assert 'looper66-cassette-bay-d7d5e6d4.png' not in CSS
 assert 'cassetteSupportForeground' not in HTML+CSS
 assert 'clip-path:circle(44%)' in CSS
 assert 'transform-origin:50% 50%' in CSS
@@ -120,12 +120,25 @@ references={
     'looper66-mobile-transport-fbd6a0d3.webp':((379,215),'fbd6a0d378eb43526ffbb1c9b6109c6894522d516310d003abe3f47edfd51bc5'),
     'looper66-desktop-transport-square-3d62809d.webp':((750,224),'3d62809d2fd4dd16021e166ec8b648cb0b6304987354da52f58673c718fdafd7'),
     'looper66-crate-cassettes.webp':((560,62),'12256e2ec27d0a2976ce0a15184f578a04034c5318bbff8819deab05d0d6e3c9'),
-    'looper66-cassette-bay-b10ab679.png':((793,496),'b10ab6796ed411b1633b7c81f8cbdc213c249e4499ffc92ec9e373bcb2c5c245'),
+    'looper66-cassette-bay-d7d5e6d4.png':((793,496),'d7d5e6d4d5a23a5c972bd37aaeb33bcbfa08af92acb3322658ad0669de85081b'),
 }
 for name,(expected_size,expected_sha) in references.items():
     path=ROOT/'assets/looper-ui'/name
     assert path.is_file(),name
     assert Image.open(path).size==expected_size,(name,Image.open(path).size)
     assert hashlib.sha256(path.read_bytes()).hexdigest()==expected_sha,name
+
+# The foreground must remain a real cutout: opaque/checkerboard exports can
+# satisfy image-load checks while hiding both independently animated reels.
+with Image.open(ROOT/'assets/looper-ui/looper66-cassette-bay-d7d5e6d4.png') as bay:
+    assert bay.mode == 'RGBA', 'cassette foreground must carry alpha'
+    alpha = bay.getchannel('A')
+    for region in ((.23,.38,.39,.63), (.59,.38,.76,.63), (.22,.18,.78,.23)):
+        box = tuple(round(value * size) for value,size in zip(region,(793,496,793,496)))
+        assert alpha.crop(box).getextrema()[1] == 0, ('foreground hides reel or label', box)
+    for point in ((0,0),(792,0),(0,495),(792,495)):
+        assert alpha.getpixel(point) == 0, ('opaque exterior', point)
+    for point in ((396,40),(96,440),(690,440)):
+        assert alpha.getpixel(point) >= 250, ('missing latch or lower hinge', point)
 
 print('OK: Looper66 v2 uses responsive production skins, native controls, separate animated reels and CSS-only state lights')

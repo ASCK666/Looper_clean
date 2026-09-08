@@ -70,7 +70,7 @@ with contextlib.ExitStack() as stack:
         ],info
         assert info['bay']=={
             'tag':'IMG','complete':True,'naturalWidth':793,'naturalHeight':496,
-            'src':'assets/looper-ui/looper66-cassette-bay-b10ab679.png'
+            'src':'assets/looper-ui/looper66-cassette-bay-d7d5e6d4.png'
         },info
         assert all(c['display']!='none' and c['width']>=44 and c['height']>=44 for c in info['controls']),info
         stop,play,speed=info['transport']
