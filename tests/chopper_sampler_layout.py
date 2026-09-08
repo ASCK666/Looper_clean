@@ -127,7 +127,7 @@ with sync_playwright() as p:
 
         assert data['upperChildren']==['screen'],data
         assert data['controlCount']==0 and data['oldActionStripCount']==0,data
-        assert data['waveActionOrder']==['loadSampleBtn','autoMarkers'],data
+        assert data['waveActionOrder']==['loadSampleBtn'],data
         assert data['padTransportOrder']==['previewFlip','playDrumsOnly','stopFlip'],data
         assert data['sequenceActionOrder']==['addFlipLibrary','clearGrid'],data
         assert 'SAMPLE DISPLAY' not in data['titleText'],data

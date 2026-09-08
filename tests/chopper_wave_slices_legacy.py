@@ -232,8 +232,10 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     assert page.evaluate('ChopperWaveSlices.mode')=='slices'
     assert page.evaluate('ChopperWaveSlices.slices.length')==16
 
-    page.click('#autoMarkers')
-    page.wait_for_timeout(80)
+    # AUTO CHOP was retired from the UI. Loading a sample is the supported
+    # transition that resets edits to the four coarse slices.
+    page.set_input_files('#sampleFile',str(sample))
+    page.wait_for_function('ChopperWaveSlices.slices.length === 4',timeout=10000)
     reset=page.evaluate('''() => ({
       count:ChopperWaveSlices.slices.length,
       enabled:[...document.querySelectorAll('#pads .pad')].filter(p=>!p.disabled).length,
