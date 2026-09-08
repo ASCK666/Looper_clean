@@ -176,7 +176,9 @@ with sync_playwright() as p:
         assert data['punchType']=='range' and data['punchValue']=='1',data
         assert abs(float(data['punchPct'])-(100/3))<.1,data
 
-        page.fill('#punchMode','3')
+        # This layout test checks the range's input binding; mobile exposes a
+        # separate readout control, so the native range is not always visible.
+        page.locator('#punchMode').evaluate("el=>{el.value='3';}")
         page.dispatch_event('#punchMode','input')
         state=page.evaluate('''() => ({
           pct:getComputedStyle(document.querySelector('.punchKnob')).getPropertyValue('--knob-pct').trim(),
