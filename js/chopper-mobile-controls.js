@@ -353,9 +353,9 @@
     for(const element of [loadButton,pitchControl,tempoControl,volumeControl,punchControl,modeButton,previewButton,stopButton,saveButton])restoreHome(element);
     resetMovedStyles();
     const bankTabs=document.getElementById("chopperBankTabs"),spButton=document.getElementById("sp1200Toggle"),filterButton=document.getElementById("sp1200FilterToggle");
-    if(bankTabs && waveActions)waveActions.insertBefore(bankTabs,spButton||filterButton||null);
     if(spButton && waveActions)waveActions.appendChild(spButton);
     if(filterButton && waveActions)waveActions.appendChild(filterButton);
+    if(bankTabs && waveActions)waveActions.insertBefore(bankTabs,spButton||filterButton||null);
     screen.style.removeProperty("grid-template-columns");
     screen.style.removeProperty("grid-template-areas");
     waveWrap.style.removeProperty("grid-area");
