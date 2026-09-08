@@ -94,6 +94,17 @@ assert re.search(r'<img\b[^>]*class="cassetteBayForeground"[^>]*src="assets/loop
 assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
 assert '.cassetteGlass { position:absolute;z-index:4;' in CSS
 assert '.cassetteBayForeground { position:absolute;z-index:5;inset:0;' in CSS
+# Illumination belongs inside the aperture, below the label/glass/door. A
+# full-frame overlay would brighten the hinges and obscure the printed label.
+light_rule = re.search(r'\.cassetteCssLight\s*\{([^}]+)\}', CSS).group(1)
+assert re.search(r'z-index:\s*2;', light_rule)
+assert re.search(r'inset:\s*17\.5% 10\.5% 29%;', light_rule)
+assert 'clip-path:polygon(' in light_rule
+assert re.search(r'opacity:\s*0;', light_rule)
+assert 'animation:' not in light_rule
+assert 'mix-blend-mode:screen' in light_rule
+assert '.cassetteDeck.loaded .cassetteCssLight { opacity:calc(.3 * var(--backlight-opacity)); }' in CSS
+assert '.cassetteDeck.playing .cassetteCssLight { opacity:calc(.86 * var(--backlight-opacity)); }' in CSS
 assert re.search(r'\.cassetteBayForeground\s*\{[^}]*display:block;[^}]*width:100%;[^}]*height:100%;[^}]*object-fit:fill;',CSS)
 assert 'looper66-cassette-bay-d7d5e6d4.png' not in CSS
 assert 'cassetteSupportForeground' not in HTML+CSS
