@@ -63,11 +63,11 @@ with sync_playwright() as p:
         assert page.evaluate('snareReverbSettings().type')=='plate'
         assert page.evaluate('snareReverbSettings().on') is True
 
-        page.fill('#snareReverbMix','0')
+        reverb.evaluate("el=>{el.value='0';}")
         page.dispatch_event('#snareReverbMix','input')
         assert page.locator('#snareReverbMixReadout').inner_text()=='0%'
         assert page.evaluate('snareReverbSettings().on') is False
-        page.fill('#snareReverbMix','40')
+        reverb.evaluate("el=>{el.value='40';}")
         page.dispatch_event('#snareReverbMix','input')
         assert page.evaluate('snareReverbSettings().on') is True
         assert abs(page.evaluate('snareReverbSettings().mix')-.40)<1e-9
@@ -88,16 +88,16 @@ with sync_playwright() as p:
         assert punch.get_attribute('step')=='1'
         expected=['OFF','WARM','KNOCK','HARD']
         for value,label in enumerate(expected):
-            page.fill('#punchMode',str(value))
+            punch.evaluate('(el,value)=>{el.value=String(value);}',value)
             page.dispatch_event('#punchMode','input')
             assert page.locator('#punchDesc').inner_text()==label
             assert page.evaluate('punchSettings().mode')==label.lower()
 
         # Range-knob bootstrap keeps the rotary position live.
-        page.fill('#punchMode','3')
+        punch.evaluate("el=>{el.value='3';}")
         page.dispatch_event('#punchMode','input')
         punch_pct=float(page.evaluate("getComputedStyle(document.querySelector('.punchKnob')).getPropertyValue('--knob-pct')"))
-        page.fill('#snareReverbMix','35')
+        reverb.evaluate("el=>{el.value='35';}")
         page.dispatch_event('#snareReverbMix','input')
         reverb_pct=float(page.evaluate("getComputedStyle(document.querySelector('.drumReverbKnob')).getPropertyValue('--knob-pct')"))
         assert abs(punch_pct-100)<.01
