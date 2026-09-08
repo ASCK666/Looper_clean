@@ -234,6 +234,7 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
 
     # AUTO CHOP was retired from the UI. Loading a sample is the supported
     # transition that resets edits to the four coarse slices.
+    page.set_input_files('#sampleFile',[])
     page.set_input_files('#sampleFile',str(sample))
     page.wait_for_function('ChopperWaveSlices.slices.length === 4',timeout=10000)
     reset=page.evaluate('''() => ({
