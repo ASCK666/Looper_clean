@@ -49,10 +49,18 @@ function refreshCassetteUI(){
   const currentName=($("deckTrack")?.textContent || "NO BEAT LOADED").trim();
   const displayName=shortName(currentName.toUpperCase(),32);
   name.textContent=displayName;
-  if(readoutTrack)readoutTrack.textContent=displayName;
+  name.title=currentName;
+  const fullName=$("deckFullTrackName");
+  if(fullName)fullName.textContent=currentName;
+  if(readoutTrack){
+    readoutTrack.textContent=currentName.toUpperCase();
+    readoutTrack.title=currentName;
+  }
 
   const loaded=!!deckBuffer;
   const playing=!!deckSource;
+  const hint=$("deckReadoutHint");
+  if(hint)hint.textContent=zone.getAttribute("aria-busy")==="true" ? "CHARGEMENT…" : !loaded ? "LOAD BEAT POUR COMMENCER" : playing ? "EN LECTURE • BOUCLE" : "PRÊT • APPUYER SUR PLAY";
 
   zone.classList.toggle("loaded",loaded);
   zone.classList.toggle("playing",playing);
@@ -229,6 +237,8 @@ async function beatFolderPermission(mode="read"){
 function updateBeatFolderStatus(text){
   const el=$("beatImportStatus");
   if(el)el.textContent=text;
+  const hint=$("deckReadoutHint");
+  if(hint)hint.textContent=text;
 }
 
 async function normalizeBeatDirectoryHandle(selectedHandle){
@@ -418,6 +428,9 @@ async function importBeatFiles(files){
   const selected=[...(files||[])];
   const items=selected.filter(isAudioFile);
   const loadRequest=++trackLoadSequence;
+  $("looperDropzoneBtn")?.removeAttribute("aria-busy");
+  const hint=$("deckReadoutHint");
+  if(hint)hint.textContent="IMPORT EN COURS…";
   let firstImported=null;
   let imported=0;
   let skipped=selected.length-items.length;
@@ -481,8 +494,10 @@ function createBeatSpine(row){
   meta.className="trackMeta";
   meta.type="button";
   meta.setAttribute("aria-label",`Charger ${row.label||shortName(row.name)}`);
+  meta.title=row.name;
+  if(currentTrack?.id===row.id)meta.setAttribute("aria-current","true");
   const b=document.createElement("b");
-  b.textContent=row.label||shortName(row.name);
+  b.textContent=row.label||row.name;
   const sm=document.createElement("small");
   const folderSource=isFolderBeat(row);
   sm.textContent=folderSource
@@ -578,12 +593,28 @@ function renderLibraryRows(rows){
   const columnCount=Math.max(MIN_RACK_COLUMNS,Math.ceil(rows.length/RACK_SLOTS_PER_COLUMN));
   const content=[];
   box.style.setProperty("--rack-columns",String(columnCount));
+  box.dataset.empty=String(rows.length===0);
+  box.dataset.message=$("librarySearch").value.trim()
+    ? "Aucun résultat. Essaie un autre nom."
+    : "Ta Beat Crate est vide.\nAjoute tes sons avec LOAD BEAT ou LOAD LIBRARY.";
+  box.setAttribute("aria-label",rows.length ? "Beats disponibles" : box.dataset.message);
+  const count=$("crateCount");
+  if(count)count.textContent=`${rows.length} beat${rows.length===1?"":"s"}`;
 
   for(let columnIndex=0;columnIndex<columnCount;columnIndex++){
     content.push(createCassetteRackColumn(rows,columnIndex));
   }
 
   box.replaceChildren(...content);
+  // Reveal the loaded beat inside the rack without scrolling the whole page.
+  const active=box.querySelector(".track.active");
+  if(active){
+    const item=active.getBoundingClientRect(),viewport=box.getBoundingClientRect();
+    if(item.left<viewport.left)box.scrollLeft+=item.left-viewport.left;
+    else if(item.right>viewport.right)box.scrollLeft+=item.right-viewport.right;
+    if(item.top<viewport.top)box.scrollTop+=item.top-viewport.top;
+    else if(item.bottom>viewport.bottom)box.scrollTop+=item.bottom-viewport.bottom;
+  }
 }
 
 async function refreshLibrary(rescanDirectory=true){
@@ -632,17 +663,27 @@ function commitLoadedTrack(row,decoded){
 
 async function loadTrack(row,{preservePlayback=false}={}){
   const request=++trackLoadSequence;
-  const decoded=await decodeTrackAudio(row);
-  if(request!==trackLoadSequence)return false;
+  const zone=$("looperDropzoneBtn");
+  zone?.setAttribute("aria-busy","true");
+  refreshCassetteUI();
+  try{
+    const decoded=await decodeTrackAudio(row);
+    if(request!==trackLoadSequence)return false;
 
-  // Read the transport state after decoding: a STOP pressed during a slow
-  // decode must stay stopped, while an active deck should resume the new beat.
-  const resumePlayback=preservePlayback && !!deckSource;
-  if(resumePlayback)stopDeck();
-  commitLoadedTrack(row,decoded);
-  if(resumePlayback)await playDeck();
-  await refreshLibrary(false);
-  return true;
+    // Read the transport state after decoding: a STOP pressed during a slow
+    // decode must stay stopped, while an active deck should resume the new beat.
+    const resumePlayback=preservePlayback && !!deckSource;
+    if(resumePlayback)stopDeck();
+    commitLoadedTrack(row,decoded);
+    if(resumePlayback)await playDeck();
+    await refreshLibrary(false);
+    return true;
+  }finally{
+    if(request===trackLoadSequence){
+      zone?.removeAttribute("aria-busy");
+      refreshCassetteUI();
+    }
+  }
 }
 
 async function switchTrack(row){

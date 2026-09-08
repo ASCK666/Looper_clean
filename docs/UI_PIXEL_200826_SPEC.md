@@ -27,7 +27,7 @@ Visual references committed with this contract:
 - `assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp` (`1086 × 1009`);
 - `assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp` (`441 × 849`);
 - `assets/looper-ui/looper66-mobile-transport-fbd6a0d3.webp` (`379 × 215`), neutral powered-off phone transport;
-- `assets/looper-ui/looper66-cassette-bay-b10ab679.png` (`793 × 496`), habitacle complet au premier plan : charnière et cadre supérieur, montants latéraux, traverse de maintien inférieure et ouverture transparente. Son PNG alpha fingerprinté évite tout fond clair ou ancien asset mis en cache.
+- `assets/looper-ui/looper66-cassette-bay-d7d5e6d4.png` (`793 × 496`), habitacle au premier plan : cadre fixe à quatre vis, porte fermée avec joint continu, deux charnières inférieures et verrou supérieur central. L'ouverture et l'extérieur sont réellement transparents. Le PNG fingerprinté conserve les dimensions, les calques et les coordonnées des bobines animées ; aucune animation d'ouverture n'est ajoutée.
 
 These files are the composition, spacing, material and typography references.
 Where a reference conflicts with a behavioural requirement below, the

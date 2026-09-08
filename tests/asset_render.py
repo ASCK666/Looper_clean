@@ -1,5 +1,5 @@
 from pathlib import Path
-import contextlib, http.server, os, socketserver, sys, threading
+import contextlib, http.server, os, socketserver, sys, threading, tempfile, wave
 
 try:
     from playwright.sync_api import sync_playwright
@@ -70,7 +70,7 @@ with contextlib.ExitStack() as stack:
         ],info
         assert info['bay']=={
             'tag':'IMG','complete':True,'naturalWidth':793,'naturalHeight':496,
-            'src':'assets/looper-ui/looper66-cassette-bay-b10ab679.png'
+            'src':'assets/looper-ui/looper66-cassette-bay-d7d5e6d4.png'
         },info
         assert all(c['display']!='none' and c['width']>=44 and c['height']>=44 for c in info['controls']),info
         stop,play,speed=info['transport']
@@ -97,6 +97,124 @@ with contextlib.ExitStack() as stack:
 
         page.locator('#looper').screenshot(path=str(ARTIFACTS/'looper66-render.png'))
         page.screenshot(path=str(ARTIFACTS/'looper66-full-render.png'),full_page=True)
+        # Exercise real transport transitions and rate-driven animation at each
+        # layout size; screenshots are uploaded by the existing CI workflow.
+        for width,height in [(1440,1100),(820,1000),(390,900)]:
+            page.set_viewport_size({'width':width,'height':height})
+            page.evaluate('''() => {
+              stopDeck();
+              deckBuffer=null;
+              refreshCassetteUI();
+            }''')
+            page.wait_for_function("Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)<.01")
+            page.evaluate('''() => {
+              commitLoadedTrack({name:'CABINET TEST'},new AudioBuffer({length:44100,sampleRate:44100,numberOfChannels:1}));
+            }''')
+            page.wait_for_function("Math.abs(Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)-.3)<.01")
+            page.locator('#playBeat').click()
+            page.wait_for_function("Math.abs(Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)-.86)<.01")
+            light=page.evaluate('''() => {
+              const get=selector=>document.querySelector(selector);
+              const lamp=get('.cassetteCssLight'),bay=get('.cassetteBayForeground');
+              const l=lamp.getBoundingClientRect(),b=bay.getBoundingClientRect();
+              return {inside:l.left>b.left&&l.right<b.right&&l.top>b.top&&l.bottom<b.bottom,
+                belowGlass:Number(getComputedStyle(lamp).zIndex)<Number(getComputedStyle(get('.cassetteGlass')).zIndex),
+                belowFrame:Number(getComputedStyle(lamp).zIndex)<Number(getComputedStyle(bay).zIndex),
+                states:[...document.querySelectorAll('.cassetteReel')].map(el=>getComputedStyle(el).animationPlayState)};
+            }''')
+            assert light['inside'] and light['belowGlass'] and light['belowFrame'],light
+            assert light['states']==['running','running'],light
+            for pitch in (-8,0,8):
+                page.evaluate('(value)=>setLooperPitch(value)',pitch)
+                duration=float(page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).animationDuration').removesuffix('s'))
+                if pitch==-8:
+                    slow_duration=duration
+                elif pitch==8:
+                    assert duration<slow_duration,(duration,slow_duration)
+            before=page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).transform')
+            page.wait_for_timeout(180)
+            after=page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).transform')
+            assert before!=after,(width,before,after)
+            page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cabinet-playing-{width}.png'))
+            page.locator('#stopBeat').click()
+            page.wait_for_function("Math.abs(Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)-.3)<.01")
+            assert page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).animationPlayState')=='paused'
+            page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cabinet-stopped-{width}.png'))
+        assert not page_errors,page_errors
+        # The native crate must represent real imports, including an empty
+        # search and overflow beyond the first nine slots, at each viewport.
+        with tempfile.TemporaryDirectory() as folder:
+            paths=[]
+            for i in range(11):
+                path=Path(folder)/f'{i:02d} - Late night session with a deliberately long beat name.wav'
+                with wave.open(str(path),'wb') as wav:
+                    wav.setnchannels(1); wav.setsampwidth(2); wav.setframerate(8000)
+                    wav.writeframes(bytes(16000))
+                paths.append(str(path))
+            page.set_input_files('#beatFiles',paths)
+            page.wait_for_function("document.querySelectorAll('#library .track').length===11")
+            for width,height in [(1440,1100),(820,1000),(390,900)]:
+                page.set_viewport_size({'width':width,'height':height})
+                assert page.locator('#crateCount').inner_text()=='11 beats'
+                assert page.locator('#library .trackMeta[aria-current="true"]').count()==1
+                page.locator('#librarySearch').fill('no matching beat')
+                page.wait_for_function("document.querySelector('#library').dataset.empty==='true'")
+                assert 'Aucun résultat' in page.locator('#library').get_attribute('aria-label')
+                page.locator('#librarySearch').fill('10 -')
+                page.wait_for_function("document.querySelectorAll('#library .track').length===1")
+                page.locator('#library .trackMeta').click()
+                page.wait_for_function("document.querySelector('#cassetteBeatName').title.startsWith('10 -')")
+                assert page.locator('#deckReadoutTrack').inner_text()==Path(paths[-1]).name.upper()
+                page.locator('#deckReadoutTrack').click()
+                page.wait_for_function("document.querySelector('#deckTrackDetails').matches(':popover-open')")
+                assert page.locator('#deckFullTrackName').inner_text()==Path(paths[-1]).name
+                assert page.locator('#deckFullTrackName').evaluate('(el)=>el.scrollWidth<=el.clientWidth')
+                page.screenshot(path=str(ARTIFACTS/f'beat-title-{width}.png'))
+                page.locator('#deckTrackDetails button').click()
+                page.wait_for_function("!document.querySelector('#deckTrackDetails').matches(':popover-open')")
+                page.locator('#deckReadoutTrack').focus()
+                page.keyboard.press('Space')
+                page.wait_for_function("document.querySelector('#deckTrackDetails').matches(':popover-open')")
+                page.keyboard.press('Escape')
+                page.wait_for_function("!document.querySelector('#deckTrackDetails').matches(':popover-open')")
+                assert page.evaluate('deckSource===null')
+                page.locator('#librarySearch').fill('')
+                page.wait_for_function("document.querySelectorAll('#library .track').length===11")
+                page.locator('#libraryOrder').select_option('recent')
+                page.wait_for_function("document.querySelector('#library .trackMeta').title.startsWith('10 -')")
+                geometry=page.evaluate('''() => {
+                  const box=s=>document.querySelector(s).getBoundingClientRect();
+                  const search=box('.beatCrateControls'),list=box('#library'),nav=box('.beatCrateTransport');
+                  return {separate:search.bottom<=list.top && list.bottom<=nav.top,
+                    overflow:document.body.scrollWidth<=innerWidth+2,
+                    opaque:getComputedStyle(document.querySelector('#library')).backgroundColor!=='rgba(0, 0, 0, 0)',
+                    cover:parseFloat(getComputedStyle(document.querySelector('.beatCratePanel'),'::before').width)>box('.looper66Workspace').width*.85};
+                }''')
+                assert all(geometry.values()),(width,geometry)
+                page.locator('#looper').screenshot(path=str(ARTIFACTS/f'crate-loaded-{width}.png'))
+                page.locator('#libraryOrder').select_option('name')
+                page.wait_for_function("document.querySelector('#library .trackMeta').title.startsWith('00 -')")
+                for button,prefix in [('#nextBeat','00 -'),('#prevBeat','10 -')]:
+                    page.locator(button).scroll_into_view_if_needed()
+                    before_scroll=page.evaluate('scrollY')
+                    page.locator(button).click()
+                    page.wait_for_function("prefix=>document.querySelector('#cassetteBeatName').title.startsWith(prefix)",arg=prefix)
+                    page.wait_for_function('''() => {
+                      const active=document.querySelector('#library .track.active');
+                      if(!active)return false;
+                      const item=active.getBoundingClientRect(),rack=document.querySelector('#library').getBoundingClientRect();
+                      return item.left>=rack.left-1 && item.right<=rack.right+1 && item.top>=rack.top-1 && item.bottom<=rack.bottom+1;
+                    }''')
+                    assert abs(page.evaluate('scrollY')-before_scroll)<2
+                if width<=680:
+                    assert page.locator('#library').bounding_box()['height']>=360
+                    assert page.evaluate('''() => {
+                      const range=document.createRange();
+                      range.selectNodeContents(document.querySelector('#deckReadoutTrack'));
+                      return range.getBoundingClientRect().bottom<=document.querySelector('#deckReadoutHint').getBoundingClientRect().top;
+                    }'''),'Mobile title overlaps playback status'
+                    page.locator('#library').screenshot(path=str(ARTIFACTS/'crate-mobile-navigation.png'))
+            assert not page_errors,page_errors
         browser.close()
 
 print('OK: Looper66 desktop transport matches cassette width with dominant Play and symmetric side controls')

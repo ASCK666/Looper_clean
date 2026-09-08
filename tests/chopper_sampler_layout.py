@@ -72,13 +72,13 @@ with sync_playwright() as p:
             oldActionStripCount:document.querySelectorAll('.chopperActionStrip').length,
             waveActionOrder:ids('#chopper .waveHeaderActions > .btn'),
             padTransportOrder:ids('#chopper .padTransport > .btn'),
-            sequenceActionOrder:ids('#chopper .sequenceActions > .btn'),
+            sequenceActionOrder:ids('#chopper .sequenceActions:has(> #addFlipLibrary) > .btn'),
             waveActions:boxes('#chopper .waveHeaderActions > .btn'),
             padActions:boxes('#chopper .padTransport > .btn'),
-            sequenceActions:boxes('#chopper .sequenceActions > .btn'),
+            sequenceActions:boxes('#chopper .sequenceActions:has(> #addFlipLibrary) > .btn'),
             waveActionGroup:box('.waveHeaderActions'),
             padTransport:box('.padTransport'),
-            sequenceActionGroup:box('.sequenceActions'),
+            sequenceActionGroup:box('.sequenceActions:has(> #addFlipLibrary)'),
             padsPanel:box('.samplerPadsModule'),
             sequencePanel:box('.samplerSequenceModule'),
             fine:box('.advancedBox'),
@@ -127,7 +127,7 @@ with sync_playwright() as p:
 
         assert data['upperChildren']==['screen'],data
         assert data['controlCount']==0 and data['oldActionStripCount']==0,data
-        assert data['waveActionOrder']==['loadSampleBtn','autoMarkers'],data
+        assert data['waveActionOrder']==['loadSampleBtn'],data
         assert data['padTransportOrder']==['previewFlip','playDrumsOnly','stopFlip'],data
         assert data['sequenceActionOrder']==['addFlipLibrary','clearGrid'],data
         assert 'SAMPLE DISPLAY' not in data['titleText'],data
@@ -176,7 +176,9 @@ with sync_playwright() as p:
         assert data['punchType']=='range' and data['punchValue']=='1',data
         assert abs(float(data['punchPct'])-(100/3))<.1,data
 
-        page.fill('#punchMode','3')
+        # This layout test checks the range's input binding; mobile exposes a
+        # separate readout control, so the native range is not always visible.
+        page.locator('#punchMode').evaluate("el=>{el.value='3';}")
         page.dispatch_event('#punchMode','input')
         state=page.evaluate('''() => ({
           pct:getComputedStyle(document.querySelector('.punchKnob')).getPropertyValue('--knob-pct').trim(),
