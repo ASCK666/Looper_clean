@@ -37,7 +37,7 @@ assert transport.index('id="stopBeat"') < transport.index('id="playBeat"') < tra
 assert 'deckTransportFaceplate' not in HTML+CSS
 assert 'class="deckTransportVisual"' in HTML
 
-crate=HTML[HTML.index('<section class="panel beatCratePanel">'):]
+crate=HTML[HTML.index('<section class="panel beatCratePanel"'):]
 assert crate.index('id="prevBeat"') < crate.index('id="nextBeat"')
 
 ordered=['cassetteReelLeft','cassetteReelRight','cassetteBeatName','cassetteBayForeground','cassetteCssLight','cassetteGlass']

@@ -1,5 +1,5 @@
 from pathlib import Path
-import contextlib, http.server, os, socketserver, sys, threading
+import contextlib, http.server, os, socketserver, sys, threading, tempfile, wave
 
 try:
     from playwright.sync_api import sync_playwright
@@ -141,6 +141,46 @@ with contextlib.ExitStack() as stack:
             assert page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).animationPlayState')=='paused'
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cabinet-stopped-{width}.png'))
         assert not page_errors,page_errors
+        # The native crate must represent real imports, including an empty
+        # search and overflow beyond the first nine slots, at each viewport.
+        with tempfile.TemporaryDirectory() as folder:
+            paths=[]
+            for i in range(11):
+                path=Path(folder)/f'{i:02d} - Late night session with a deliberately long beat name.wav'
+                with wave.open(str(path),'wb') as wav:
+                    wav.setnchannels(1); wav.setsampwidth(2); wav.setframerate(8000)
+                    wav.writeframes(bytes(16000))
+                paths.append(str(path))
+            page.set_input_files('#beatFiles',paths)
+            page.wait_for_function("document.querySelectorAll('#library .track').length===11")
+            for width,height in [(1440,1100),(820,1000),(390,900)]:
+                page.set_viewport_size({'width':width,'height':height})
+                assert page.locator('#crateCount').inner_text()=='11 beats'
+                assert page.locator('#library .trackMeta[aria-current="true"]').count()==1
+                page.locator('#librarySearch').fill('no matching beat')
+                page.wait_for_function("document.querySelector('#library').dataset.empty==='true'")
+                assert 'Aucun résultat' in page.locator('#library').get_attribute('aria-label')
+                page.locator('#librarySearch').fill('10 -')
+                page.wait_for_function("document.querySelectorAll('#library .track').length===1")
+                page.locator('#library .trackMeta').click()
+                page.wait_for_function("document.querySelector('#cassetteBeatName').title.startsWith('10 -')")
+                assert page.locator('#deckReadoutTrack').inner_text()==Path(paths[-1]).name.upper()
+                page.locator('#librarySearch').fill('')
+                page.wait_for_function("document.querySelectorAll('#library .track').length===11")
+                page.locator('#libraryOrder').select_option('recent')
+                page.wait_for_function("document.querySelector('#library .trackMeta').title.startsWith('10 -')")
+                geometry=page.evaluate('''() => {
+                  const box=s=>document.querySelector(s).getBoundingClientRect();
+                  const search=box('.beatCrateControls'),list=box('#library'),nav=box('.beatCrateTransport');
+                  return {separate:search.bottom<=list.top && list.bottom<=nav.top,
+                    overflow:document.body.scrollWidth<=innerWidth+2,
+                    opaque:getComputedStyle(document.querySelector('#library')).backgroundColor!=='rgba(0, 0, 0, 0)'};
+                }''')
+                assert all(geometry.values()),(width,geometry)
+                page.locator('#looper').screenshot(path=str(ARTIFACTS/f'crate-loaded-{width}.png'))
+                page.locator('#libraryOrder').select_option('name')
+                page.wait_for_function("document.querySelector('#library .trackMeta').title.startsWith('00 -')")
+            assert not page_errors,page_errors
         browser.close()
 
 print('OK: Looper66 desktop transport matches cassette width with dominant Play and symmetric side controls')
