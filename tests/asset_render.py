@@ -174,7 +174,8 @@ with contextlib.ExitStack() as stack:
                   const search=box('.beatCrateControls'),list=box('#library'),nav=box('.beatCrateTransport');
                   return {separate:search.bottom<=list.top && list.bottom<=nav.top,
                     overflow:document.body.scrollWidth<=innerWidth+2,
-                    opaque:getComputedStyle(document.querySelector('#library')).backgroundColor!=='rgba(0, 0, 0, 0)'};
+                    opaque:getComputedStyle(document.querySelector('#library')).backgroundColor!=='rgba(0, 0, 0, 0)',
+                    cover:parseFloat(getComputedStyle(document.querySelector('.beatCratePanel'),'::before').width)>box('.looper66Workspace').width*.85};
                 }''')
                 assert all(geometry.values()),(width,geometry)
                 page.locator('#looper').screenshot(path=str(ARTIFACTS/f'crate-loaded-{width}.png'))

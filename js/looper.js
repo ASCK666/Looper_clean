@@ -426,6 +426,7 @@ async function importBeatFiles(files){
   const selected=[...(files||[])];
   const items=selected.filter(isAudioFile);
   const loadRequest=++trackLoadSequence;
+  $("looperDropzoneBtn")?.removeAttribute("aria-busy");
   const hint=$("deckReadoutHint");
   if(hint)hint.textContent="IMPORT EN COURS…";
   let firstImported=null;
