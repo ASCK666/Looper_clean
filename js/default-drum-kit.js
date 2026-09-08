@@ -1,25 +1,52 @@
 "use strict";
 
 (() => {
-  if(globalThis.LooperDefaultDrumKit?.version>=2)return;
+  if(globalThis.LooperDefaultDrumKit?.version>=3)return;
 
-  const KIT_NAME="LOOPER BOOM BAP 90 V2";
-  const KIT_VERSION=2;
+  const KIT_NAME="LOOPER NY DARK 90 V3";
+  const KIT_VERSION=3;
+  const SOURCE_REF="dbfd6ec52d4ed53b60bdbea5fc6adf295127c027";
+  const SOURCE_ROOT=`https://cdn.jsdelivr.net/gh/stargatedaw/stargate-sample-pack@${SOURCE_REF}/stargate-sample-pack`;
+
   const ASSETS=Object.freeze({
     kick:Object.freeze({
-      url:"./assets/drums/default/kick.wav",
-      name:"LOOPER_BB90_V2_KICK",
-      compensationDb:1.5
+      sources:Object.freeze([
+        Object.freeze({
+          url:`${SOURCE_ROOT}/karoryfer/kicks/kick_marching_20_old.wav`,
+          name:"NY90_KICK_OLD"
+        }),
+        Object.freeze({
+          url:"./assets/drums/default/kick.wav",
+          name:"LOOPER_BB90_V2_KICK"
+        })
+      ]),
+      compensationDb:0
     }),
     snare:Object.freeze({
-      url:"./assets/drums/default/snare.wav",
-      name:"LOOPER_BB90_V2_SNARE",
-      compensationDb:2.0
+      sources:Object.freeze([
+        Object.freeze({
+          url:`${SOURCE_ROOT}/freesound/drums/snare/212233__alexthegr81__tapesnare-5.wav`,
+          name:"NY90_SNARE_TAPE"
+        }),
+        Object.freeze({
+          url:"./assets/drums/default/snare.wav",
+          name:"LOOPER_BB90_V2_SNARE"
+        })
+      ]),
+      compensationDb:0
     }),
     hat:Object.freeze({
-      url:"./assets/drums/default/hat.wav",
-      name:"LOOPER_BB90_V2_HAT",
-      compensationDb:4.0
+      sources:Object.freeze([
+        Object.freeze({
+          url:`${SOURCE_ROOT}/freesound/drums/cymbal/closed/339278__cabled-mess__hihat-closed-raw-03-gate-eq.wav`,
+          name:"NY90_HAT_RAW"
+        }),
+        Object.freeze({
+          url:"./assets/drums/default/hat.wav",
+          name:"LOOPER_BB90_V2_HAT"
+        })
+      ]),
+      compensationDb:0
     })
   });
 
@@ -38,20 +65,31 @@
     return {buffer:drumDecodeCache.get(key),name:file.name};
   }
 
-  async function loadEmbeddedDrum(kind){
+  async function loadDefaultDrum(kind){
     const spec=ASSETS[kind];
     if(!spec)return null;
 
     if(!embeddedLoads.has(kind)){
       embeddedLoads.set(kind,(async()=>{
-        const response=await fetch(spec.url,{cache:"no-store"});
-        if(!response.ok){
-          throw new Error(`${kind.toUpperCase()} default asset HTTP ${response.status}`);
+        let lastError=null;
+
+        for(const source of spec.sources){
+          try{
+            const response=await fetch(source.url,{cache:"no-store"});
+            if(!response.ok){
+              throw new Error(`${kind.toUpperCase()} default asset HTTP ${response.status}`);
+            }
+            const bytes=await response.arrayBuffer();
+            const buffer=await ctx.decodeAudioData(bytes.slice(0));
+            embeddedBufferCompensation.set(buffer,spec.compensationDb);
+            return {buffer,name:source.name};
+          }catch(error){
+            lastError=error;
+            console.warn(`Default ${kind} source unavailable: ${source.url}`,error);
+          }
         }
-        const bytes=await response.arrayBuffer();
-        const buffer=await ctx.decodeAudioData(bytes.slice(0));
-        embeddedBufferCompensation.set(buffer,spec.compensationDb);
-        return {buffer,name:spec.name};
+
+        throw lastError||new Error(`${kind.toUpperCase()} default asset unavailable`);
       })());
     }
 
@@ -61,7 +99,7 @@
   if(typeof loadSelectedDrum!=="function" ||
      typeof randomAudioFileFromDirectory!=="function" ||
      typeof makeSynthBuffer!=="function"){
-    console.warn("Default drum kit v2: drum engine unavailable");
+    console.warn("Default drum kit v3: drum engine unavailable");
     return;
   }
 
@@ -70,7 +108,7 @@
     if(file)return await decodeUserDrum(kind,file);
 
     try{
-      const embedded=await loadEmbeddedDrum(kind);
+      const embedded=await loadDefaultDrum(kind);
       if(embedded)return embedded;
     }catch(error){
       console.warn(`Default ${kind} one-shot unavailable; using synth fallback`,error);
@@ -95,15 +133,23 @@
     installed:true,
     name:KIT_NAME,
     version:KIT_VERSION,
-    source:"bundled-wav-one-shots",
-    priority:"user-library > embedded-default > synth-fallback",
+    source:"cc0-recorded-one-shots",
+    sourceLicense:"CC0-1.0",
+    sourceRepository:"stargatedaw/stargate-sample-pack",
+    sourceRef:SOURCE_REF,
+    priority:"user-library > cc0-recorded-default > bundled-default > synth-fallback",
     dry:true,
     snareReverbReady:true,
-    gainCompensationDb:Object.freeze({kick:1.5,snare:2.0,hat:4.0}),
+    gainCompensationDb:Object.freeze({kick:0,snare:0,hat:0}),
     assets:Object.freeze({
-      kick:ASSETS.kick.url,
-      snare:ASSETS.snare.url,
-      hat:ASSETS.hat.url
+      kick:ASSETS.kick.sources[0].url,
+      snare:ASSETS.snare.sources[0].url,
+      hat:ASSETS.hat.sources[0].url
+    }),
+    fallbackAssets:Object.freeze({
+      kick:ASSETS.kick.sources[1].url,
+      snare:ASSETS.snare.sources[1].url,
+      hat:ASSETS.hat.sources[1].url
     })
   });
 })();
