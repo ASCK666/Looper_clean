@@ -57,7 +57,7 @@
         <section class="panel looperMainPanel" aria-label="Deck Looper66">
           <div id="looperDropzoneBtn" class="cassetteDeck" role="group" aria-label="Lecteur cassette pixel art et commandes du looper">
             <div class="deckReadout" role="status" aria-live="polite">
-              <strong id="deckReadoutTrack" class="deckReadoutTrack">NO BEAT LOADED</strong>
+              <button id="deckReadoutTrack" class="deckReadoutTrack" type="button" popovertarget="deckTrackDetails" aria-label="Afficher le titre complet">NO BEAT LOADED</button>
               <span id="deckReadoutHint" class="deckReadoutProgress">LOAD BEAT POUR COMMENCER</span>
               <strong id="deckSpeedReadout" class="deckReadoutRate">100%</strong>
               <div class="deckReadoutState"><small>STATE</small><strong id="deckTransportState">EMPTY</strong></div>
@@ -110,12 +110,17 @@
           </div>
           <div id="library" class="library" role="region" aria-label="Beats disponibles"></div>
           <div class="beatCrateTransport" role="group" aria-label="Navigation dans le Beat Crate">
-            <button id="prevBeat" type="button" aria-label="Beat précédent"><span aria-hidden="true">◀</span> PREVIOUS</button>
-            <button id="nextBeat" type="button" aria-label="Beat suivant">NEXT <span aria-hidden="true">▶</span></button>
+            <button id="prevBeat" type="button" aria-label="Beat précédent"><span aria-hidden="true">◀</span> Beat précédent</button>
+            <button id="nextBeat" type="button" aria-label="Beat suivant">Beat suivant <span aria-hidden="true">▶</span></button>
           </div>
         </section>
       </div>
 
+      <div id="deckTrackDetails" popover role="dialog" aria-labelledby="deckTrackDetailsLabel">
+        <strong id="deckTrackDetailsLabel">TITRE DU BEAT</strong>
+        <p id="deckFullTrackName">Aucun beat chargé</p>
+        <button class="btn" type="button" popovertarget="deckTrackDetails" popovertargetaction="hide">Fermer</button>
+      </div>
       <input id="beatFiles" class="hidden" type="file" accept="audio/*" multiple>
       <input id="beatFolder" class="hidden" type="file" accept="audio/*" webkitdirectory multiple>
     </div>

@@ -165,6 +165,19 @@ with contextlib.ExitStack() as stack:
                 page.locator('#library .trackMeta').click()
                 page.wait_for_function("document.querySelector('#cassetteBeatName').title.startsWith('10 -')")
                 assert page.locator('#deckReadoutTrack').inner_text()==Path(paths[-1]).name.upper()
+                page.locator('#deckReadoutTrack').click()
+                page.wait_for_function("document.querySelector('#deckTrackDetails').matches(':popover-open')")
+                assert page.locator('#deckFullTrackName').inner_text()==Path(paths[-1]).name
+                assert page.locator('#deckFullTrackName').evaluate('(el)=>el.scrollWidth<=el.clientWidth')
+                page.screenshot(path=str(ARTIFACTS/f'beat-title-{width}.png'))
+                page.locator('#deckTrackDetails button').click()
+                page.wait_for_function("!document.querySelector('#deckTrackDetails').matches(':popover-open')")
+                page.locator('#deckReadoutTrack').focus()
+                page.keyboard.press('Space')
+                page.wait_for_function("document.querySelector('#deckTrackDetails').matches(':popover-open')")
+                page.keyboard.press('Escape')
+                page.wait_for_function("!document.querySelector('#deckTrackDetails').matches(':popover-open')")
+                assert page.evaluate('deckSource===null')
                 page.locator('#librarySearch').fill('')
                 page.wait_for_function("document.querySelectorAll('#library .track').length===11")
                 page.locator('#libraryOrder').select_option('recent')
@@ -181,6 +194,21 @@ with contextlib.ExitStack() as stack:
                 page.locator('#looper').screenshot(path=str(ARTIFACTS/f'crate-loaded-{width}.png'))
                 page.locator('#libraryOrder').select_option('name')
                 page.wait_for_function("document.querySelector('#library .trackMeta').title.startsWith('00 -')")
+                for button,prefix in [('#nextBeat','00 -'),('#prevBeat','10 -')]:
+                    page.locator(button).scroll_into_view_if_needed()
+                    before_scroll=page.evaluate('scrollY')
+                    page.locator(button).click()
+                    page.wait_for_function("prefix=>document.querySelector('#cassetteBeatName').title.startsWith(prefix)",arg=prefix)
+                    page.wait_for_function('''() => {
+                      const active=document.querySelector('#library .track.active');
+                      if(!active)return false;
+                      const item=active.getBoundingClientRect(),rack=document.querySelector('#library').getBoundingClientRect();
+                      return item.left>=rack.left-1 && item.right<=rack.right+1 && item.top>=rack.top-1 && item.bottom<=rack.bottom+1;
+                    }''')
+                    assert abs(page.evaluate('scrollY')-before_scroll)<2
+                if width<=680:
+                    assert page.locator('#library').bounding_box()['height']>=360
+                    page.locator('#library').screenshot(path=str(ARTIFACTS/'crate-mobile-navigation.png'))
             assert not page_errors,page_errors
         browser.close()
 

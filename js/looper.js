@@ -50,6 +50,8 @@ function refreshCassetteUI(){
   const displayName=shortName(currentName.toUpperCase(),32);
   name.textContent=displayName;
   name.title=currentName;
+  const fullName=$("deckFullTrackName");
+  if(fullName)fullName.textContent=currentName;
   if(readoutTrack){
     readoutTrack.textContent=currentName.toUpperCase();
     readoutTrack.title=currentName;
@@ -604,6 +606,15 @@ function renderLibraryRows(rows){
   }
 
   box.replaceChildren(...content);
+  // Reveal the loaded beat inside the rack without scrolling the whole page.
+  const active=box.querySelector(".track.active");
+  if(active){
+    const item=active.getBoundingClientRect(),viewport=box.getBoundingClientRect();
+    if(item.left<viewport.left)box.scrollLeft+=item.left-viewport.left;
+    else if(item.right>viewport.right)box.scrollLeft+=item.right-viewport.right;
+    if(item.top<viewport.top)box.scrollTop+=item.top-viewport.top;
+    else if(item.bottom>viewport.bottom)box.scrollTop+=item.bottom-viewport.bottom;
+  }
 }
 
 async function refreshLibrary(rescanDirectory=true){

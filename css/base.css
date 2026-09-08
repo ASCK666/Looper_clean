@@ -1,6 +1,6 @@
 /* Transitional mixed-domain stylesheet. Shared primitives live in shared.css. */
 
-#looper .panel:nth-child(2):before, .chopperMainPanel:before {
+.chopperMainPanel:before {
   background: var(--accent-secondary);
 }
 
