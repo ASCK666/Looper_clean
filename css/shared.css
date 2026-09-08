@@ -4,11 +4,12 @@
   box-sizing: border-box;
 }
 
-html, body {
+html {
   background-color: #050403 !important;
 }
 
 body {
+  background-color: #050403 !important;
   min-height: 100vh;
   margin: 0 !important;
   color: #e7eaed !important;
@@ -33,11 +34,12 @@ body:before {
   opacity: .015 !important;
 }
 
-button, input, select {
+input, select {
   font: inherit;
 }
 
 button {
+  font: inherit;
   cursor: pointer;
 }
 
@@ -91,7 +93,7 @@ button {
 label {
   display: block;
   margin: 10px 0 5px;
-  font: 700 9px/1 var(--font-mono);
+  font: 600 9px/1 var(--font-mono);
   text-transform: uppercase;
 }
 
@@ -207,8 +209,4 @@ input[type=range] {
   .grid4 {
     grid-template-columns: 1fr 1fr;
   }
-}
-
-label {
-  font-weight: 600;
 }

@@ -341,7 +341,6 @@
   color: #e1c99e !important;
 }
 
-#chopper .pad,
 #chopper .drumEditStep,
 #chopper .matrixCell,
 #chopper .matrixRowLabel,
@@ -350,11 +349,6 @@
   color: #b9a488 !important;
   border-color: #493927 !important;
   background: linear-gradient(180deg,#1b1712,#0d0a07) !important;
-}
-
-/* Pads keep the previous amber backlight and now carry the same warm tint on the key surface. */
-#chopper .pad {
-  border-color: #5a4328 !important;
 }
 
 #chopper .pad:hover {

@@ -356,17 +356,17 @@ input, select, .status {
   background: linear-gradient(180deg,#0b0907,#060504) !important;
 }
 
-.pad, .drumEditStep, .matrixCell, .matrixRowLabel, .matrixHead, .matrixCorner {
+.drumEditStep, .matrixRowLabel, .matrixHead, .matrixCorner {
   border-color: #3a3229 !important;
   background: linear-gradient(180deg,#1b1814,#0e0c09) !important;
   box-shadow: none !important;
 }
 
-.pad:hover, .drumEditStep:hover, .matrixCell:hover {
+.drumEditStep:hover {
   border-color: #735a3b !important;
 }
 
-.pad.hit, .pad.active, .drumEditStep.active.kick, .drumEditStep.active.snare, .drumEditStep.active.hat, .matrixCell.active {
+.drumEditStep.active.kick, .drumEditStep.active.snare, .drumEditStep.active.hat, .matrixCell.active {
   color: #fff1d5 !important;
   border-color: #9a7038 !important;
   background: linear-gradient(145deg,#80552c,#4b301d 62%,#25170f) !important;
@@ -391,7 +391,7 @@ a, .blue {
     0 10px 22px rgba(0,0,0,.18) !important;
 }
 
-.btn.primary, .btn.blue, .btn.good, .pad.active, .pad.hit, .drumEditStep.active.kick, .drumEditStep.active.snare, .drumEditStep.active.hat, .matrixCell.active {
+.btn.primary, .btn.blue, .btn.good, .drumEditStep.active.kick, .drumEditStep.active.snare, .drumEditStep.active.hat, .matrixCell.active {
   box-shadow: inset 0 1px 0 rgba(255,255,255,.035),
     0 0 10px rgba(226,173,95,.10) !important;
 }

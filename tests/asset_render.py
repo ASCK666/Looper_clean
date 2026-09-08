@@ -97,6 +97,50 @@ with contextlib.ExitStack() as stack:
 
         page.locator('#looper').screenshot(path=str(ARTIFACTS/'looper66-render.png'))
         page.screenshot(path=str(ARTIFACTS/'looper66-full-render.png'),full_page=True)
+        # Exercise real transport transitions and rate-driven animation at each
+        # layout size; screenshots are uploaded by the existing CI workflow.
+        for width,height in [(1440,1100),(820,1000),(390,900)]:
+            page.set_viewport_size({'width':width,'height':height})
+            page.evaluate('''() => {
+              stopDeck();
+              deckBuffer=null;
+              refreshCassetteUI();
+            }''')
+            page.wait_for_function("Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)<.01")
+            page.evaluate('''() => {
+              commitLoadedTrack({name:'CABINET TEST'},new AudioBuffer({length:44100,sampleRate:44100,numberOfChannels:1}));
+            }''')
+            page.wait_for_function("Math.abs(Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)-.3)<.01")
+            page.locator('#playBeat').click()
+            page.wait_for_function("Math.abs(Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)-.86)<.01")
+            light=page.evaluate('''() => {
+              const get=selector=>document.querySelector(selector);
+              const lamp=get('.cassetteCssLight'),bay=get('.cassetteBayForeground');
+              const l=lamp.getBoundingClientRect(),b=bay.getBoundingClientRect();
+              return {inside:l.left>b.left&&l.right<b.right&&l.top>b.top&&l.bottom<b.bottom,
+                belowGlass:Number(getComputedStyle(lamp).zIndex)<Number(getComputedStyle(get('.cassetteGlass')).zIndex),
+                belowFrame:Number(getComputedStyle(lamp).zIndex)<Number(getComputedStyle(bay).zIndex),
+                states:[...document.querySelectorAll('.cassetteReel')].map(el=>getComputedStyle(el).animationPlayState)};
+            }''')
+            assert light['inside'] and light['belowGlass'] and light['belowFrame'],light
+            assert light['states']==['running','running'],light
+            for pitch in (-8,0,8):
+                page.evaluate('(value)=>setLooperPitch(value)',pitch)
+                duration=float(page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).animationDuration').removesuffix('s'))
+                if pitch==-8:
+                    slow_duration=duration
+                elif pitch==8:
+                    assert duration<slow_duration,(duration,slow_duration)
+            before=page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).transform')
+            page.wait_for_timeout(180)
+            after=page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).transform')
+            assert before!=after,(width,before,after)
+            page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cabinet-playing-{width}.png'))
+            page.locator('#stopBeat').click()
+            page.wait_for_function("Math.abs(Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)-.3)<.01")
+            assert page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).animationPlayState')=='paused'
+            page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cabinet-stopped-{width}.png'))
+        assert not page_errors,page_errors
         browser.close()
 
 print('OK: Looper66 desktop transport matches cassette width with dominant Play and symmetric side controls')
