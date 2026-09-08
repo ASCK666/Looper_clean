@@ -11,7 +11,10 @@ except Exception:
 
 html=inline_runtime_page(
     preload_before={
-        'js/chopper-wave-slices.js': ('js/sp1200.js', 'js/chopper-sp1200.js'),
+        'js/chopper-wave-slices.js': (
+            'js/chopper-mobile-controls.js', 'js/chopper-mobile-slice-editor.js',
+            'js/sp1200.js', 'js/chopper-sp1200.js',
+        ),
     }
 )
 
