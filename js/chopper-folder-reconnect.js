@@ -11,8 +11,9 @@
 // on the next page load.
 (() => {
   const root=document.getElementById("chopper");
-  const persistence=globalThis.ChopperFolderPersistence;
-  if(!root || !persistence || root.dataset.folderReconnectInstalled==="1")return;
+  if(!root || root.dataset.folderReconnectInstalled==="1")return;
+  // File snapshots own persistence now; the retired handle adapter is optional.
+  const persistence=globalThis.ChopperFolderPersistence ||= {};
   root.dataset.folderReconnectInstalled="1";
 
   const DRUM_KEYS=Object.freeze(["kick","snare","hat"]);
@@ -316,7 +317,7 @@
           drumDirectoryHandles[kind]=handle;
           drumDirectoryEntries[kind]=entries;
           drumFolderFiles[kind]=[];
-          await persistence.saveHandle(kind,handle);
+          await persistence.saveHandle?.(kind,handle);
           drumStatus(`${kind.toUpperCase()} • ${handle.name} • ${entries.length} SOUNDS • LOADING…`);
           await refreshDrumsAfterFolderChange(kind,entries.length,handle.name);
 
@@ -363,7 +364,7 @@
     setFallbackDrumFolder=async function(kind,fileList){
       const ok=await setFallbackDrumFolderBase(kind,fileList);
       if(!ok || !validKind(kind))return ok;
-      await persistence.removeHandle(kind);
+      await persistence.removeHandle?.(kind);
       const files=[...(drumFolderFiles[kind]||[])];
       const folderName=(files[0]?.webkitRelativePath||"").split("/")[0]||`${kind.toUpperCase()} LIBRARY`;
       try{
