@@ -70,7 +70,8 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.wait_for_function("document.getElementById('cassetteBeatName').textContent === 'TEST-BEAT.WAV'",timeout=10000)
         assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='none'
         assert page.evaluate("document.getElementById('deckTrack').textContent === 'test-beat.wav'") is True
-        assert page.locator('#library .track').count()==1
+        # The deck label updates before the asynchronous IndexedDB crate refresh.
+        page.wait_for_function("document.querySelectorAll('#library .track').length===1",timeout=10000)
         page.click('#playBeat'); page.wait_for_function('deckSource !== null')
         page.wait_for_function("document.getElementById('deckTransportState').textContent === 'PLAYING'",timeout=5000)
         assert page.evaluate("getComputedStyle(document.querySelector('.cassetteReel')).animationPlayState")=='running'
