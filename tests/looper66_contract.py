@@ -101,6 +101,14 @@ assert 'cassetteShell' not in HTML+CSS
 assert HTML.count('class="cassetteBayForeground"')==1
 assert re.search(r'<img\b[^>]*class="cassetteBayForeground"[^>]*src="assets/looper-ui/looper66-cassette-bay-d7d5e6d4\.png"',HTML)
 assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
+mechanism_rule = re.search(r'\.cassetteMechanism\s*\{([^}]+)\}',CSS).group(1)
+assert '--tape-shadow:#24160f;' in mechanism_rule
+assert '--tape-mid:#5a3923;' in mechanism_rule
+assert '--tape-edge:#7a5234;' in mechanism_rule
+tape_rule = re.search(r'\.cassetteMechanism::before\s*\{([^}]+)\}',CSS).group(1)
+assert 'linear-gradient(111deg' in tape_rule and 'linear-gradient(69deg' in tape_rule
+assert 'var(--tape-mid)' in tape_rule and 'var(--tape-edge)' in tape_rule
+assert 'center 70%/48% 2.5% no-repeat' in tape_rule
 assert re.search(r'\.cassetteBeatName\s*\{[^}]*border:0;[^}]*background:transparent;[^}]*box-shadow:none;',CSS)
 assert re.search(r'\.cassetteMechanism::after\s*\{[^}]*clip-path:polygon\(evenodd,',CSS)
 assert '.cassetteGlass { position:absolute;z-index:4;' in CSS
@@ -168,4 +176,4 @@ with Image.open(ROOT/'assets/looper-ui/looper66-cassette-bay-d7d5e6d4.png') as b
     for point in ((396,40),(96,440),(690,440)):
         assert alpha.getpixel(point) >= 250, ('missing latch or lower hinge', point)
 
-print('OK: Looper66 v2 uses responsive production skins, native controls, deck-specific transport artwork, separate animated reels and CSS-only state lights')
+print('OK: Looper66 v2 uses responsive production skins, native controls, deck-specific transport artwork, visible cassette tape, separate animated reels and CSS-only state lights')
