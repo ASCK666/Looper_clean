@@ -12,5 +12,8 @@
   --font-condensed: "Arial Narrow","Helvetica Neue",Arial,sans-serif;
 
   /* Shared physical surface */
+  --deck-key-text: #e8dcc5;
+  --deck-key-edge: #62594c;
+  --deck-key-surface: linear-gradient(#62594c 0 1px,rgba(48,43,35,.28) 1px,rgba(5,5,4,.42) calc(100% - 3px),#0b0b09 calc(100% - 3px)),var(--deck-texture) center/128px repeat,#141411;
   --deck-texture: url("../assets/deck-black-ui-texture.png");
 }

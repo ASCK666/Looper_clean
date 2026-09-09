@@ -283,7 +283,7 @@
 }
 
 #chopper .btn {
-  color: #d8c6aa !important;
+  color: var(--deck-key-text) !important;
   border-color: #514131 !important;
   background: linear-gradient(180deg,#1b1712,#0d0a07) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.025),0 3px 7px rgba(0,0,0,.24) !important;
@@ -298,10 +298,10 @@
 #chopper .btn.primary,
 #chopper .btn.blue,
 #chopper .btn.good {
-  color: #ffe0a5 !important;
-  border-color: var(--chopper-border-bright) !important;
-  background: linear-gradient(180deg,#4b321d,#24170e) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.04),0 0 12px rgba(226,173,95,.12) !important;
+  color: var(--deck-key-text) !important;
+  border-color: var(--deck-key-edge) !important;
+  background: linear-gradient(180deg,#24211c,#100f0c) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04),0 2px 4px rgba(0,0,0,.24) !important;
 }
 
 /* The waveform already reads as a screen. Do not add a second frame around it. */

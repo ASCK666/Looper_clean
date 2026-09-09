@@ -116,7 +116,10 @@ assert 'transform-origin:50% 50%' in CSS
 assert 'animation:looper66ReelSpin var(--supply-reel-cycle)' in CSS
 assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
 assert 'animation-direction:reverse' not in CSS
-assert re.search(r'\.deckHotspot\s*\{[^}]*background:linear-gradient\([^;]+;[^}]*box-shadow:inset',CSS)
+assert re.search(r'\.deckHotspot\s*\{[^}]*background:var\(--deck-key-surface\);[^}]*box-shadow:inset',CSS)
+assert re.search(r'--deck-key-surface: linear-gradient\([^;]+var\(--deck-texture\)[^;]+;',CSS)
+assert 'background:var(--deck-key-surface);' in (ROOT/'css/chopper-deck-texture.css').read_text()
+assert '#chopper.screen .btn.primary::before' not in CSS
 assert re.search(r'\.deckReadout\s*\{[^}]*border:0;[^}]*box-shadow:none;',CSS)
 assert re.search(r'\.deckPitchModule\s*\{[^}]*border:0;[^}]*box-shadow:none;',CSS)
 assert '.deckPitchModule::before' not in CSS
