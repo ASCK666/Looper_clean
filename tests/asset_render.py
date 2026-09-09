@@ -92,7 +92,9 @@ with contextlib.ExitStack() as stack:
           assert abs(center_x-expected_x)<1 and abs(center_y-expected_y)<1,(center_x,center_y)
         assert info['rackSlots']==9,info
         assert info['title']=='AUCUN BEAT CHARGÉ' and info['skin'].endswith('looper66-desktop-pitch-clean-1e6d4f36.webp'),info
-        assert info['emptyPlayAnimation']=='looper66EmptyPlayPulse',info
+        assert info['emptyPlayAnimation']=='none',info
+        assert page.locator('.cassetteBeatName').evaluate('(el)=>getComputedStyle(el).opacity')=='0'
+        assert page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).opacity')=='0'
         assert not info['appErrors'] and not page_errors and not failed,(info['appErrors'],page_errors,failed)
 
         page.locator('#looper').screenshot(path=str(ARTIFACTS/'looper66-render.png'))
@@ -137,6 +139,8 @@ with contextlib.ExitStack() as stack:
             assert light['inside'] and light['belowGlass'] and light['belowFrame'],light
             assert light['labelClear'],(width,light)
             assert light['states']==['running','running'],light
+            assert page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).opacity')=='1'
+            assert page.locator('.cassetteBeatName').evaluate('(el)=>getComputedStyle(el).opacity')=='1'
             for pitch in (-8,0,8):
                 page.evaluate('(value)=>setLooperPitch(value)',pitch)
                 duration=float(page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).animationDuration').removesuffix('s'))

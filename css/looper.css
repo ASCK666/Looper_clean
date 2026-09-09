@@ -17,7 +17,6 @@
   background:#050504;
 }
 .looper66Workspace {
-  --looper-skin-image:url("../assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp");
   position:relative;
   display:block!important;
   width:100%;
@@ -64,24 +63,26 @@
 .looper66Shell .deckAutoKey:hover { --light-strength:.3; }
 .looper66Shell .deckAutoKey[aria-pressed="true"] { --light-strength:1; }
 
-.looper66Shell .cassetteMechanism { --hub-left:31.26%;--hub-right:67.03%;--hub-y:49.42%;--ring-y:17.1%;top:9.6%;left:42.3%;width:41.7%;height:28.3%;overflow:hidden;border:0;background:transparent;box-shadow:none;isolation:isolate;pointer-events:none; }
+.looper66Shell .cassetteMechanism { --hub-left:31.26%;--hub-right:67.03%;--hub-y:49.42%;top:9.6%;left:42.3%;width:41.7%;height:28.3%;overflow:hidden;border:0;background:transparent;box-shadow:none;isolation:isolate;pointer-events:none; }
 /* One opaque interior replaces the old baked glass, label and stationary reels.
    The two independently animated hubs remain above it, under the real door. */
 .looper66Shell .cassetteMechanism::before {
   content:"";position:absolute;z-index:0;inset:0;border-radius:4px;
   background:
-    radial-gradient(ellipse 10.8% var(--ring-y) at var(--hub-left) var(--hub-y),#151612 0 57%,#383329 58% 60%,#10110e 61% 78%,#4b463a 79% 81%,#090a08 82% 96%,#37372f 97% 99%,transparent 100%),
-    radial-gradient(ellipse 10.8% var(--ring-y) at var(--hub-right) var(--hub-y),#151612 0 57%,#383329 58% 60%,#10110e 61% 78%,#4b463a 79% 81%,#090a08 82% 96%,#37372f 97% 99%,transparent 100%),
-    linear-gradient(#302e25,#302e25) center 65%/36% 1px no-repeat,
-    linear-gradient(#1c1d19,#0e100d);
+    radial-gradient(ellipse 9.8% 15.5% at var(--hub-left) var(--hub-y),#463b2a 0 82%,#28251d 83% 94%,#141611 95% 100%,transparent 101%),
+    radial-gradient(ellipse 9.8% 15.5% at var(--hub-right) var(--hub-y),#463b2a 0 82%,#28251d 83% 94%,#141611 95% 100%,transparent 101%),
+    linear-gradient(#453a29,#302a20) center 53%/15% 17% no-repeat,
+    linear-gradient(#555347,#555347) center 17%/76% 1px no-repeat,
+    linear-gradient(#282c25,#1b1f19) center 43%/76% 54% no-repeat,
+    linear-gradient(#090d0a,#080b09);
 }
 /* One die-cut paper sticker surrounds the reel window; the title is ink on it. */
-.looper66Shell .cassetteMechanism::after { content:"A";position:absolute;z-index:0;inset:18.5% 13.5% 32%;display:flex;align-items:center;padding-left:3%;border:0;border-radius:0;clip-path:polygon(evenodd,1% 0,99% 0,99% 2%,100% 2%,100% 98%,99% 98%,99% 100%,1% 100%,1% 98%,0 98%,0 2%,1% 2%,1% 0,9% 26%,9% 96%,91% 96%,91% 26%,9% 26%);background:repeating-linear-gradient(0deg,#ffffff05 0 1px,transparent 1px 3px),linear-gradient(100deg,#9f947b,#b9ad90 48%,#a69a7f);color:#303127;box-shadow:none;font:600 clamp(9px,1vw,13px)/1 var(--font-mono);pointer-events:none; }
-.looper66Shell .cassetteReel { position:absolute;z-index:1;top:38.32%;width:14%;aspect-ratio:1;border-radius:50%;clip-path:circle(44%);background-image:var(--looper-skin-image);background-repeat:no-repeat;filter:saturate(.55) brightness(.98);transform-origin:50% 50%;animation:looper66ReelSpin var(--supply-reel-cycle) steps(24,end) infinite;animation-play-state:paused;pointer-events:none; }
-.looper66Shell .cassetteReelLeft { left:24.26%;background-size:1724% 1602%;background-position:55.67% 21.82%; }
-.looper66Shell .cassetteReelRight { left:60.03%;background-size:1724% 1602%;background-position:71.51% 21.82%;animation-duration:var(--takeup-reel-cycle); }
-.looper66Shell .cassetteBeatName { position:absolute;z-index:3;top:20%;left:22%;width:56%;padding:1% 2%;overflow:hidden;border:0;border-radius:0;background:transparent;color:#252820;box-shadow:none;font:600 clamp(8px,1vw,13px)/1.2 var(--font-mono);letter-spacing:.02em;text-align:left;text-overflow:ellipsis;white-space:nowrap;pointer-events:none; }
-.looper66Shell .cassetteGlass { position:absolute;z-index:4;inset:16.5% 9.6% 28.6%;clip-path:polygon(0 0,100% 0,100% 90%,94% 100%,6% 100%,0 90%);border:0;background:linear-gradient(135deg,transparent 0 23%,rgba(220,226,205,.055) 23% 30%,transparent 30% 33%,rgba(220,226,205,.025) 33% 35%,transparent 35%),linear-gradient(rgba(7,10,8,.16),rgba(7,10,8,.04) 42%,rgba(7,10,8,.12));box-shadow:inset 0 6px 3px #030503b3,inset 4px 0 2px #03050380,inset -4px 0 2px #03050380,inset 0 -4px 2px #03050399,inset 0 1px #a6ad9138;pointer-events:none; }
+.looper66Shell .cassetteMechanism::after { content:"A";position:absolute;z-index:0;inset:20% 15.5% 32%;display:flex;align-items:center;padding-left:3%;border:0;border-radius:0;clip-path:polygon(evenodd,1% 0,99% 0,99% 2%,100% 2%,100% 98%,99% 98%,99% 100%,1% 100%,1% 98%,0 98%,0 2%,1% 2%,1% 0,7% 44%,7% 80%,12% 94%,88% 94%,93% 80%,93% 44%,88% 28%,61% 28%,61% 40%,39% 40%,39% 28%,12% 28%,7% 44%);background:repeating-linear-gradient(0deg,#ffffff05 0 1px,transparent 1px 3px),linear-gradient(100deg,#877e68,#9e9379 48%,#8e846d);color:#303127;box-shadow:none;font:600 clamp(9px,1vw,13px)/1 var(--font-mono);pointer-events:none; }
+.looper66Shell .cassetteReel { position:absolute;z-index:1;top:38.32%;width:14%;aspect-ratio:1;border-radius:50%;clip-path:circle(44%);background:radial-gradient(circle,#131811 0 18%,transparent 19% 37%,#a59a7b 38% 56%,#625e4b 57% 62%,transparent 63%),repeating-conic-gradient(#aaa082 0deg 42deg,#34392e 42deg 60deg);transform-origin:50% 50%;animation:looper66ReelSpin var(--supply-reel-cycle) steps(24,end) infinite;animation-play-state:paused;pointer-events:none; }
+.looper66Shell .cassetteReelLeft { left:24.26%; }
+.looper66Shell .cassetteReelRight { left:60.03%;animation-duration:var(--takeup-reel-cycle); }
+.looper66Shell .cassetteBeatName { position:absolute;z-index:3;top:21.5%;left:22%;width:56%;padding:1% 2%;overflow:hidden;border:0;border-radius:0;background:transparent;color:#252820;box-shadow:none;font:600 clamp(8px,1vw,13px)/1.2 var(--font-mono);letter-spacing:.02em;text-align:left;text-overflow:ellipsis;white-space:nowrap;pointer-events:none; }
+.looper66Shell .cassetteGlass { position:absolute;z-index:4;inset:16.5% 9.6% 28.6%;clip-path:polygon(0 0,100% 0,100% 90%,94% 100%,6% 100%,0 90%);border:0;background:linear-gradient(135deg,rgba(220,226,205,.04) 0 18%,transparent 18% 100%),linear-gradient(rgba(7,10,8,.16),rgba(7,10,8,.04) 42%,rgba(7,10,8,.12));box-shadow:inset 0 6px 3px #030503b3,inset 4px 0 2px #03050380,inset -4px 0 2px #03050380,inset 0 -4px 2px #03050399,inset 0 1px #a6ad9138;pointer-events:none; }
 .looper66Shell .cassetteBayForeground { position:absolute;z-index:5;inset:0;display:block;width:100%;height:100%;object-fit:fill;filter:brightness(.8) saturate(.45) sepia(.05);pointer-events:none; }
 .looper66Shell .cassetteCssLight {
   position:absolute;
@@ -126,8 +127,6 @@
 .looper66Shell .deckHotspot::before { content:"";position:absolute;z-index:0;inset:3px;opacity:calc(var(--light-strength) * var(--backlight-opacity));border:0;background:rgba(var(--backlight-yellow),.09);box-shadow:inset 0 0 0 2px #d8ad57;transition:opacity .15s ease;pointer-events:none; }
 .looper66Shell .deckHotspot::after { content:"";position:absolute;z-index:1;top:8%;right:9%;width:6px;height:3px;opacity:calc(var(--light-strength) * var(--backlight-opacity));border:0;background:#ffe0a0;box-shadow:2px 0 #a77b38;transition:opacity .15s ease;pointer-events:none; }
 .looper66Shell .deckHotspot:not([data-speed-level]):is(:hover,:focus-visible),.looper66Shell .deckRateHotspot[data-speed-level="0"]:is(:hover,:focus-visible) { --light-strength:.25; }
-.looper66Shell .cassetteDeck:not(.loaded) #playBeat::before { animation:looper66EmptyPlayPulse 6s ease-in-out infinite; }
-.looper66Shell .cassetteDeck:not(.loaded) #playBeat::after { animation:looper66EmptyPlayAuraPulse 6s ease-in-out infinite; }
 .looper66Shell .cassetteDeck.playing #playBeat { --light-strength:1; }
 .looper66Shell .cassetteDeck:not(.playing).loaded #stopBeat { --light-strength:.25; }
 .looper66Shell .deckRateHotspot[data-speed-level="1"] { --light-strength:.28; }
@@ -138,8 +137,9 @@
 .looper66Shell .deckRateVisualSegments { flex:none;width:70%;height:12%;min-height:6px;max-height:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:4%; }
 .looper66Shell .deckRateVisualSegments i { display:block;border:1px solid #74654b;background:#13130f; }
 .looper66Shell .cassetteDeck:has(.deckRateHotspot[data-speed-level="1"]) .deckRateVisualSegments i:nth-child(-n+1),.looper66Shell .cassetteDeck:has(.deckRateHotspot[data-speed-level="2"]) .deckRateVisualSegments i:nth-child(-n+2),.looper66Shell .cassetteDeck:has(.deckRateHotspot[data-speed-level="3"]) .deckRateVisualSegments i:nth-child(-n+3),.looper66Shell .cassetteDeck:has(.deckRateHotspot[data-speed-level="4"]) .deckRateVisualSegments i:nth-child(-n+4),.looper66Shell .cassetteDeck:has(.deckRateHotspot[data-speed-level="5"]) .deckRateVisualSegments i { border-color:#dca72e;background:linear-gradient(#fff0ad,#ffcf45 38%,#d99716);box-shadow:0 0 3px rgba(var(--backlight-yellow),.55); }
-@keyframes looper66EmptyPlayPulse { 0%,100% { opacity:calc(.03 * var(--backlight-opacity)); } 38%,62% { opacity:calc(.9 * var(--backlight-opacity)); } }
-@keyframes looper66EmptyPlayAuraPulse { 0%,100% { opacity:calc(.01 * var(--backlight-opacity)); } 38%,62% { opacity:calc(.12 * var(--backlight-opacity)); } }
+
+.looper66Shell .cassetteDeck:not(.loaded) .cassetteMechanism::before { background:#090d0a; }
+.looper66Shell .cassetteDeck:not(.loaded) .cassetteMechanism::after,.looper66Shell .cassetteDeck:not(.loaded) .cassetteReel,.looper66Shell .cassetteDeck:not(.loaded) .cassetteBeatName { opacity:0; }
 
 #looper .beatCratePanel::before { content:"";position:absolute;inset:55.5% 2.5% 2.5%;width:auto;border:1px solid #494235;border-radius:5px;background:linear-gradient(115deg,rgba(52,43,31,.22),rgba(7,8,7,.5)),var(--deck-texture) center/256px repeat,#0e0d0b;box-shadow:inset 0 1px #75664f,inset 0 0 0 3px #141411,inset 0 0 18px #050504; }
 .beatCrateHeading { position:absolute;top:57.2%;left:4.5%;width:91%;display:flex;justify-content:space-between;align-items:center;color:#d7bb91;font:500 clamp(11px,1.3vw,17px)/1.4 var(--font-mono);letter-spacing:.04em; }
@@ -170,7 +170,7 @@
 @media (max-width:680px) {
   /* Extend the rack below the fixed artwork coordinates, preserving the deck. */
   .looper66Shell { --crate-extension:clamp(220px,35vh,360px);width:min(100%,441px);padding-bottom:var(--crate-extension); }
-  .looper66Workspace { --looper-skin-image:url("../assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp");aspect-ratio:441/1120;overflow:visible; }
+  .looper66Workspace { aspect-ratio:441/1120;overflow:visible; }
   .looper66Workspace::after { content:"";position:absolute;z-index:0;top:75.8%;right:0;bottom:calc(0px - var(--crate-extension));left:0;border-right:9px solid #16130f;border-left:9px solid #16130f;background:linear-gradient(180deg,#0b0b09,#060605),var(--deck-texture);background-size:auto,256px 256px;box-shadow:inset 0 0 0 2px #33291f; }
 
   .looper66Shell .deckReadout { top:6.6%;left:8%;width:84%;height:6.1%;border:0;background:#030302;box-shadow:none; }
@@ -179,7 +179,7 @@
   .deckReadoutRate { top:20%;right:4%;bottom:auto;left:auto;font-size:clamp(20px,8.7vw,39px); }
   .deckReadoutState,.deckReadoutSpeed { display:none; }
 
-  .looper66Shell .cassetteMechanism { --hub-left:30.88%;--hub-right:66.74%;--hub-y:50.6%;--ring-y:16.25%;top:14.15%;left:7%;width:86%;height:22.5%; }
+  .looper66Shell .cassetteMechanism { --hub-left:30.88%;--hub-right:66.74%;--hub-y:50.6%;top:14.15%;left:7%;width:86%;height:22.5%; }
   .looper66Shell .cassetteReel { top:39.31%;width:15%; }
   .looper66Shell .cassetteReelLeft { left:23.38%;background-size:775.2% 1492.4%;background-position:31.13% 32.55%; }
   .looper66Shell .cassetteReelRight { left:59.24%;background-size:775.2% 1492.4%;background-position:66.52% 32.55%; }
@@ -218,9 +218,6 @@
 @media (prefers-reduced-motion:reduce) {
   .looper66Shell .cassetteReel { animation:none!important; }
   .looper66Shell .cassetteCssLight { transition:none; }
-  .looper66Shell .cassetteDeck:not(.loaded) #playBeat { --light-strength:.2; }
-  .looper66Shell .cassetteDeck:not(.loaded) #playBeat::before { animation:none!important; }
-  .looper66Shell .cassetteDeck:not(.loaded) #playBeat::after { animation:none!important; }
 }
 
 #looper #beatImportStatus {

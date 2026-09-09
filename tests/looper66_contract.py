@@ -58,10 +58,8 @@ assert 'const RACK_SLOTS_PER_COLUMN=3' in LOOPER
 assert 'animation-play-state:paused' in CSS
 assert '.cassetteDeck.playing .cassetteReel { animation-play-state:running; }' in CSS
 assert '@keyframes looper66ReelSpin' in CSS
-assert '@keyframes looper66EmptyPlayPulse' in CSS
-assert '.cassetteDeck:not(.loaded) #playBeat::before { animation:looper66EmptyPlayPulse 6s ease-in-out infinite; }' in CSS
-assert '@keyframes looper66EmptyPlayAuraPulse' in CSS
-assert '.cassetteDeck:not(.loaded) #playBeat::after { animation:looper66EmptyPlayAuraPulse 6s ease-in-out infinite; }' in CSS
+assert 'looper66EmptyPlay' not in CSS
+assert '.cassetteDeck:not(.loaded) .cassetteMechanism::before { background:#090d0a; }' in CSS
 assert '@media (prefers-reduced-motion:reduce)' in CSS
 assert 'grid-template-columns:28fr 44fr 28fr' in CSS
 assert '.deckReadoutRate { position:absolute;bottom:14%;left:8%;font-size:clamp(13px,1.8vw,27px);' in CSS
