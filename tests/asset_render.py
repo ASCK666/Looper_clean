@@ -117,8 +117,7 @@ with contextlib.ExitStack() as stack:
             assert page.locator('#playBeat').evaluate("el=>el===document.activeElement && el.matches(':focus-visible')")
             assert page.locator('#playBeat').evaluate('(el)=>parseFloat(getComputedStyle(el).outlineWidth)')>=2
             page.keyboard.down('Space')
-            page.wait_for_timeout(100)
-            assert page.locator('#playBeat').evaluate('(el)=>new DOMMatrix(getComputedStyle(el).transform).m42')==2
+            page.wait_for_function("new DOMMatrix(getComputedStyle(document.querySelector('#playBeat')).transform).m42===2",timeout=3000)
             page.locator('.deckTransport').screenshot(path=str(ARTIFACTS/f'transport-pressed-{width}.png'))
             page.keyboard.up('Space')
             page.wait_for_function("Math.abs(Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)-.86)<.01")

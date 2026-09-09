@@ -75,6 +75,7 @@
     linear-gradient(#504934,#504934) center 66%/36% 1px no-repeat,
     linear-gradient(#1c1d19,#0e100d);
 }
+.looper66Shell .cassetteMechanism::after { content:"A";position:absolute;z-index:0;inset:18% 13% 30%;display:flex;align-items:center;padding-left:3%;border:1px solid #49473c;border-radius:5px;background:linear-gradient(#3d3a30,#25241e) center bottom/38% 10% no-repeat;color:#a89c82;box-shadow:inset 0 1px #625c4c,inset 0 -3px #080907;font:600 clamp(9px,1vw,13px)/1 var(--font-mono);pointer-events:none; }
 .looper66Shell .cassetteReel { position:absolute;z-index:1;top:38.32%;width:14%;aspect-ratio:1;border-radius:50%;clip-path:circle(44%);background-image:var(--looper-skin-image);background-repeat:no-repeat;filter:saturate(.55) brightness(.98);transform-origin:50% 50%;animation:looper66ReelSpin var(--supply-reel-cycle) steps(24,end) infinite;animation-play-state:paused;pointer-events:none; }
 .looper66Shell .cassetteReelLeft { left:24.26%;background-size:1724% 1602%;background-position:55.67% 21.82%; }
 .looper66Shell .cassetteReelRight { left:60.03%;background-size:1724% 1602%;background-position:71.51% 21.82%;animation-duration:var(--takeup-reel-cycle); }
