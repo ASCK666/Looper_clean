@@ -7,13 +7,17 @@ On branch `210826`, the narrower desktop side controls and reduced speed-readout
 hierarchy in `UI_210826_SPEC.md` override the equal desktop transport dimensions
 below. The phone contract remains unchanged.
 
-On branch `090927`, the user-approved light pixel-art pass replaces both
-transport sprites with native CSS keycaps and crisp vector symbols. Their
-desktop/mobile geometry and audio behavior stay the same. Cream labels, stepped
-bevels, amber state lights, a 2px press and visible keyboard focus now belong to
-`css/looper.css`. The cassette foreground remains unchanged as an asset; CSS
-lightens its presentation and simplifies the glass reflections while preserving
-its transparent aperture, hinges, layer order and animated reel coordinates.
+On branch `090927`, the approved transport geometry is intentionally asymmetric
+on desktop: `STOP / PLAY / SPEED UP` retain the existing `28 / 44 / 28` grid
+proportions. Do not normalize those widths. Dedicated powered-off transport
+artwork supplies the hardware material on desktop and phone, while the native
+HTML buttons remain transparent interactive hotspots above it. Runtime amber
+lighting reuses crops of the same transport artwork; DOM labels and vector
+symbols remain available for semantics/fallback but are not the primary rendered
+button faces. The cassette foreground remains unchanged as an asset; CSS owns
+the visible magnetic tape, lighting and restrained glass reflections while
+preserving its transparent aperture, hinges, layer order and animated reel
+coordinates.
 
 ## 1. Visual identity
 
@@ -34,12 +38,16 @@ Visual references committed with this contract:
 
 - `assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp` (`1086 × 1009`);
 - `assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp` (`441 × 849`);
+- `assets/looper-ui/looper66-desktop-transport-square-3d62809d.webp` (`750 × 224`);
+- `assets/looper-ui/looper66-mobile-transport-fbd6a0d3.webp` (`379 × 215`);
 - `assets/looper-ui/looper66-cassette-bay-d7d5e6d4.png` (`793 × 496`), habitacle au premier plan : cadre fixe à quatre vis, porte fermée avec joint continu, deux charnières inférieures et verrou supérieur central. L'ouverture et l'extérieur sont réellement transparents. Le PNG fingerprinté conserve les dimensions, les calques et les coordonnées des bobines animées ; aucune animation d'ouverture n'est ajoutée.
 
 These files are the composition, spacing, material and typography references.
 Where a reference conflicts with a behavioural requirement below, the
-behavioural requirement wins. In particular, the three desktop transport
-modules remain equal-sized and all amber illumination remains runtime CSS.
+behavioural requirement wins. On `090927`, the current asymmetric desktop
+transport proportions are the approved geometry; consistency means matching
+material, depth, lighting and artwork language rather than equalizing widths.
+All amber illumination remains runtime CSS.
 
 - Keep one semantic DOM and one behaviour implementation.
 - Provide a horizontal desktop/tablet composition.
@@ -55,9 +63,12 @@ modules remain equal-sized and all amber illumination remains runtime CSS.
 - Vertical `PITCH` module.
 - Animated cassette in the centre.
 - `LOAD LIBRARY` and `LOAD BEAT` controls on the right.
-- `PLAY`, `STOP` and `SPEED UP` form one balanced transport row.
-- The outer hardware boxes for `PLAY`, `STOP` and `SPEED UP` must have equal
-  width, height, depth and border treatment.
+- `STOP`, `PLAY` and `SPEED UP` form one balanced transport row.
+- On `090927`, preserve the existing `28 / 44 / 28` transport proportions and
+  current heights. Do not resize them to equal dimensions.
+- `STOP`, `PLAY` and `SPEED UP` must share the same deck-specific material,
+  depth language and powered-off artwork treatment despite their different
+  dimensions.
 - The Beat Crate occupies the lower section.
 - `PREVIOUS` and `NEXT` belong to the Beat Crate footer, not to the cassette
   transport row.
@@ -76,7 +87,11 @@ modules remain equal-sized and all amber illumination remains runtime CSS.
 
 ## 5. Cassette construction
 
-- Use a transparent cassette shell with visible reels.
+- Use a transparent cassette shell with visible reels and visible brown magnetic
+  tape around the hubs.
+- The tape must read as continuous material: wound packs feed short tangent
+  shoulders into a restrained lower run, with the label and door masking the
+  portions a real cassette would conceal.
 - Place a substantial matte-black label around the reel openings.
 - The label must stop above the lower mechanism.
 - Roughly the lower 30 percent of the cassette remains clear so the lower
@@ -89,9 +104,9 @@ modules remain equal-sized and all amber illumination remains runtime CSS.
 Required back-to-front runtime layer order:
 
 1. responsive powered-off deck skin;
-2. two animated complete reel/tape-pack instances;
-3. transparent cassette shell containing the fixed lower mechanism, support and
-   blank label;
+2. cassette interior/tape material and two animated reel instances;
+3. transparent cassette foreground containing the fixed lower mechanism,
+   support and blank label framing;
 4. HTML beat name;
 5. CSS-controlled lighting;
 6. CSS glass reflection.
@@ -133,15 +148,17 @@ Requirements:
 - provide a visible `:focus-visible` treatment;
 - never ship a decorative control that has no product behaviour.
 
-The HTML may be visually transparent over the skin, but it must remain visible
-to the accessibility tree and fully interactive.
+For `STOP`, `PLAY` and `SPEED UP` on `090927`, the HTML controls are visually
+transparent over the dedicated transport artwork. They remain visible to the
+accessibility tree and fully interactive. Do not replace the deck-specific
+hardware faces with the shared generic key surface merely because the semantic
+button elements exist.
 
 ## 8. Speed Up
 
 - The hardware button is labelled **SPEED UP**, with the smaller explanatory
   subtitle `+1% / 8 LOOPS`.
-- Do not bake `+1%`, `EVERY 8 LOOPS`, active segments or a current value into the
-  asset.
+- Do not bake active segments or a current value into the asset.
 - Level 0 disables automatic acceleration.
 - Five successive clicks select `+1%`, `+2%`, `+3%`, `+4%` and `+5%` applied
   after every eight completed loops.
@@ -171,14 +188,15 @@ Do not bake any of the following into an asset:
 - fake illuminated bloom.
 
 Assets may contain neutral dark lenses, transparent apertures and alpha masks.
-CSS owns colour, strength, blur, inner and outer glow, transitions, hover,
-focus, pressed, disabled and product-state lighting.
-The active palette is a warm yellow. Transport lighting reuses the exact
-button crop as a CSS blend layer, so the engraved icon, label and inset trim
-light up without a rectangular colour wash. A weak central falloff supplies
-the reflected light; CSS box outlines and broad orange blooms are not used.
-Interactive HTML overlays must not draw an additional frame or outline over
-the hardware borders already present in the reference artwork.
+CSS owns colour, strength, blur, transitions, hover, focus, pressed, disabled and
+product-state lighting. The active palette is a warm yellow. Transport lighting
+reuses the exact button crop from the dedicated transport artwork as a CSS blend
+layer, so the engraved icon, label and inset trim light up without a rectangular
+colour wash. A weak central falloff supplies the reflected light; CSS box
+outlines and broad orange blooms are not used as the primary hardware treatment.
+Interactive HTML overlays must not draw a second material surface over the
+hardware borders already present in the reference artwork. Keyboard focus remains
+visible as an accessibility affordance.
 
 CSS lighting must independently support:
 
@@ -212,12 +230,17 @@ CSS lighting must independently support:
 - Verify desktop, tablet and phone layouts without horizontal overflow.
 - Verify phone touch-target sizes.
 - Verify hotspot-to-artwork alignment in both skins.
-- Assert equal desktop dimensions for `PLAY`, `STOP` and `SPEED UP`.
+- Assert that desktop `STOP / PLAY / SPEED UP` keep the approved `28 / 44 / 28`
+  proportions and are not normalized to equal widths.
+- Verify that desktop and phone transport use their dedicated powered-off assets
+  and that native buttons remain transparent interaction layers.
 - Verify the Speed Up cycle `0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 0`.
 - Verify rate application after every eight completed loops.
 - Verify reset behaviour when a new beat loads.
 - Verify that the cassette beat name comes from HTML.
 - Verify that reel animation starts and stops with playback.
+- Verify that the brown wound tape and lower tape run remain visible through the
+  cassette aperture at desktop and phone sizes.
 - Verify that reels remain behind the cassette shell and in front of the
   mechanism.
 - Verify that all coloured backlighting is runtime CSS, not baked artwork.
