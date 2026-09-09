@@ -7,6 +7,14 @@ On branch `210826`, the narrower desktop side controls and reduced speed-readout
 hierarchy in `UI_210826_SPEC.md` override the equal desktop transport dimensions
 below. The phone contract remains unchanged.
 
+On branch `090927`, the user-approved light pixel-art pass replaces both
+transport sprites with native CSS keycaps and crisp vector symbols. Their
+desktop/mobile geometry and audio behavior stay the same. Cream labels, stepped
+bevels, amber state lights, a 2px press and visible keyboard focus now belong to
+`css/looper.css`. The cassette foreground remains unchanged as an asset; CSS
+lightens its presentation and simplifies the glass reflections while preserving
+its transparent aperture, hinges, layer order and animated reel coordinates.
+
 ## 1. Visual identity
 
 - The product name is exactly **Looper66**.
@@ -26,7 +34,6 @@ Visual references committed with this contract:
 
 - `assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp` (`1086 × 1009`);
 - `assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp` (`441 × 849`);
-- `assets/looper-ui/looper66-mobile-transport-fbd6a0d3.webp` (`379 × 215`), neutral powered-off phone transport;
 - `assets/looper-ui/looper66-cassette-bay-d7d5e6d4.png` (`793 × 496`), habitacle au premier plan : cadre fixe à quatre vis, porte fermée avec joint continu, deux charnières inférieures et verrou supérieur central. L'ouverture et l'extérieur sont réellement transparents. Le PNG fingerprinté conserve les dimensions, les calques et les coordonnées des bobines animées ; aucune animation d'ouverture n'est ajoutée.
 
 These files are the composition, spacing, material and typography references.
