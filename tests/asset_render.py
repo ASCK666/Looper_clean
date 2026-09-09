@@ -107,6 +107,7 @@ with contextlib.ExitStack() as stack:
               refreshCassetteUI();
             }''')
             page.wait_for_function("Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)<.01")
+            page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cabinet-empty-{width}.png'))
             page.evaluate('''() => {
               commitLoadedTrack({name:'CABINET TEST'},new AudioBuffer({length:44100,sampleRate:44100,numberOfChannels:1}));
             }''')
@@ -125,12 +126,17 @@ with contextlib.ExitStack() as stack:
               const get=selector=>document.querySelector(selector);
               const lamp=get('.cassetteCssLight'),bay=get('.cassetteBayForeground');
               const l=lamp.getBoundingClientRect(),b=bay.getBoundingClientRect();
+              const label=get('.cassetteBeatName').getBoundingClientRect();
+              const glass=get('.cassetteGlass').getBoundingClientRect();
+              const reel=get('.cassetteReel').getBoundingClientRect();
               return {inside:l.left>b.left&&l.right<b.right&&l.top>b.top&&l.bottom<b.bottom,
+                labelClear:label.left>glass.left && label.right<glass.right && label.top>glass.top && label.bottom<reel.top,
                 belowGlass:Number(getComputedStyle(lamp).zIndex)<Number(getComputedStyle(get('.cassetteGlass')).zIndex),
                 belowFrame:Number(getComputedStyle(lamp).zIndex)<Number(getComputedStyle(bay).zIndex),
                 states:[...document.querySelectorAll('.cassetteReel')].map(el=>getComputedStyle(el).animationPlayState)};
             }''')
             assert light['inside'] and light['belowGlass'] and light['belowFrame'],light
+            assert light['labelClear'],(width,light)
             assert light['states']==['running','running'],light
             for pitch in (-8,0,8):
                 page.evaluate('(value)=>setLooperPitch(value)',pitch)
