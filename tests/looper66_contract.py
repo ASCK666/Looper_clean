@@ -96,6 +96,8 @@ assert HTML.count('class="cassetteBayForeground"')==1
 assert re.search(r'<img\b[^>]*class="cassetteBayForeground"[^>]*src="assets/looper-ui/looper66-cassette-bay-d7d5e6d4\.png"',HTML)
 assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
 assert '.cassetteGlass { position:absolute;z-index:4;' in CSS
+# Glass reflections and the recess shadow cover the moving hubs, below the door.
+assert re.search(r'\.cassetteGlass\s*\{[^}]*background:linear-gradient[^;]+;box-shadow:inset[^;]+;pointer-events:none;',CSS)
 assert '.cassetteBayForeground { position:absolute;z-index:5;inset:0;' in CSS
 # Illumination belongs inside the aperture, below the label/glass/door. A
 # full-frame overlay would brighten the hinges and obscure the printed label.
