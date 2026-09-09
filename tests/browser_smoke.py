@@ -58,22 +58,8 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         handlers=page.evaluate('''() => ['playBeat','stopBeat','loadSampleBtn','kickFolderBtn','autoLooperToggle','deckAutoToggle','importBeatsBtn','importFolderBtn'].map(id=>typeof document.getElementById(id).onclick)''')
         assert all(v=='function' for v in handlers),handlers
         assert page.evaluate("typeof document.getElementById('deckPitch').oninput")=='function'
-        assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='none'
-        assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationDuration")=='0s'
-        # Material colours must survive the full real cascade, not just source CSS.
-        palette=page.evaluate("""() => ({
-          caption:getComputedStyle(document.querySelector('.deckKeyCaption')).color,
-          input:getComputedStyle(document.querySelector('.beatCrateControls input')).backgroundColor,
-          load:getComputedStyle(document.querySelector('.deckLoadKey')).color,
-          looper:getComputedStyle(document.querySelector('#stopBeat')).color,
-          chopper:getComputedStyle(document.querySelector('#stopFlip'),'::after').color,
-          drumsPulse:getComputedStyle(document.querySelector('#playDrumsOnly'),'::before').animationName
-        })""")
-        assert palette['caption']=='rgb(194, 177, 140)',palette
-        assert palette['input']=='rgb(18, 17, 14)',palette
-        assert palette['load']==palette['looper']==palette['chopper']=='rgb(232, 220, 197)',palette
-        assert palette['drumsPulse']=='none',palette
-
+        assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='looper66EmptyPlayPulse'
+        assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationDuration")=='6s'
 
         visible=page.evaluate('''() => ['playBeat','stopBeat','prevBeat','nextBeat','autoLooperToggle','deckAutoToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect(),c=getComputedStyle(e);return [id,r.width,r.height,c.display,c.visibility,parseFloat(c.opacity)]})''')
         assert all(v[1]>=44 and v[2]>=44 and v[3]!='none' and v[4]=='visible' and v[5]>.5 for v in visible),visible

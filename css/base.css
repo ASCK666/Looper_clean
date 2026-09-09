@@ -318,17 +318,17 @@ input, select {
 }
 
 .title, .currentDrumsTitle, label {
-  color: var(--deck-key-text);
+  color: #d6dade !important;
 }
 
 .help, small {
-  color: #b9a98f;
+  color: #747d85 !important;
 }
 
 input, select, .status {
-  color: var(--deck-key-text);
-  border-color: #4a3d2e;
-  background: #12110e;
+  color: #d9dde0 !important;
+  border-color: #2a3035 !important;
+  background: #080a0c !important;
 }
 
 .btn {
@@ -376,7 +376,7 @@ a, .blue {
   color: #e7b969 !important;
 }
 
-.panel, .headerDeckPill, .beatCratePanel, .currentDrums, .wavewrap.largeWave, .loopGridWrap, .drumEditBox, .snareFx, .punchFx, .btn, .status {
+.panel, .headerDeckPill, .beatCratePanel, .currentDrums, .wavewrap.largeWave, .loopGridWrap, .drumEditBox, .snareFx, .punchFx, .btn, input, select, .status {
   background-image: linear-gradient(180deg,rgba(255,255,255,.02),rgba(0,0,0,.16)),
     var(--deck-texture) !important;
   background-size: auto,256px 256px !important;

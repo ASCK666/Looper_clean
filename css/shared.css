@@ -120,7 +120,7 @@ select {
 }
 
 input::placeholder {
-  color: #9e9078;
+  color: #4f585d;
 }
 
 input[type=range] {
