@@ -318,17 +318,17 @@ input, select {
 }
 
 .title, .currentDrumsTitle, label {
-  color: #d6dade !important;
+  color: var(--deck-key-text);
 }
 
 .help, small {
-  color: #747d85 !important;
+  color: #b9a98f;
 }
 
 input, select, .status {
-  color: #d9dde0 !important;
-  border-color: #2a3035 !important;
-  background: #080a0c !important;
+  color: var(--deck-key-text);
+  border-color: #4a3d2e;
+  background: #12110e;
 }
 
 .btn {
