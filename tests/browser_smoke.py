@@ -110,6 +110,33 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.wait_for_function("document.getElementById('chopStatus').textContent.includes('SAMPLE READY')",timeout=10000)
         assert page.evaluate("sampleName === 'test-sample.wav' && sampleBuffer !== null") is True
 
+        # Real-page captures retain all artwork. The indicator must rotate
+        # around the face centre at every responsive knob size.
+        artifacts=ROOT/'test-artifacts'
+        artifacts.mkdir(exist_ok=True)
+        for width in (1440,820,390):
+            page.set_viewport_size({'width':width,'height':1100})
+            page.wait_for_timeout(100)
+            face=page.locator('.samplePitchKnob .sampleKnobFace')
+            geometry=face.evaluate('''el=>{
+              const s=getComputedStyle(el,'::after');
+              return {origin:s.transformOrigin.split(' ').map(parseFloat),w:el.clientWidth,h:el.clientHeight};
+            }''')
+            assert abs(geometry['origin'][0]-geometry['w']/2)<1,geometry
+            assert abs(geometry['origin'][1]-geometry['h']/2)<1,geometry
+            control=page.locator('.samplePitchKnob .sampleKnobControl') if width<=760 else page.locator('#samplePitch')
+            before=face.evaluate("el=>getComputedStyle(el,'::after').transform")
+            control.focus()
+            control.press('ArrowUp')
+            assert page.locator('#samplePitch').input_value()=='1'
+            assert face.evaluate("el=>getComputedStyle(el,'::after').transform")!=before
+            control.press('ArrowDown')
+            assert page.locator('#samplePitch').input_value()=='0'
+            page.locator('#chopper').screenshot(path=str(artifacts/f'chopper-deck-{width}.png'))
+            page.locator('.samplePitchKnob').screenshot(path=str(artifacts/f'chopper-knob-{width}.png'))
+        page.set_viewport_size({'width':1280,'height':720})
+        assert not page_errors,page_errors
+
         page.click('[data-tab="looper"]')
         page.set_input_files('#beatFiles',str(xss)); page.wait_for_timeout(500)
         assert page.locator('#autoLooperToggle').get_attribute('data-speed-level')=='0'
