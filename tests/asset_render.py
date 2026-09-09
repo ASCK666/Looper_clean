@@ -79,7 +79,7 @@ with contextlib.ExitStack() as stack:
         assert play['height']>stop['height'] and stop['width']/stop['height']<1.3,info
         assert info['transportOrder']==['stopBeat','playBeat','autoLooperToggle'],info
         assert info['readoutRateFontSize']<=27.01,info
-        assert all(style['background']=='rgba(0, 0, 0, 0)' and style['backgroundImage']=='none' and style['boxShadow']=='none' for style in info['transportStyles']),info
+        assert all('linear-gradient' in style['backgroundImage'] and 'inset' in style['boxShadow'] for style in info['transportStyles']),info
         transport_left=min(rect['x'] for rect in info['transport'])
         transport_right=max(rect['x']+rect['width'] for rect in info['transport'])
         cassette_left=info['workspace']['x']+info['workspace']['width']*.423
@@ -111,7 +111,13 @@ with contextlib.ExitStack() as stack:
               commitLoadedTrack({name:'CABINET TEST'},new AudioBuffer({length:44100,sampleRate:44100,numberOfChannels:1}));
             }''')
             page.wait_for_function("Math.abs(Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)-.3)<.01")
-            page.locator('#playBeat').click()
+            page.locator('#playBeat').focus()
+            assert page.locator('#playBeat').evaluate('(el)=>parseFloat(getComputedStyle(el).outlineWidth)')>=2
+            page.keyboard.down('Space')
+            page.wait_for_timeout(100)
+            assert page.locator('#playBeat').evaluate('(el)=>new DOMMatrix(getComputedStyle(el).transform).m42')==2
+            page.locator('.deckTransport').screenshot(path=str(ARTIFACTS/f'transport-pressed-{width}.png'))
+            page.keyboard.up('Space')
             page.wait_for_function("Math.abs(Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)-.86)<.01")
             light=page.evaluate('''() => {
               const get=selector=>document.querySelector(selector);
@@ -140,6 +146,15 @@ with contextlib.ExitStack() as stack:
             page.wait_for_function("Math.abs(Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)-.3)<.01")
             assert page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).animationPlayState')=='paused'
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cabinet-stopped-{width}.png'))
+            # All five speed increments remain selectable and readable after
+            # moving the indicators into the native keycap.
+            for level in (1,2,3,4,5,0):
+                page.locator('#autoLooperToggle').click()
+                assert page.locator('#autoLooperToggle').get_attribute('data-speed-level')==str(level)
+                lit=page.locator('.deckRateVisualSegments i').evaluate_all("els=>els.filter(el=>getComputedStyle(el).borderTopColor==='rgb(220, 167, 46)').length")
+                assert lit==level,(width,level,lit)
+                assert page.locator('#autoLooperToggle').get_attribute('aria-pressed')==('true' if level else 'false')
+            page.locator('.deckTransport').screenshot(path=str(ARTIFACTS/f'transport-stopped-{width}.png'))
         assert not page_errors,page_errors
         # The native crate must represent real imports, including an empty
         # search and overflow beyond the first nine slots, at each viewport.
@@ -215,6 +230,11 @@ with contextlib.ExitStack() as stack:
                     }'''),'Mobile title overlaps playback status'
                     page.locator('#library').screenshot(path=str(ARTIFACTS/'crate-mobile-navigation.png'))
             assert not page_errors,page_errors
+        page.emulate_media(reduced_motion='reduce')
+        page.evaluate('''() => { stopDeck();deckBuffer=null;refreshCassetteUI(); }''')
+        assert page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).animationName')=='none'
+        for pseudo in ('::before','::after'):
+            assert page.locator('#playBeat').evaluate('(el,pseudo)=>getComputedStyle(el,pseudo).animationName',pseudo)=='none'
         browser.close()
 
 print('OK: Looper66 desktop transport matches cassette width with dominant Play and symmetric side controls')

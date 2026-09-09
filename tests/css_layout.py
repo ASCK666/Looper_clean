@@ -56,7 +56,15 @@ with contextlib.ExitStack() as stack:
                 assert abs(speed['x']-metrics['transportPanel']['x'])<1 and abs(speed['width']-metrics['transportPanel']['width'])<1,metrics
                 assert metrics['transportPanel']['y']>=metrics['mechanism']['y']+metrics['mechanism']['height']-1,metrics
                 assert metrics['transportPanel']['y']+metrics['transportPanel']['height']<=metrics['pitch']['y']+1,metrics
-                assert metrics['playLightSize']=='208.35% 208.35%',metrics
+            # Visible native labels and the five level indicators fit inside
+            # their own controls, including tablet and narrow phone widths.
+            assert page.locator('.deckTransport button').evaluate_all('''buttons=>buttons.every(button=>{
+              const b=button.getBoundingClientRect();
+              return [...button.children].every(child=>{
+                const c=child.getBoundingClientRect();
+                return c.left>=b.left+3 && c.right<=b.right-3 && c.top>=b.top+3 && c.bottom<=b.bottom-3;
+              });
+            })'''),metrics
             assert len(metrics['workspace'].split())==1,metrics
             page.click('[data-tab="chopper"]'); page.wait_for_timeout(60)
             page.click('[data-tab="looper"]'); page.wait_for_timeout(60)

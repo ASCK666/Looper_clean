@@ -11,9 +11,7 @@ except Exception:
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE_ASSET_NAME='looper66-desktop-transport-square-3d62809d.webp'
 BUTTON_ASSET_NAME='chopper-looper-button-off-alpha-6920266c.webp'
-source_asset=ROOT/'assets/looper-ui'/SOURCE_ASSET_NAME
 button_asset=ROOT/'assets/looper-ui'/BUTTON_ASSET_NAME
-assert source_asset.exists(),f'Missing Looper source transport asset: {source_asset}'
 assert button_asset.exists(),f'Missing isolated Chopper button asset: {button_asset}'
 
 html=inline_runtime_page()

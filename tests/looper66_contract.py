@@ -74,14 +74,17 @@ assert '.deckHotspot::before' in CSS and '.deckLoadKey::before' in CSS
 assert re.search(r'\.deckHotspot::before\s*\{[^}]*border:0;',CSS)
 assert re.search(r'\.deckLoadKey::before[^\{]*\{[^}]*border:0;',CSS)
 assert re.search(r'\.deckAutoKey::before\s*\{[^}]*border:0;',CSS)
-assert 'looper66-desktop-transport-square-3d62809d.webp' in CSS
-assert re.search(r'\.deckHotspot::before\s*\{[^}]*background-image:var\(--transport-light-image\);[^}]*background-size:var\(--transport-light-size\);[^}]*box-shadow:none;[^}]*mix-blend-mode:screen;',CSS)
-assert '#playBeat { --transport-light-position:center;--transport-light-size:227.273% 100%;height:100%; }' in CSS
-assert '#autoLooperToggle { --light-gain:.62;--transport-light-position:right center; }' in CSS
-assert 'looper66-mobile-transport-fbd6a0d3.webp' in CSS
+# Native keycaps replace baked transport labels; each layout uses the same
+# accessible buttons, with CSS-only lighting and pixel-aligned vector symbols.
+assert transport.count('class="deckKeySymbol"') == 2
+assert transport.count('class="deckKeyLabel"') == 3
+assert '>STOP<' in transport and '>PLAY<' in transport and '>SPEED UP<' in transport
+assert 'shape-rendering:crispEdges' in CSS
+assert '.deckHotspot:active { transform:translateY(2px); }' in CSS
+assert '--transport-light-image' not in CSS
+assert '#looper .deckHotspot:focus-visible' not in CSS  # no suppression of shared focus outline
 assert re.search(r'@media \(max-width:680px\)[\s\S]*\.deckTransport\s*\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\);[^}]*grid-template-rows:48fr 46fr;',CSS)
 assert re.search(r'@media \(max-width:680px\)[\s\S]*#autoLooperToggle\s*\{[^}]*grid-column:1/-1;',CSS)
-assert re.search(r'@media \(max-width:680px\)[\s\S]*#playBeat\s*\{[^}]*--transport-light-position:right top;[^}]*--transport-light-size:208\.35% 208\.35%;',CSS)
 assert re.search(r'\.deckLoadKey::before[^\{]*\{[^}]*box-shadow:none;[^}]*filter:blur\(2px\);',CSS)
 assert 'opacity:.001' not in CSS
 assert 'id="deckPitchModule"' in HTML
@@ -113,7 +116,7 @@ assert 'transform-origin:50% 50%' in CSS
 assert 'animation:looper66ReelSpin var(--supply-reel-cycle)' in CSS
 assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
 assert 'animation-direction:reverse' not in CSS
-assert re.search(r'\.deckHotspot\s*\{[^}]*background:transparent;[^}]*box-shadow:none;',CSS)
+assert re.search(r'\.deckHotspot\s*\{[^}]*background:linear-gradient\([^;]+;[^}]*box-shadow:inset',CSS)
 assert re.search(r'\.deckReadout\s*\{[^}]*border:0;[^}]*box-shadow:none;',CSS)
 assert re.search(r'\.deckPitchModule\s*\{[^}]*border:0;[^}]*box-shadow:none;',CSS)
 assert '.deckPitchModule::before' not in CSS
@@ -128,8 +131,6 @@ for name in retired:
 references={
     'looper66-desktop-pitch-clean-1e6d4f36.webp':((1086,1009),'1e6d4f360d7b6382a6bfeab0559aaaf505080ff6ef6e6bff7467175dd696e548'),
     'looper66-mobile-pitch-clean-c034fcbb.webp':((441,849),'c034fcbb8d60de005240f9a339af9a51d5dd25f66c6fdb81209c2d93052ef02b'),
-    'looper66-mobile-transport-fbd6a0d3.webp':((379,215),'fbd6a0d378eb43526ffbb1c9b6109c6894522d516310d003abe3f47edfd51bc5'),
-    'looper66-desktop-transport-square-3d62809d.webp':((750,224),'3d62809d2fd4dd16021e166ec8b648cb0b6304987354da52f58673c718fdafd7'),
     'looper66-crate-cassettes.webp':((560,62),'12256e2ec27d0a2976ce0a15184f578a04034c5318bbff8819deab05d0d6e3c9'),
     'looper66-cassette-bay-d7d5e6d4.png':((793,496),'d7d5e6d4d5a23a5c972bd37aaeb33bcbfa08af92acb3322658ad0669de85081b'),
 }
