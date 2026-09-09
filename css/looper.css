@@ -66,13 +66,14 @@
 
 .looper66Shell .cassetteMechanism { --hub-left:31.26%;--hub-right:67.03%;--hub-y:49.42%;--ring-y:17.1%;top:9.6%;left:42.3%;width:41.7%;height:28.3%;overflow:hidden;border:0;background:transparent;box-shadow:none;isolation:isolate;pointer-events:none; }
 /* One opaque interior replaces the old baked glass, label and stationary reels.
-   The two independently animated hubs remain above it, under the real door. */
+   Dense brown tape packs sit behind the independently animated hubs. Their
+   fine adjacent bands describe wound tape, not separate metal rings. The tape
+   path below the reels stays concealed by the sticker and door. */
 .looper66Shell .cassetteMechanism::before {
   content:"";position:absolute;z-index:0;inset:0;border-radius:4px;
   background:
-    radial-gradient(ellipse 10.8% var(--ring-y) at var(--hub-left) var(--hub-y),#151612 0 57%,#383329 58% 60%,#10110e 61% 78%,#4b463a 79% 81%,#090a08 82% 96%,#37372f 97% 99%,transparent 100%),
-    radial-gradient(ellipse 10.8% var(--ring-y) at var(--hub-right) var(--hub-y),#151612 0 57%,#383329 58% 60%,#10110e 61% 78%,#4b463a 79% 81%,#090a08 82% 96%,#37372f 97% 99%,transparent 100%),
-    linear-gradient(#302e25,#302e25) center 65%/36% 1px no-repeat,
+    radial-gradient(ellipse 10.8% var(--ring-y) at var(--hub-left) var(--hub-y),#151612 0 56%,#292017 57% 60%,#4a3525 61% 64%,#433022 65% 70%,#493424 71% 74%,#402d20 75% 80%,#463122 81% 84%,#3c2b1e 85% 90%,#412e20 91% 95%,#261e16 96% 99%,transparent 100%),
+    radial-gradient(ellipse 10.8% var(--ring-y) at var(--hub-right) var(--hub-y),#151612 0 56%,#292017 57% 60%,#4a3525 61% 64%,#433022 65% 70%,#493424 71% 74%,#402d20 75% 80%,#463122 81% 84%,#3c2b1e 85% 90%,#412e20 91% 95%,#261e16 96% 99%,transparent 100%),
     linear-gradient(#1c1d19,#0e100d);
 }
 /* One die-cut paper sticker surrounds the reel window; the title is ink on it. */
