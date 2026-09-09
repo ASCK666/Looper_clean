@@ -139,6 +139,8 @@ with contextlib.ExitStack() as stack:
             assert light['inside'] and light['belowGlass'] and light['belowFrame'],light
             assert light['labelClear'],(width,light)
             assert light['states']==['running','running'],light
+            for hub in ('.cassetteReelLeft','.cassetteReelRight'):
+                assert page.locator(hub).evaluate('(el)=>getComputedStyle(el).backgroundSize')=='auto, auto'
             assert page.locator('.cassetteReelLeft').evaluate('(el)=>getComputedStyle(el).opacity')=='1'
             assert page.locator('.cassetteBeatName').evaluate('(el)=>getComputedStyle(el).opacity')=='1'
             for pitch in (-8,0,8):
