@@ -111,7 +111,9 @@ with contextlib.ExitStack() as stack:
               commitLoadedTrack({name:'CABINET TEST'},new AudioBuffer({length:44100,sampleRate:44100,numberOfChannels:1}));
             }''')
             page.wait_for_function("Math.abs(Number(getComputedStyle(document.querySelector('.cassetteCssLight')).opacity)-.3)<.01")
-            page.locator('#playBeat').focus()
+            page.locator('#stopBeat').focus()
+            page.keyboard.press('Tab')
+            assert page.locator('#playBeat').evaluate("el=>el===document.activeElement && el.matches(':focus-visible')")
             assert page.locator('#playBeat').evaluate('(el)=>parseFloat(getComputedStyle(el).outlineWidth)')>=2
             page.keyboard.down('Space')
             page.wait_for_timeout(100)
