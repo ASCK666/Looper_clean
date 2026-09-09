@@ -95,6 +95,8 @@ assert 'cassetteShell' not in HTML+CSS
 assert HTML.count('class="cassetteBayForeground"')==1
 assert re.search(r'<img\b[^>]*class="cassetteBayForeground"[^>]*src="assets/looper-ui/looper66-cassette-bay-d7d5e6d4\.png"',HTML)
 assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
+assert re.search(r'\.cassetteBeatName\s*\{[^}]*border:0;[^}]*background:transparent;[^}]*box-shadow:none;',CSS)
+assert re.search(r'\.cassetteMechanism::after\s*\{[^}]*clip-path:polygon\(evenodd,',CSS)
 assert '.cassetteGlass { position:absolute;z-index:4;' in CSS
 # Glass reflections and the recess shadow cover the moving hubs, below the door.
 assert re.search(r'\.cassetteGlass\s*\{[^}]*background:linear-gradient[^;]+;box-shadow:inset[^;]+;pointer-events:none;',CSS)
