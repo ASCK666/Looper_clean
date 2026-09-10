@@ -102,13 +102,16 @@ assert HTML.count('class="cassetteBayForeground"')==1
 assert re.search(r'<img\b[^>]*class="cassetteBayForeground"[^>]*src="assets/looper-ui/looper66-cassette-bay-d7d5e6d4\.png"',HTML)
 assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
 mechanism_rule = re.search(r'\.cassetteMechanism\s*\{([^}]+)\}',CSS).group(1)
-assert '--tape-shadow:rgba(36,22,15,.32);' in mechanism_rule
-assert '--tape-mid:rgba(90,57,35,.48);' in mechanism_rule
-assert '--tape-edge:rgba(122,82,52,.42);' in mechanism_rule
+assert '--tape-shadow:rgba(36,22,15,.20);' in mechanism_rule
+assert '--tape-mid:rgba(90,57,35,.34);' in mechanism_rule
+assert '--tape-edge:rgba(122,82,52,.30);' in mechanism_rule
 tape_rule = re.search(r'\.cassetteMechanism::before\s*\{([^}]+)\}',CSS).group(1)
+assert tape_rule.count('radial-gradient(circle at var(--hub-') == 2
 assert 'radial-gradient(circle at var(--hub-left)' in tape_rule
 assert 'radial-gradient(circle at var(--hub-right)' in tape_rule
+assert tape_rule.count('transparent 0 7.2%') == 2
 assert 'var(--tape-mid)' in tape_rule and 'var(--tape-edge)' in tape_rule
+assert 'linear-gradient(#1c1b17,#0e100d)' not in tape_rule
 assert 'linear-gradient(111deg' not in tape_rule and 'linear-gradient(69deg' not in tape_rule
 assert 'center 70%/48% 2.5% no-repeat' not in tape_rule
 assert 'radial-gradient(ellipse 10.8%' not in tape_rule
@@ -179,4 +182,4 @@ with Image.open(ROOT/'assets/looper-ui/looper66-cassette-bay-d7d5e6d4.png') as b
     for point in ((396,40),(96,440),(690,440)):
         assert alpha.getpixel(point) >= 250, ('missing latch or lower hinge', point)
 
-print('OK: Looper66 v2 uses responsive production skins, native controls, deck-specific transport artwork, circular translucent cassette tape packs, separate animated reels and CSS-only state lights')
+print('OK: Looper66 v2 uses responsive production skins, native controls, deck-specific transport artwork, circular translucent cassette tape packs with open reel gap, separate animated reels and CSS-only state lights')
