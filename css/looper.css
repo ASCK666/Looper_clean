@@ -64,16 +64,14 @@
 .looper66Shell .deckAutoKey:hover { --light-strength:.3; }
 .looper66Shell .deckAutoKey[aria-pressed="true"] { --light-strength:1; }
 
-.looper66Shell .cassetteMechanism { --hub-left:31.26%;--hub-right:67.03%;--hub-y:49.42%;--tape-shadow:rgba(36,22,15,.32);--tape-dark:rgba(52,32,20,.38);--tape-mid:rgba(90,57,35,.48);--tape-edge:rgba(122,82,52,.42);top:9.6%;left:42.3%;width:41.7%;height:28.3%;overflow:hidden;border:0;background:transparent;box-shadow:none;isolation:isolate;pointer-events:none; }
-/* Only the wound magnetic tape is drawn here. Each pack is a true circle,
-   lightly translucent through the cassette shell; no invented connector or
-   diagonal tape path crosses the clear aperture. */
+.looper66Shell .cassetteMechanism { --hub-left:31.26%;--hub-right:67.03%;--hub-y:49.42%;--tape-shadow:rgba(36,22,15,.20);--tape-dark:rgba(52,32,20,.26);--tape-mid:rgba(90,57,35,.34);--tape-edge:rgba(122,82,52,.30);top:9.6%;left:42.3%;width:41.7%;height:28.3%;overflow:hidden;border:0;background:transparent;box-shadow:none;isolation:isolate;pointer-events:none; }
+/* Only the wound magnetic tape is drawn here. Both packs stay circular and
+   translucent, with transparent hubs and a fully open gap between the reels. */
 .looper66Shell .cassetteMechanism::before {
   content:"";position:absolute;z-index:0;inset:0;border-radius:4px;
   background:
-    radial-gradient(circle at var(--hub-left) var(--hub-y),rgba(21,22,18,.28) 0 7.2%,var(--tape-dark) 7.4% 8.2%,var(--tape-mid) 8.4% 9.4%,var(--tape-dark) 9.6% 10.5%,var(--tape-edge) 10.7% 11.4%,var(--tape-mid) 11.6% 12.4%,var(--tape-dark) 12.6% 13.3%,var(--tape-edge) 13.5% 14.1%,var(--tape-shadow) 14.3% 15%,transparent 15.3%),
-    radial-gradient(circle at var(--hub-right) var(--hub-y),rgba(21,22,18,.28) 0 7.2%,var(--tape-dark) 7.4% 8.2%,var(--tape-mid) 8.4% 9.4%,var(--tape-dark) 9.6% 10.5%,var(--tape-edge) 10.7% 11.4%,var(--tape-mid) 11.6% 12.4%,var(--tape-dark) 12.6% 13.3%,var(--tape-edge) 13.5% 14.1%,var(--tape-shadow) 14.3% 15%,transparent 15.3%),
-    linear-gradient(#1c1b17,#0e100d);
+    radial-gradient(circle at var(--hub-left) var(--hub-y),transparent 0 7.2%,var(--tape-dark) 7.4% 8.2%,var(--tape-mid) 8.4% 9.4%,var(--tape-dark) 9.6% 10.5%,var(--tape-edge) 10.7% 11.4%,var(--tape-mid) 11.6% 12.4%,var(--tape-dark) 12.6% 13.3%,var(--tape-edge) 13.5% 14.1%,var(--tape-shadow) 14.3% 15%,transparent 15.3%),
+    radial-gradient(circle at var(--hub-right) var(--hub-y),transparent 0 7.2%,var(--tape-dark) 7.4% 8.2%,var(--tape-mid) 8.4% 9.4%,var(--tape-dark) 9.6% 10.5%,var(--tape-edge) 10.7% 11.4%,var(--tape-mid) 11.6% 12.4%,var(--tape-dark) 12.6% 13.3%,var(--tape-edge) 13.5% 14.1%,var(--tape-shadow) 14.3% 15%,transparent 15.3%);
 }
 /* One die-cut paper sticker surrounds the reel window; the title is ink on it. */
 .looper66Shell .cassetteMechanism::after { content:"A";position:absolute;z-index:0;inset:18.5% 13.5% 32%;display:flex;align-items:center;padding-left:3%;border:0;border-radius:0;clip-path:polygon(evenodd,1% 0,99% 0,99% 2%,100% 2%,100% 98%,99% 98%,99% 100%,1% 100%,1% 98%,0 98%,0 2%,1% 2%,1% 0,9% 26%,9% 96%,91% 96%,91% 26%,9% 26%);background:repeating-linear-gradient(0deg,#ffffff05 0 1px,transparent 1px 3px),linear-gradient(100deg,#9f947b,#b9ad90 48%,#a69a7f);color:#303127;box-shadow:none;font:600 clamp(9px,1vw,13px)/1 var(--font-mono);pointer-events:none; }
