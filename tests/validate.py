@@ -43,8 +43,6 @@ for rel in [
     "assets/deck-black-ui-texture.png",
     "assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp",
     "assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp",
-    "assets/looper-ui/looper66-mobile-transport-fbd6a0d3.webp",
-    "assets/looper-ui/looper66-desktop-transport-square-3d62809d.webp",
     "assets/looper-ui/looper66-crate-cassettes.webp",
     "assets/looper-ui/looper66-cassette-bay-d7d5e6d4.png",
 ]:

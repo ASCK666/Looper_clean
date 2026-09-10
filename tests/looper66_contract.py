@@ -74,10 +74,19 @@ assert '.deckHotspot::before' in CSS and '.deckLoadKey::before' in CSS
 assert re.search(r'\.deckHotspot::before\s*\{[^}]*border:0;',CSS)
 assert re.search(r'\.deckLoadKey::before[^\{]*\{[^}]*border:0;',CSS)
 assert re.search(r'\.deckAutoKey::before\s*\{[^}]*border:0;',CSS)
+# Native controls remain the interaction layer, while Looper-specific artwork
+# owns the powered-off key material and is reused as the amber light mask.
+assert transport.count('class="deckKeySymbol"') == 2
+assert transport.count('class="deckKeyLabel"') == 3
+assert '>STOP<' in transport and '>PLAY<' in transport and '>SPEED UP<' in transport
 assert 'looper66-desktop-transport-square-3d62809d.webp' in CSS
+assert re.search(r'\.deckTransportVisual\s*\{[^}]*looper66-desktop-transport-square-3d62809d\.webp[^}]*pointer-events:none;',CSS)
+assert re.search(r'\.deckHotspot\s*\{[^}]*--transport-light-image:url\("\.\./assets/looper-ui/looper66-desktop-transport-square-3d62809d\.webp"\);[^}]*background:transparent;[^}]*box-shadow:none;',CSS)
 assert re.search(r'\.deckHotspot::before\s*\{[^}]*background-image:var\(--transport-light-image\);[^}]*background-size:var\(--transport-light-size\);[^}]*box-shadow:none;[^}]*mix-blend-mode:screen;',CSS)
 assert '#playBeat { --transport-light-position:center;--transport-light-size:227.273% 100%;height:100%; }' in CSS
 assert '#autoLooperToggle { --light-gain:.62;--transport-light-position:right center; }' in CSS
+assert '.deckKeySymbol,.looper66Shell .deckKeyLabel,.looper66Shell .deckKeyCaption { opacity:0;' in CSS
+assert '#looper .deckHotspot:focus-visible' not in CSS  # keep shared keyboard focus visible
 assert 'looper66-mobile-transport-fbd6a0d3.webp' in CSS
 assert re.search(r'@media \(max-width:680px\)[\s\S]*\.deckTransport\s*\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\);[^}]*grid-template-rows:48fr 46fr;',CSS)
 assert re.search(r'@media \(max-width:680px\)[\s\S]*#autoLooperToggle\s*\{[^}]*grid-column:1/-1;',CSS)
@@ -92,7 +101,25 @@ assert 'cassetteShell' not in HTML+CSS
 assert HTML.count('class="cassetteBayForeground"')==1
 assert re.search(r'<img\b[^>]*class="cassetteBayForeground"[^>]*src="assets/looper-ui/looper66-cassette-bay-d7d5e6d4\.png"',HTML)
 assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
+mechanism_rule = re.search(r'\.cassetteMechanism\s*\{([^}]+)\}',CSS).group(1)
+assert '--tape-shadow:rgba(36,22,15,.20);' in mechanism_rule
+assert '--tape-mid:rgba(90,57,35,.34);' in mechanism_rule
+assert '--tape-edge:rgba(122,82,52,.30);' in mechanism_rule
+tape_rule = re.search(r'\.cassetteMechanism::before\s*\{([^}]+)\}',CSS).group(1)
+assert tape_rule.count('radial-gradient(circle at var(--hub-') == 2
+assert 'radial-gradient(circle at var(--hub-left)' in tape_rule
+assert 'radial-gradient(circle at var(--hub-right)' in tape_rule
+assert tape_rule.count('transparent 0 7.2%') == 2
+assert 'var(--tape-mid)' in tape_rule and 'var(--tape-edge)' in tape_rule
+assert 'linear-gradient(#1c1b17,#0e100d)' not in tape_rule
+assert 'linear-gradient(111deg' not in tape_rule and 'linear-gradient(69deg' not in tape_rule
+assert 'center 70%/48% 2.5% no-repeat' not in tape_rule
+assert 'radial-gradient(ellipse 10.8%' not in tape_rule
+assert re.search(r'\.cassetteBeatName\s*\{[^}]*border:0;[^}]*background:transparent;[^}]*box-shadow:none;',CSS)
+assert re.search(r'\.cassetteMechanism::after\s*\{[^}]*clip-path:polygon\(evenodd,',CSS)
 assert '.cassetteGlass { position:absolute;z-index:4;' in CSS
+# Glass reflections and the recess shadow cover the moving hubs, below the door.
+assert re.search(r'\.cassetteGlass\s*\{[^}]*background:linear-gradient[^;]+;box-shadow:inset[^;]+;pointer-events:none;',CSS)
 assert '.cassetteBayForeground { position:absolute;z-index:5;inset:0;' in CSS
 # Illumination belongs inside the aperture, below the label/glass/door. A
 # full-frame overlay would brighten the hinges and obscure the printed label.
@@ -114,6 +141,9 @@ assert 'animation:looper66ReelSpin var(--supply-reel-cycle)' in CSS
 assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
 assert 'animation-direction:reverse' not in CSS
 assert re.search(r'\.deckHotspot\s*\{[^}]*background:transparent;[^}]*box-shadow:none;',CSS)
+assert re.search(r'--deck-key-surface: linear-gradient\([^;]+var\(--deck-texture\)[^;]+;',CSS)
+assert 'background:var(--deck-key-surface);' in (ROOT/'css/chopper-deck-texture.css').read_text()
+assert '#chopper.screen .btn.primary::before' not in CSS
 assert re.search(r'\.deckReadout\s*\{[^}]*border:0;[^}]*box-shadow:none;',CSS)
 assert re.search(r'\.deckPitchModule\s*\{[^}]*border:0;[^}]*box-shadow:none;',CSS)
 assert '.deckPitchModule::before' not in CSS
@@ -152,4 +182,4 @@ with Image.open(ROOT/'assets/looper-ui/looper66-cassette-bay-d7d5e6d4.png') as b
     for point in ((396,40),(96,440),(690,440)):
         assert alpha.getpixel(point) >= 250, ('missing latch or lower hinge', point)
 
-print('OK: Looper66 v2 uses responsive production skins, native controls, separate animated reels and CSS-only state lights')
+print('OK: Looper66 v2 uses responsive production skins, native controls, deck-specific transport artwork, circular translucent cassette tape packs with open reel gap, separate animated reels and CSS-only state lights')
