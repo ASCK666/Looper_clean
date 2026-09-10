@@ -64,19 +64,15 @@
 .looper66Shell .deckAutoKey:hover { --light-strength:.3; }
 .looper66Shell .deckAutoKey[aria-pressed="true"] { --light-strength:1; }
 
-.looper66Shell .cassetteMechanism { --hub-left:31.26%;--hub-right:67.03%;--hub-y:49.42%;--ring-y:17.1%;--tape-shadow:#24160f;--tape-dark:#342014;--tape-mid:#5a3923;--tape-edge:#7a5234;top:9.6%;left:42.3%;width:41.7%;height:28.3%;overflow:hidden;border:0;background:transparent;box-shadow:none;isolation:isolate;pointer-events:none; }
-/* The cassette interior keeps the moving hubs independent while exposing real
-   brown wound tape around each reel. Two short tangent shoulders descend from
-   the packs into a restrained lower tape run; the label and door still mask
-   the mechanism where a real cassette would hide it. */
+.looper66Shell .cassetteMechanism { --hub-left:31.26%;--hub-right:67.03%;--hub-y:49.42%;--tape-shadow:rgba(36,22,15,.32);--tape-dark:rgba(52,32,20,.38);--tape-mid:rgba(90,57,35,.48);--tape-edge:rgba(122,82,52,.42);top:9.6%;left:42.3%;width:41.7%;height:28.3%;overflow:hidden;border:0;background:transparent;box-shadow:none;isolation:isolate;pointer-events:none; }
+/* Only the wound magnetic tape is drawn here. Each pack is a true circle,
+   lightly translucent through the cassette shell; no invented connector or
+   diagonal tape path crosses the clear aperture. */
 .looper66Shell .cassetteMechanism::before {
   content:"";position:absolute;z-index:0;inset:0;border-radius:4px;
   background:
-    linear-gradient(111deg,transparent 0 45%,var(--tape-shadow) 46% 48%,var(--tape-mid) 49% 52%,var(--tape-edge) 53% 54%,transparent 55%) 37% 60%/18% 24% no-repeat,
-    linear-gradient(69deg,transparent 0 45%,var(--tape-edge) 46% 47%,var(--tape-mid) 48% 51%,var(--tape-shadow) 52% 54%,transparent 55%) 63% 60%/18% 24% no-repeat,
-    linear-gradient(90deg,transparent 0 4%,var(--tape-shadow) 5% 7%,var(--tape-mid) 8% 92%,var(--tape-shadow) 93% 95%,transparent 96%) center 70%/48% 2.5% no-repeat,
-    radial-gradient(ellipse 10.8% var(--ring-y) at var(--hub-left) var(--hub-y),#151612 0 53%,#382216 54% 58%,#6a452c 59% 63%,#5b3924 64% 70%,#714a30 71% 74%,#5d3b25 75% 81%,#69442a 82% 86%,#57351f 87% 92%,#493020 93% 96%,#2a1b12 97% 99%,transparent 100%),
-    radial-gradient(ellipse 10.8% var(--ring-y) at var(--hub-right) var(--hub-y),#151612 0 53%,#382216 54% 58%,#6a452c 59% 63%,#5b3924 64% 70%,#714a30 71% 74%,#5d3b25 75% 81%,#69442a 82% 86%,#57351f 87% 92%,#493020 93% 96%,#2a1b12 97% 99%,transparent 100%),
+    radial-gradient(circle at var(--hub-left) var(--hub-y),rgba(21,22,18,.28) 0 7.2%,var(--tape-dark) 7.4% 8.2%,var(--tape-mid) 8.4% 9.4%,var(--tape-dark) 9.6% 10.5%,var(--tape-edge) 10.7% 11.4%,var(--tape-mid) 11.6% 12.4%,var(--tape-dark) 12.6% 13.3%,var(--tape-edge) 13.5% 14.1%,var(--tape-shadow) 14.3% 15%,transparent 15.3%),
+    radial-gradient(circle at var(--hub-right) var(--hub-y),rgba(21,22,18,.28) 0 7.2%,var(--tape-dark) 7.4% 8.2%,var(--tape-mid) 8.4% 9.4%,var(--tape-dark) 9.6% 10.5%,var(--tape-edge) 10.7% 11.4%,var(--tape-mid) 11.6% 12.4%,var(--tape-dark) 12.6% 13.3%,var(--tape-edge) 13.5% 14.1%,var(--tape-shadow) 14.3% 15%,transparent 15.3%),
     linear-gradient(#1c1b17,#0e100d);
 }
 /* One die-cut paper sticker surrounds the reel window; the title is ink on it. */
@@ -181,7 +177,7 @@
   .deckReadoutRate { top:20%;right:4%;bottom:auto;left:auto;font-size:clamp(20px,8.7vw,39px); }
   .deckReadoutState,.deckReadoutSpeed { display:none; }
 
-  .looper66Shell .cassetteMechanism { --hub-left:30.88%;--hub-right:66.74%;--hub-y:50.6%;--ring-y:16.25%;top:14.15%;left:7%;width:86%;height:22.5%; }
+  .looper66Shell .cassetteMechanism { --hub-left:30.88%;--hub-right:66.74%;--hub-y:50.6%;top:14.15%;left:7%;width:86%;height:22.5%; }
   .looper66Shell .cassetteReel { top:39.31%;width:15%; }
   .looper66Shell .cassetteReelLeft { left:23.38%;background-size:775.2% 1492.4%;background-position:31.13% 32.55%; }
   .looper66Shell .cassetteReelRight { left:59.24%;background-size:775.2% 1492.4%;background-position:66.52% 32.55%; }
