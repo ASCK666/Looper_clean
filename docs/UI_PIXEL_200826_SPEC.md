@@ -89,9 +89,14 @@ All amber illumination remains runtime CSS.
 
 - Use a transparent cassette shell with visible reels and visible brown magnetic
   tape around the hubs.
-- The tape must read as continuous material: wound packs feed short tangent
-  shoulders into a restrained lower run, with the label and door masking the
-  portions a real cassette would conceal.
+- On `090927`, the magnetic tape is represented by two circular wound packs
+  around the hubs. Their centres remain open for the animated reels, and the
+  space between the two packs remains visibly transparent.
+- Each wound pack should read as one continuous translucent mass with only a few
+  restrained concentric striations. Do not render a stack of equally weighted
+  rings that reads like a target.
+- Do not draw a bridge, diagonal connector, tangent shoulder or lower tape run
+  across the clear aperture on `090927`.
 - Place a substantial matte-black label around the reel openings.
 - The label must stop above the lower mechanism.
 - Roughly the lower 30 percent of the cassette remains clear so the lower
@@ -101,15 +106,15 @@ All amber illumination remains runtime CSS.
 - Render the current beat name exclusively as HTML over the reserved blank label
   field.
 
-Required back-to-front runtime layer order:
+Required back-to-front runtime layer order on `090927`:
 
 1. responsive powered-off deck skin;
-2. cassette interior/tape material and two animated reel instances;
-3. transparent cassette foreground containing the fixed lower mechanism,
-   support and blank label framing;
-4. HTML beat name;
-5. CSS-controlled lighting;
-6. CSS glass reflection.
+2. cassette interior/tape material;
+3. two animated reel instances;
+4. CSS-controlled cassette lighting;
+5. HTML beat name;
+6. CSS glass reflection;
+7. transparent cassette foreground / fixed door frame.
 
 The reels must never be composited over the cassette. They rotate behind the
 shell and remain visible through the shell openings or transparency.
@@ -239,8 +244,11 @@ CSS lighting must independently support:
 - Verify reset behaviour when a new beat loads.
 - Verify that the cassette beat name comes from HTML.
 - Verify that reel animation starts and stops with playback.
-- Verify that the brown wound tape and lower tape run remain visible through the
-  cassette aperture at desktop and phone sizes.
+- Verify that both brown circular wound packs remain visible through the cassette
+  aperture at desktop and phone sizes, with transparent centres and a clear gap
+  between them.
+- Verify that no connector, lower run or diagonal tape bar crosses the clear
+  cassette aperture on `090927`.
 - Verify that reels remain behind the cassette shell and in front of the
   mechanism.
 - Verify that all coloured backlighting is runtime CSS, not baked artwork.
@@ -258,4 +266,3 @@ CSS lighting must independently support:
 5. Check this document at each important milestone.
 6. Remove replaced code and asset references.
 7. Run all acceptance checks.
-8. Push the completed branch without merging it.
