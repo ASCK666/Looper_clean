@@ -331,3 +331,39 @@ primitives and Looper. Remaining architecture debt is concentrated in the
 transitional Chopper/base layers and the eventual retirement of `clean-ui.css`.
 The next CSS phase should continue ownership extraction; it must not add new
 behavior to `clean-ui.css`.
+
+
+## Cassette rebuild from `090927`
+
+Scope: only cassette composition, assets and their regression coverage. Looper
+remains the state and CSS owner. The loaded/playing hooks, transport, loading,
+audio algorithms and all JavaScript files are unchanged.
+
+Removed: skin-derived reel crops, independent mobile reel coordinates, tape
+pseudo-element gradients, the CSS sticker and hard-coded side letter, the glass
+overlay and foreground color filter. Four independent SVG assets replace the
+retired 354,015-byte foreground PNG. The opaque cavity prevents baked cassette
+artwork from being visible in EMPTY. One 3:2 coordinate system owns every state.
+
+The baseline was 75/100. The six-category reassessment is conservative: only
+human editability increases, because geometry and assets can now be edited
+locally without desktop/mobile crop calibration. The existing regression-safety
+category is already at its maximum; stronger cassette tests do not inflate it.
+
+| Category | Before | After | Delta |
+| --- | ---: | ---: | ---: |
+| Runtime manifest truthfulness | 12 | 12 | 0 |
+| Dead code / redundancy | 15 | 15 | 0 |
+| Ownership / locality | 12 | 12 | 0 |
+| Cascade independence | 10 | 10 | 0 |
+| Human editability | 11 | 12 | +1 |
+| Regression safety | 15 | 15 | 0 |
+| **Total** | **75** | **76** | **+1** |
+
+CSS health: 747/750 selector branches before and after, zero unreachable
+selectors, zero unused keyframes and zero fully shadowed declarations. Used
+custom properties: 47 → 39. New `!important`: 0. No category decreases.
+
+See `CASSETTE_REBUILD.md` for the state contract, six visual references,
+validation evidence and the stale baseline transport assertion repaired in its
+own test-only commit.
