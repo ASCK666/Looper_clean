@@ -65,7 +65,7 @@ with contextlib.ExitStack() as stack:
             # new translucent blue-night glass: the old skin cannot participate
             # in the composition and the cassette cavity itself is opaque.
             assert page.locator('.looper66Skin').evaluate("el=>getComputedStyle(el).display==='none'")
-            assert mechanism.evaluate("el=>getComputedStyle(el).backgroundColor not in ['transparent','rgba(0, 0, 0, 0)']")
+            assert mechanism.evaluate("el=>!['transparent','rgba(0, 0, 0, 0)'].includes(getComputedStyle(el).backgroundColor)")
             assert page.locator('.cassetteBayForeground').is_visible()
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight','.cassetteLabel','.cassetteBeatName'):
                 assert not page.locator(selector).is_visible(), ('empty', selector)
