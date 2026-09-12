@@ -1,6 +1,6 @@
 "use strict";
 
-window.__SP={version:"200826-ui-pixel",ready:false,errors:[]};
+window.__SP={version:"120927-ui-migration",ready:false,errors:[]};
 window.__SP.report=(scope,error)=>{
   const message=error?.message||String(error||"Unknown error");
   const item={scope,message,time:new Date().toISOString()};
@@ -10,6 +10,16 @@ window.__SP.report=(scope,error)=>{
 };
 window.addEventListener("error",event=>window.__SP.report("RUNTIME",event.error||event.message));
 window.addEventListener("unhandledrejection",event=>window.__SP.report("PROMISE",event.reason));
+
+// Branch 120927 is a visual migration over the maintained Looper engine.
+// Load its stylesheet last so existing component rules remain the fallback.
+if(!document.querySelector('link[data-looper-120927="1"]')){
+  const link=document.createElement("link");
+  link.rel="stylesheet";
+  link.href="./css/looper-120927.css";
+  link.dataset.looper120927="1";
+  document.head.appendChild(link);
+}
 
 document.querySelectorAll("[data-range-knob]").forEach(knob=>{
   const input=document.getElementById(knob.dataset.rangeKnob);
@@ -43,6 +53,19 @@ if("caches" in window){
     .then(keys=>Promise.all(keys.filter(key=>key.startsWith("scratch-practice-")).map(key=>caches.delete(key))))
     .catch(error=>console.warn("Scratch Practice cache cleanup failed:",error));
 }
+
+// The 120927 adapter loads only after all maintained defer scripts have bound
+// their existing events. It reuses those bindings and state rather than
+// replacing the Looper engine.
+window.addEventListener("DOMContentLoaded",()=>{
+  if(location.protocol==="about:" || location.protocol==="data:")return;
+  if(document.querySelector('script[data-looper-120927="1"]'))return;
+  const script=document.createElement("script");
+  script.src="./js/looper-120927.js";
+  script.dataset.looper120927="1";
+  script.onerror=()=>window.__SP.report("LOOPER 120927",new Error("120927 migration layer failed to load"));
+  document.body.appendChild(script);
+},{once:true});
 
 // looper-next feature modules load after the maintained defer scripts so they
 // can extend the existing Chopper engine without changing its base files.
