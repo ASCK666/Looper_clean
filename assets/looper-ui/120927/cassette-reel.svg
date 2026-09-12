@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="rim"><stop offset="0" stop-color="#111719"/><stop offset=".56" stop-color="#1d2528"/><stop offset=".58" stop-color="#aab1b1"/><stop offset=".74" stop-color="#d5d9d8"/><stop offset=".76" stop-color="#717a7c"/><stop offset="1" stop-color="#171d20"/></radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="62" fill="#0c1215" stroke="#616a6d" stroke-width="3"/>
+  <circle cx="64" cy="64" r="54" fill="url(#rim)"/>
+  <circle cx="64" cy="64" r="25" fill="#0b0e10" stroke="#7f898a" stroke-width="3"/>
+  <g fill="#c9cecc">
+    <path d="M58 18h12l5 24-11 10-11-10Z"/>
+    <path d="M110 58v12l-24 5-10-11 10-11Z"/>
+    <path d="M70 110H58l-5-24 11-10 11 10Z"/>
+    <path d="M18 70V58l24-5 10 11-10 11Z"/>
+    <path d="m92 29 8 8-13 21-15 1-1-15Z"/>
+    <path d="m99 92-8 8-21-13-1-15 15-1Z"/>
+    <path d="m36 99-8-8 13-21 15-1 1 15Z"/>
+    <path d="m29 36 8-8 21 13 1 15-15 1Z"/>
+  </g>
+  <circle cx="64" cy="64" r="12" fill="#171d1f" stroke="#959d9d" stroke-width="3"/>
+  <circle cx="64" cy="64" r="4" fill="#050708"/>
+</svg>
