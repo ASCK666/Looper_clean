@@ -1,0 +1,80 @@
+/* Review tuning against the approved 120927 mockup.
+   Kept separate while the migration is in draft so visual deltas stay easy to
+   inspect; fold into looper-120927.css once the reference is accepted. */
+
+/* The approved 1408×1056 reference nearly fills a 1440px review viewport. */
+#looper .looper66Shell { width:min(100%,1400px); }
+#looper .looper66Workspace::after { filter:brightness(1.16); }
+
+/* Match the vertical module proportions in the approved desktop reference. */
+@media (min-width:681px) {
+  #looper .deckReadout { height:30.8%; }
+  #looper .deckUtilityPanel { top:45.8%;height:10.5%; }
+  #looper .deckPitchModule { height:42.4%; }
+
+  #looper .deckTransport {
+    top:47.3%;
+    height:9.0%;
+  }
+}
+
+/* The reel apertures in cassette-tape.svg are centered at y=310/600. The
+   animated reels therefore sit at 51.6667% — not the retired skin's 49%. */
+#looper .cassetteReel { top:41%; }
+#looper .cassetteBeatName {
+  top:27%;
+  left:20%;
+  width:60%;
+  height:8%;
+  font-size:3.25cqw;
+}
+
+/* Real light projection on the graphite deck. The existing state variable
+   drives both internal illumination and a restrained external bloom. */
+#looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton) {
+  box-shadow:
+    inset 0 1px #5f6263,
+    inset 0 -3px #090a0a,
+    inset 0 0 0 3px #1a1c1d,
+    0 2px 4px #000,
+    0 0 13px rgba(var(--light-r),var(--light-g),var(--light-b),calc(var(--light-strength) * .20)),
+    0 7px 19px rgba(var(--light-r),var(--light-g),var(--light-b),calc(var(--light-strength) * .08));
+}
+
+/* The old skin used a large empty-deck pulse. The mockup specifies only a
+   slight steady invitation glow until PLAY is engaged. */
+#looper #playBeat::before,
+#looper #playBeat::after { animation:none!important; }
+#looper .cassetteDeck:not(.playing) #playBeat { --light-strength:.10; }
+#looper .cassetteDeck:not(.playing) #playBeat:is(:hover,:focus-visible) { --light-strength:.28; }
+#looper .cassetteDeck.playing #playBeat {
+  box-shadow:
+    inset 0 1px #ffe6a6,
+    inset 0 -3px #713800,
+    inset 0 0 0 3px #e38108,
+    0 2px 4px #000,
+    0 0 14px rgba(255,158,25,.22),
+    0 8px 22px rgba(255,137,10,.10);
+}
+
+/* Keep the 5 SPEED AUTO lamps physical on narrow layouts instead of letting
+   their aspect-ratio stretch into oversized circles. */
+@media (max-width:680px) {
+  #looper #autoLooperToggle {
+    grid-template-rows:auto auto;
+    align-content:center;
+    justify-items:center;
+    padding:5% 10%;
+  }
+  #looper .deckRateVisualSegments {
+    width:auto;
+    grid-template-columns:repeat(5,12px);
+    justify-content:center;
+    gap:9px;
+  }
+  #looper .deckRateVisualSegments i {
+    width:12px;
+    height:12px;
+    aspect-ratio:auto;
+  }
+}
