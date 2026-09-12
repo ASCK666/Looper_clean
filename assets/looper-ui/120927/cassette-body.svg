@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d0d5d5"/><stop offset="1" stop-color="#aeb5b7"/></linearGradient>
+    <linearGradient id="label" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dfe3e1"/><stop offset="1" stop-color="#c7cdcc"/></linearGradient>
+  </defs>
+  <!-- cassette body with real transparent reel apertures -->
+  <path fill="url(#body)" fill-rule="evenodd" stroke="#687174" stroke-width="4"
+    d="M128 116H772L795 139V449L775 478H125L105 449V139Z
+       M229 309a72 72 0 1 0 144 0a72 72 0 1 0-144 0
+       M527 309a72 72 0 1 0 144 0a72 72 0 1 0-144 0"/>
+  <path d="M146 134H754L779 158" fill="none" stroke="#e7e9e8" stroke-width="3" opacity=".72"/>
+  <rect x="173" y="143" width="554" height="92" rx="8" fill="url(#label)" stroke="#9ba2a3" stroke-width="2"/>
+  <rect x="199" y="155" width="502" height="46" rx="5" fill="#c5cccb" opacity=".86"/>
+  <!-- center tape window -->
+  <path d="M374 254H526L551 278V350L526 374H374L349 350V278Z" fill="#252b2e" stroke="#626b6e" stroke-width="4"/>
+  <rect x="386" y="271" width="128" height="86" rx="4" fill="#4b392b"/>
+  <g stroke="#79583c" stroke-width="10" opacity=".62"><path d="M404 272v84M431 272v84M469 272v84M496 272v84"/></g>
+  <!-- A marking -->
+  <path fill="#354044" d="M151 265h44l16 84h-18l-4-20h-31l-4 20h-18Zm12 47h23l-11-30Z"/>
+  <!-- 90 / type marks -->
+  <g fill="#354044" font-family="monospace" font-weight="700"><text x="690" y="315" font-size="45">90</text><text x="693" y="337" font-size="17">TYPE I</text><text x="689" y="357" font-size="16">NORMAL</text></g>
+  <!-- lower cassette shell -->
+  <path d="M274 394H626L657 469H243Z" fill="#22292d" stroke="#5b666a" stroke-width="4"/>
+  <g fill="#05090b" stroke="#687276" stroke-width="3"><circle cx="305" cy="438" r="14"/><circle cx="363" cy="447" r="10"/><circle cx="450" cy="420" r="10"/><circle cx="537" cy="447" r="10"/><circle cx="595" cy="438" r="14"/></g>
+</svg>
