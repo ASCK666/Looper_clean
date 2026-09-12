@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="160" viewBox="0 0 1000 160" shape-rendering="crispEdges">
+  <!-- Decorative pixel-art rear cables: one power lead and two XLR outs. -->
+  <g fill="#08090a">
+    <path d="M175 0h26v22h8v22h-7v22h-8v50h-38V70h8V44h8V22h3z"/>
+    <path d="M675 0h30v38h8v40h-6v44h-46V76h-6V38h20z"/>
+    <path d="M765 0h30v38h8v40h-6v44h-46V76h-6V38h20z"/>
+  </g>
+  <g fill="#1a1c1e">
+    <rect x="157" y="92" width="36" height="24"/>
+    <rect x="663" y="90" width="42" height="32"/>
+    <rect x="753" y="90" width="42" height="32"/>
+  </g>
+  <g fill="#a9a49a">
+    <rect x="664" y="78" width="40" height="24"/>
+    <rect x="754" y="78" width="40" height="24"/>
+  </g>
+  <g fill="#d1cbc0">
+    <rect x="669" y="78" width="7" height="24"/>
+    <rect x="759" y="78" width="7" height="24"/>
+  </g>
+  <g fill="#55575a">
+    <rect x="671" y="96" width="26" height="5"/>
+    <rect x="761" y="96" width="26" height="5"/>
+  </g>
+</svg>
