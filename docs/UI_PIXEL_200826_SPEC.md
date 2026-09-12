@@ -3,6 +3,10 @@
 This document is the acceptance contract for branch `ui-pixel-200826`.
 Implementation work must be checked against it at every important milestone.
 
+On `cassette-rebuild`, [CASSETTE_REBUILD.md](CASSETTE_REBUILD.md) supersedes the
+cassette assets, construction, state visibility and layer order below. The
+following cassette details describe the historical `090927` implementation.
+
 On branch `210826`, the narrower desktop side controls and reduced speed-readout
 hierarchy in `UI_210826_SPEC.md` override the equal desktop transport dimensions
 below. The phone contract remains unchanged.

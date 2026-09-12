@@ -36,7 +36,7 @@ with contextlib.ExitStack() as stack:
             assert metrics['bodyW']<=metrics['viewportW']+2,metrics
             assert abs(metrics['tabs']['width']-metrics['shell']['width'])<1,metrics
             assert abs(metrics['tabs']['x']-metrics['shell']['x'])<1,metrics
-            expected_mechanism_ratio=1.505 if width<=680 else 1.586
+            expected_mechanism_ratio=1.5
             assert abs(metrics['mechanism']['width']/metrics['mechanism']['height']-expected_mechanism_ratio)<.02,metrics
             assert all(c['width']>=44 and c['height']>=44 for c in metrics['controls']),metrics
             if width>=1080:
@@ -60,7 +60,11 @@ with contextlib.ExitStack() as stack:
             # their own controls, including tablet and narrow phone widths.
             assert page.locator('.deckTransport button').evaluate_all('''buttons=>buttons.every(button=>{
               const b=button.getBoundingClientRect();
-              return [...button.children].every(child=>{
+              if(!button.getAttribute('aria-label'))return false;
+              return [...button.children].filter(child=>{
+                const s=getComputedStyle(child);
+                return s.display!=='none' && s.visibility!=='hidden' && Number(s.opacity)>0;
+              }).every(child=>{
                 const c=child.getBoundingClientRect();
                 return c.left>=b.left+3 && c.right<=b.right-3 && c.top>=b.top+3 && c.bottom<=b.bottom-3;
               });

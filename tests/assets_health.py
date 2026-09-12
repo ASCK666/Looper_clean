@@ -14,13 +14,16 @@ EXPECTED_VISUALS = {
     "looper-ui/looper66-desktop-transport-square-3d62809d.webp",
     "looper-ui/looper66-mobile-transport-fbd6a0d3.webp",
     "looper-ui/looper66-crate-cassettes.webp",
-    "looper-ui/looper66-cassette-bay-d7d5e6d4.png",
+    "looper-ui/cassette-frame.svg",
+    "looper-ui/cassette-tape.svg",
+    "looper-ui/cassette-reel.svg",
+    "looper-ui/cassette-label.svg",
 }
 
 actual_visuals = {
     path.relative_to(ASSETS).as_posix()
     for path in ASSETS.rglob("*")
-    if path.is_file() and path.suffix.lower() in {".png", ".webp", ".jpg", ".jpeg", ".gif"}
+    if path.is_file() and path.suffix.lower() in {".png", ".webp", ".jpg", ".jpeg", ".gif", ".svg"}
 }
 unexpected = sorted(actual_visuals - EXPECTED_VISUALS)
 missing = sorted(EXPECTED_VISUALS - actual_visuals)

@@ -44,7 +44,10 @@ for rel in [
     "assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp",
     "assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp",
     "assets/looper-ui/looper66-crate-cassettes.webp",
-    "assets/looper-ui/looper66-cassette-bay-d7d5e6d4.png",
+    "assets/looper-ui/cassette-frame.svg",
+    "assets/looper-ui/cassette-tape.svg",
+    "assets/looper-ui/cassette-reel.svg",
+    "assets/looper-ui/cassette-label.svg",
 ]:
     require(f"file {rel}", (ROOT / rel).is_file())
 
