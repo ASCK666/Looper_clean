@@ -5,7 +5,7 @@ The regular run always writes current screenshots to test-artifacts, then
 compares against those references with a small cross-platform raster tolerance.
 """
 from pathlib import Path
-import contextlib, http.server, math, os, socketserver, threading
+import contextlib, http.server, os, socketserver, threading
 from PIL import Image, ImageChops, ImageStat
 try:
     from playwright.sync_api import sync_playwright
@@ -60,14 +60,12 @@ with contextlib.ExitStack() as stack:
             box = mechanism.bounding_box()
             assert abs(box['width']/box['height']-1.5) < .001
             assert page.evaluate('document.body.scrollWidth <= innerWidth+2')
-            # Empty must be a truly opaque cavity: changing the retired skin
-            # must not change a single pixel in the new self-contained mechanism.
-            interior = {'x':math.ceil(box['x'])+1, 'y':math.ceil(box['y'])+1,
-                        'width':math.floor(box['width'])-3, 'height':math.floor(box['height'])-3}
-            before = page.screenshot(clip=interior)
-            page.locator('.looper66Skin').evaluate("el=>el.style.visibility='hidden'")
-            assert before == page.screenshot(clip=interior), 'Baked-in cassette leaks through the cavity'
-            page.locator('.looper66Skin').evaluate("el=>el.style.visibility=''")
+            # 120927 retires the baked workstation skin entirely. This direct
+            # contract is stronger than comparing two GPU repaints through the
+            # new translucent blue-night glass: the old skin cannot participate
+            # in the composition and the cassette cavity itself is opaque.
+            assert page.locator('.looper66Skin').evaluate("el=>getComputedStyle(el).display==='none'")
+            assert mechanism.evaluate("el=>getComputedStyle(el).backgroundColor not in ['transparent','rgba(0, 0, 0, 0)']")
             assert page.locator('.cassetteBayForeground').is_visible()
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight','.cassetteLabel','.cassetteBeatName'):
                 assert not page.locator(selector).is_visible(), ('empty', selector)
