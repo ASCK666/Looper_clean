@@ -37,6 +37,24 @@ with contextlib.ExitStack() as stack:
             assert page.locator('#beat120927List').count()==1
             assert page.locator('#autoLooperToggle .deckRateVisualSegments i').count()==5
             assert not errors,errors
-            page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}.png'))
+            page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-empty.png'))
+
+            # Review the approved mockup state with a real loaded deck and real
+            # PLAY transition, not synthetic .loaded/.playing classes.
+            page.evaluate("""() => {
+              const buffer=new AudioBuffer({length:44100*156,sampleRate:44100,numberOfChannels:1});
+              commitLoadedTrack({id:'120927-review',name:'MIDNIGHT SESSION.WAV',created:Date.now(),source:'user-import'},buffer);
+            }""")
+            page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('loaded')")
+            page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-loaded.png'))
+            page.locator('#playBeat').click()
+            page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('playing')")
+            page.wait_for_timeout(250)
+            page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-playing.png'))
+            if label=='desktop':
+                page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/'120927-cassette-playing.png'))
+                page.locator('.deckTransport').screenshot(path=str(ARTIFACTS/'120927-transport-playing.png'))
+            page.locator('#stopBeat').click()
+            assert not errors,errors
             page.close()
-print('OK: 120927 deck render captured at desktop and mobile')
+print('OK: 120927 deck render captured empty, loaded and playing at desktop/mobile')
