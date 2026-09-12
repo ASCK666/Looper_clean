@@ -34,7 +34,8 @@ def capture(page, name):
         diff = ImageChops.difference(actual, expected)
         # Small font/antialias variation is OK; a veil or shifted asset is not.
         assert max(ImageStat.Stat(diff).mean) < 2.0, (name, ImageStat.Stat(diff).mean)
-        changed = sum(max(pixel) > 40 for pixel in diff.getdata())
+        red, green, blue = diff.split()
+        changed = sum(ImageChops.lighter(ImageChops.lighter(red, green), blue).histogram()[41:])
         assert changed/(actual.width*actual.height) < .015, (name, changed)
 
 with contextlib.ExitStack() as stack:

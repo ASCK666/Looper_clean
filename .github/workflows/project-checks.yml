@@ -34,8 +34,6 @@ jobs:
         run: python -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); print('CHROMIUM=' + p.chromium.executable_path); p.stop()" >> "$GITHUB_ENV"
 
       - name: Run maintained checks
-        env:
-          UPDATE_CASSETTE_REFERENCES: "1"
         run: python tools/test_all.py
 
       - name: Upload render screenshots
