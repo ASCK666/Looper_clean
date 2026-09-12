@@ -54,6 +54,7 @@ with contextlib.ExitStack() as stack:
             page.goto(f'http://127.0.0.1:{server.server_address[1]}/index.html', wait_until='networkidle')
             page.wait_for_function('window.__SP?.ready === true')
             page.wait_for_function('window.__SP?.ui120927Ready === true')
+            page.wait_for_function('window.__SP?.ui120927CssReady === true')
             page.wait_for_function("[...document.querySelectorAll('.cassetteMechanism img')].every(i=>i.complete && i.naturalWidth>0)")
             mechanism = page.locator('.cassetteMechanism')
             box = mechanism.bounding_box()
