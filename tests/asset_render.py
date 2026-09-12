@@ -78,7 +78,10 @@ with contextlib.ExitStack() as stack:
         assert play['height']>stop['height'] and stop['width']/stop['height']<1.3,info
         assert info['transportOrder']==['stopBeat','playBeat','autoLooperToggle'],info
         assert info['readoutRateFontSize']<=27.01,info
-        assert all('linear-gradient' in style['backgroundImage'] and 'inset' in style['boxShadow'] for style in info['transportStyles']),info
+        # 090927 uses native transparent hotspots over a dedicated transport
+        # asset. The former gradient assertion contradicted that branch's CSS.
+        assert all(style == {'background':'rgba(0, 0, 0, 0)', 'backgroundImage':'none', 'boxShadow':'none'} for style in info['transportStyles']),info
+        assert page.locator('.deckTransportVisual').evaluate('el=>getComputedStyle(el).backgroundImage').endswith('looper66-desktop-transport-square-3d62809d.webp")')
         transport_left=min(rect['x'] for rect in info['transport'])
         transport_right=max(rect['x']+rect['width'] for rect in info['transport'])
         cassette_left=info['workspace']['x']+info['workspace']['width']*.423

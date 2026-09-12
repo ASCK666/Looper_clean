@@ -94,11 +94,14 @@ with contextlib.ExitStack() as stack:
             for original, current in zip(geometry, metrics):
                 assert all(abs(original[k]-current[k])<.001 for k in ('x','y','w','h')), (width,original,current)
             if label in ('desktop','mobile'): capture(page, f'{label}-loaded')
+            # Compare layout properties, not transformed reel bounding boxes.
+            layout = mechanism.evaluate('el=>[...el.children].map(c=>[c.offsetLeft,c.offsetTop,c.offsetWidth,c.offsetHeight])')
             # Use actual PLAY/STOP buttons: no synthetic .playing class.
             page.locator('#playBeat').click()
             page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('playing')")
             page.wait_for_function("Math.abs(+getComputedStyle(document.querySelector('.cassetteCssLight')).opacity-.86)<.01")
             assert mechanism.bounding_box() == box
+            assert mechanism.evaluate('el=>[...el.children].map(c=>[c.offsetLeft,c.offsetTop,c.offsetWidth,c.offsetHeight])') == layout
             assert page.locator('.cassetteReel').evaluate_all("els=>els.every(el=>getComputedStyle(el).animationPlayState==='running')")
             transforms = page.locator('.cassetteReel').evaluate_all('els=>els.map(el=>getComputedStyle(el).transform)')
             page.wait_for_timeout(180)
@@ -109,6 +112,7 @@ with contextlib.ExitStack() as stack:
             page.locator('#stopBeat').click()
             page.wait_for_function("!document.querySelector('.cassetteDeck').classList.contains('playing')")
             assert mechanism.bounding_box() == box
+            assert mechanism.evaluate('el=>[...el.children].map(c=>[c.offsetLeft,c.offsetTop,c.offsetWidth,c.offsetHeight])') == layout
             assert page.locator('.cassetteReel').evaluate_all("els=>els.every(el=>getComputedStyle(el).animationPlayState==='paused')")
             page.evaluate("commitLoadedTrack({name:'A VERY LONG BEAT NAME '.repeat(12)},deckBuffer)")
             assert page.locator('#cassetteBeatName').evaluate('el=>el.getBoundingClientRect().width < el.parentElement.getBoundingClientRect().width')
