@@ -60,7 +60,11 @@ with contextlib.ExitStack() as stack:
             # their own controls, including tablet and narrow phone widths.
             assert page.locator('.deckTransport button').evaluate_all('''buttons=>buttons.every(button=>{
               const b=button.getBoundingClientRect();
-              return [...button.children].every(child=>{
+              if(!button.getAttribute('aria-label'))return false;
+              return [...button.children].filter(child=>{
+                const s=getComputedStyle(child);
+                return s.display!=='none' && s.visibility!=='hidden' && Number(s.opacity)>0;
+              }).every(child=>{
                 const c=child.getBoundingClientRect();
                 return c.left>=b.left+3 && c.right<=b.right-3 && c.top>=b.top+3 && c.bottom<=b.bottom-3;
               });
