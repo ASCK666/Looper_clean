@@ -1,6 +1,6 @@
 "use strict";
 
-window.__SP={version:"120927-ui-migration",ready:false,errors:[]};
+window.__SP={version:"120927-mockup-deck",ready:false,errors:[],ui120927CssReady:true};
 window.__SP.report=(scope,error)=>{
   const message=error?.message||String(error||"Unknown error");
   const item={scope,message,time:new Date().toISOString()};
@@ -10,40 +10,6 @@ window.__SP.report=(scope,error)=>{
 };
 window.addEventListener("error",event=>window.__SP.report("RUNTIME",event.error||event.message));
 window.addEventListener("unhandledrejection",event=>window.__SP.report("PROMISE",event.reason));
-
-// Branch 120927 is a visual migration over the maintained Looper engine.
-// Load the broad migration then its review-tuning sheet in deterministic DOM
-// order. Readiness is exposed only after both have actually loaded.
-{
-  let pendingCss=0;
-  const markCssLoaded=()=>{
-    pendingCss--;
-    if(pendingCss<=0)window.__SP.ui120927CssReady=true;
-  };
-  const addCss=(href,key)=>{
-    if(document.querySelector(`link[data-${key}="1"]`))return;
-    pendingCss++;
-    const link=document.createElement("link");
-    link.rel="stylesheet";
-    link.href=href;
-    link.dataset[key]="1";
-    link.onload=markCssLoaded;
-    link.onerror=()=>window.__SP.report("LOOPER 120927 CSS",new Error(`${href} failed to load`));
-    document.head.appendChild(link);
-  };
-  addCss("./css/looper-120927.css","looper120927");
-  addCss("./css/looper-120927-tuning.css","looper120927Tuning");
-  if(pendingCss===0)window.__SP.ui120927CssReady=true;
-}
-
-if(location.protocol!=="about:" && location.protocol!=="data:" && !document.querySelector('script[data-looper-120927="1"]')){
-  const script=document.createElement("script");
-  script.src="./js/looper-120927.js";
-  script.async=false;
-  script.dataset.looper120927="1";
-  script.onerror=()=>window.__SP.report("LOOPER 120927",new Error("120927 migration layer failed to load"));
-  document.body.appendChild(script);
-}
 
 document.querySelectorAll("[data-range-knob]").forEach(knob=>{
   const input=document.getElementById(knob.dataset.rangeKnob);
@@ -78,8 +44,6 @@ if("caches" in window){
     .catch(error=>console.warn("Scratch Practice cache cleanup failed:",error));
 }
 
-// looper-next feature modules load after the maintained defer scripts so they
-// can extend the existing Chopper engine without changing its base files.
 window.addEventListener("DOMContentLoaded",()=>{
   if(location.protocol==="about:" || location.protocol==="data:")return;
   if(window.ChopperWaveSlices || document.querySelector('script[data-chopper-wave-slices="1"]'))return;
@@ -90,9 +54,6 @@ window.addEventListener("DOMContentLoaded",()=>{
   document.body.appendChild(script);
 },{once:true});
 
-// Keep the user's persisted KICK / SNARE / HAT folders authoritative. The
-// embedded boom-bap kit is installed only as the engine fallback once all defer
-// scripts (including the IndexedDB drum-library restore wrapper) are ready.
 window.addEventListener("DOMContentLoaded",()=>{
   if(location.protocol==="about:" || location.protocol==="data:")return;
   if(globalThis.LooperDefaultDrumKit?.installed || document.querySelector('script[data-default-drum-kit="1"]'))return;
