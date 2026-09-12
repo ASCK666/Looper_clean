@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
+  <defs>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#315b78" stop-opacity=".54"/><stop offset=".36" stop-color="#173246" stop-opacity=".34"/><stop offset="1" stop-color="#07131d" stop-opacity=".58"/></linearGradient>
+  </defs>
+  <!-- one static coherent asset: opening gap + door + full-size glass -->
+  <rect x="18" y="18" width="864" height="564" rx="18" fill="none" stroke="#050708" stroke-width="18"/>
+  <rect x="31" y="31" width="838" height="538" rx="12" fill="url(#glass)" stroke="#52616a" stroke-width="3"/>
+  <!-- subtle reflections only; no screws on glass -->
+  <path d="M48 45h78L36 150V87Z" fill="#9fcbe3" opacity=".18"/>
+  <path d="M116 43h49L52 187v-39Z" fill="#d7eef7" opacity=".08"/>
+  <path d="M829 79h18v408h-18" fill="#020507" opacity=".24"/>
+  <!-- lower edge/latch relief kept inside door body, not on glass -->
+  <path d="M380 557h140l-12 19H392Z" fill="#15191b" stroke="#080a0b" stroke-width="3"/>
+</svg>
