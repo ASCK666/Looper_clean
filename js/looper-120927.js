@@ -11,6 +11,105 @@
   let clockWasPlaying=false;
   let clockTrackId=null;
 
+  function ensure120927Markup(){
+    const deck=$("looperDropzoneBtn");
+    if(!deck || deck.dataset.ui120927==="1")return;
+    deck.dataset.ui120927="1";
+
+    const readout=deck.querySelector(".deckReadout");
+    const state=readout?.querySelector(".deckReadoutState");
+    const speedReadout=$("deckSpeedReadout");
+    if(readout){
+      const time=document.createElement("div");
+      time.className="deckReadoutTime";
+      time.innerHTML='<small>TIME:</small><span id="deckTimeCurrent">00:00</span><span>/</span><span id="deckTimeDuration">00:00</span>';
+
+      const meter=document.createElement("div");
+      meter.className="deckReadoutMeter";
+      meter.setAttribute("aria-hidden","true");
+      meter.innerHTML='<i id="deckProgressFill"></i>';
+
+      const rateRow=document.createElement("div");
+      rateRow.className="deckReadoutRateRow";
+      const rateLabel=document.createElement("small");
+      rateLabel.textContent="RATE:";
+      rateRow.append(rateLabel);
+      if(speedReadout)rateRow.append(speedReadout);
+
+      readout.append(time,meter,rateRow);
+      if(state){
+        const label=state.querySelector("small");
+        if(label)label.textContent="STATE:";
+      }
+    }
+
+    const utility=document.createElement("div");
+    utility.className="deckUtilityPanel";
+    utility.innerHTML=`
+      <div class="deckVolumeControl">
+        <label for="deckVolume">VOLUME</label>
+        <span class="deckVolumeKnob" aria-hidden="true"></span>
+        <input id="deckVolume" type="range" min="0" max="100" step="1" value="100" aria-label="Volume du lecteur">
+      </div>
+      <div class="deckJack" aria-label="Entrée micro décorative"><span>MIC</span><i aria-hidden="true"></i></div>
+      <div class="deckJack" aria-label="Prise casque décorative"><span>PHONES</span><i aria-hidden="true"></i></div>`;
+    deck.appendChild(utility);
+
+    const importDock=deck.querySelector(".looperImportDock");
+    if(importDock){
+      importDock.querySelector("#importFolderBtn strong").textContent="IMPORT LIBRARY";
+      importDock.querySelector("#importBeatsBtn strong").textContent="IMPORT BEAT";
+      const title=document.createElement("div");
+      title.className="deckImportTitle";
+      title.textContent="IMPORT SAMPLES";
+      const drop=document.createElement("div");
+      drop.className="deckDropHint";
+      drop.innerHTML="<span>DRAG &amp; DROP<br>AUDIO FILES HERE</span>";
+      const meta=document.createElement("div");
+      meta.className="deckImportMeta";
+      meta.textContent="WAV  MP3  M4A  AAC  OGG  FLAC  WEBM  •  MAX 512MB";
+      importDock.prepend(title,drop);
+      importDock.appendChild(meta);
+    }
+
+    const autoLabel=deck.querySelector("#autoLooperToggle .deckKeyLabel");
+    if(autoLabel)autoLabel.textContent="SPEED AUTO";
+
+    const cratePanel=document.querySelector("#looper .beatCratePanel");
+    if(cratePanel){
+      const left=document.createElement("section");
+      left.className="crate120927Panel";
+      left.setAttribute("aria-label","Crates de beats");
+      const leftTitle=document.createElement("h3");
+      leftTitle.className="crate120927Title";
+      leftTitle.textContent="CRATES";
+      const filters=document.createElement("div");
+      filters.id="crate120927Filters";
+      const countWrap=document.createElement("div");
+      countWrap.className="crate120927Count";
+      const existingCount=$("crateCount");
+      if(existingCount)countWrap.append(existingCount);
+      left.append(leftTitle,filters,countWrap);
+
+      const right=document.createElement("section");
+      right.className="beat120927Panel";
+      right.setAttribute("aria-label","Liste des beats");
+      const rightTitle=document.createElement("h3");
+      rightTitle.className="beat120927Title";
+      rightTitle.textContent="BEATS";
+      const header=document.createElement("div");
+      header.className="beat120927Header";
+      header.innerHTML="<span>#</span><span>NAME</span><span>LENGTH</span>";
+      const list=document.createElement("div");
+      list.id="beat120927List";
+      list.setAttribute("role","list");
+      right.append(rightTitle,header,list);
+      cratePanel.append(left,right);
+    }
+  }
+
+  ensure120927Markup();
+
   const formatClock=value=>{
     const seconds=Math.max(0,Math.floor(Number(value)||0));
     const minutes=Math.floor(seconds/60);
