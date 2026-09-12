@@ -19,6 +19,8 @@ if(!document.querySelector('link[data-looper-120927="1"]')){
   link.rel="stylesheet";
   link.href="./css/looper-120927.css";
   link.dataset.looper120927="1";
+  link.onload=()=>{ window.__SP.ui120927CssReady=true; };
+  link.onerror=()=>window.__SP.report("LOOPER 120927 CSS",new Error("120927 stylesheet failed to load"));
   document.head.appendChild(link);
 }
 if(location.protocol!=="about:" && location.protocol!=="data:" && !document.querySelector('script[data-looper-120927="1"]')){
