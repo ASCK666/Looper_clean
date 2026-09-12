@@ -1,0 +1,847 @@
+/* 120927 visual migration layer.
+   Goal: reproduce the approved graphite / cassette-deck mockup while preserving
+   the existing Looper66 HTML/JS state model and controls. */
+
+#looper {
+  --v3-amber:#ffa31a;
+  --v3-amber-soft:#d77c09;
+  --v3-screen:#060604;
+  --v3-panel:#141617;
+  --v3-panel-2:#1c1f20;
+  --v3-edge:#53575a;
+  --v3-edge-dark:#070809;
+  --v3-text:#d8d8d4;
+  --v3-muted:#9ea0a0;
+  --v3-wood-1:#6b3419;
+  --v3-wood-2:#4a2413;
+  --v3-glow-r:255;
+  --v3-glow-g:158;
+  --v3-glow-b:25;
+}
+
+#looper .looper66Shell {
+  width:min(100%,1180px);
+  margin-inline:auto;
+  background:transparent;
+}
+
+#looper .looper66Workspace {
+  position:relative;
+  width:100%;
+  aspect-ratio:4/3;
+  overflow:hidden;
+  background:
+    repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 5px),
+    repeating-linear-gradient(90deg,rgba(31,9,2,.18) 0 2px,transparent 2px 58px),
+    linear-gradient(180deg,#74401f 0%,#5a2d17 55%,#3c1e10 100%);
+}
+
+/* Pixel-art rear cables sit behind the machine and never intercept input. */
+#looper .looper66Workspace::before {
+  content:"";
+  position:absolute;
+  z-index:0;
+  top:0;
+  left:8%;
+  right:8%;
+  height:13%;
+  background:url("../assets/looper-ui/looper66-rear-cables.svg") top center/100% 100% no-repeat;
+  pointer-events:none;
+}
+
+/* Graphite machine chassis. */
+#looper .looper66Workspace::after {
+  content:"";
+  position:absolute;
+  z-index:1;
+  top:8.5%;
+  right:2.5%;
+  bottom:3.5%;
+  left:2.5%;
+  border:2px solid #0a0b0b;
+  border-radius:8px;
+  background:
+    linear-gradient(115deg,rgba(255,255,255,.035),transparent 24%,rgba(0,0,0,.12) 67%),
+    var(--deck-texture) center/160px repeat,
+    #2a2d2e;
+  box-shadow:
+    inset 0 0 0 2px #55595a,
+    inset 0 0 0 5px #1a1c1d,
+    inset 0 0 26px #080909,
+    0 7px 0 #131313,
+    0 12px 18px rgba(0,0,0,.34);
+  pointer-events:none;
+}
+
+#looper .looper66Skin { display:none!important; }
+#looper .looperMainPanel,
+#looper .beatCratePanel {
+  position:absolute!important;
+  z-index:3!important;
+  inset:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  pointer-events:none;
+}
+#looper .cassetteDeck { position:absolute;inset:0;pointer-events:auto; }
+#looper .cassetteDeck > * { position:absolute; }
+
+/* Shared physical panel language. */
+#looper :is(.deckReadout,.deckPitchModule,.deckUtilityPanel,.looperImportDock,.deckTransport,.crate120927Panel,.beat120927Panel) {
+  border:1px solid #0b0c0c;
+  border-radius:5px;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.025),transparent 24%),
+    var(--deck-texture) center/128px repeat,
+    var(--v3-panel);
+  box-shadow:
+    inset 0 1px #54585a,
+    inset 0 0 0 3px #1d2021,
+    inset 0 0 14px rgba(0,0,0,.6),
+    0 1px 0 #080909;
+}
+
+/* ---------- Dynamic readout ---------- */
+#looper .deckReadout {
+  top:14.1%;
+  left:5.1%;
+  width:24.8%;
+  height:28.3%;
+  overflow:hidden;
+  color:var(--v3-amber);
+  font-family:var(--font-mono);
+  background:
+    repeating-linear-gradient(0deg,rgba(255,169,31,.017) 0 1px,transparent 1px 3px),
+    radial-gradient(ellipse at 52% 42%,rgba(255,142,0,.035),transparent 70%),
+    #040402;
+  box-shadow:
+    inset 0 0 0 3px #111,
+    inset 0 0 20px #000,
+    0 0 0 1px #4a4c4d;
+  pointer-events:none;
+}
+#looper .deckReadoutTrack {
+  position:absolute;
+  top:9%;
+  left:9%;
+  width:82%;
+  min-height:0;
+  max-height:none;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:var(--v3-amber);
+  font:500 clamp(10px,1.42vw,18px)/1.22 var(--font-mono);
+  letter-spacing:.02em;
+  text-align:left;
+  text-decoration:none;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  overflow:hidden;
+  pointer-events:auto;
+}
+#looper .deckReadoutTrack::before {
+  content:"TRACK:";
+  display:block;
+  margin-bottom:.35em;
+  font-size:.76em;
+  color:#ffb238;
+}
+#looper .deckReadoutState {
+  position:absolute;
+  top:34%;
+  left:9%;
+  right:auto;
+  bottom:auto;
+  width:82%;
+  display:flex;
+  align-items:center;
+  gap:8%;
+  padding:0;
+  border:0;
+}
+#looper .deckReadoutState small,
+#looper .deckReadoutState strong {
+  color:var(--v3-amber);
+  font:500 clamp(8px,.95vw,13px)/1 var(--font-mono);
+}
+#looper .cassetteDeck.playing #deckTransportState {
+  text-shadow:0 0 7px rgba(255,154,20,.36);
+}
+#looper .deckReadoutTime {
+  position:absolute;
+  top:50%;
+  left:9%;
+  width:82%;
+  display:flex;
+  align-items:center;
+  gap:.45em;
+  color:var(--v3-amber);
+  font:500 clamp(8px,.94vw,13px)/1 var(--font-mono);
+}
+#looper .deckReadoutTime small { color:var(--v3-amber);font:inherit; }
+#looper .deckReadoutMeter {
+  position:absolute;
+  top:62%;
+  left:9%;
+  width:82%;
+  height:7%;
+  overflow:hidden;
+  border:1px solid #9b650c;
+  background:#11100a;
+  box-shadow:inset 0 0 0 1px #020200;
+}
+#looper .deckReadoutMeter > i {
+  display:block;
+  width:0%;
+  height:100%;
+  background:linear-gradient(90deg,#ffb02e,#ff9414);
+  box-shadow:0 0 8px rgba(255,155,20,.25);
+}
+#looper .deckReadoutRateRow {
+  position:absolute;
+  top:77%;
+  left:9%;
+  width:82%;
+  display:flex;
+  align-items:center;
+  gap:11%;
+  color:var(--v3-amber);
+  font:500 clamp(9px,1vw,14px)/1 var(--font-mono);
+}
+#looper .deckReadoutRateRow small { color:var(--v3-amber);font:inherit; }
+#looper .deckReadoutRate {
+  position:static;
+  color:var(--v3-amber);
+  font:500 inherit;
+}
+#looper .deckReadoutProgress,
+#looper .deckReadoutSpeed { display:none!important; }
+
+/* ---------- Utility strip: volume + decorative jacks ---------- */
+#looper .deckUtilityPanel {
+  top:44.2%;
+  left:5.1%;
+  width:24.8%;
+  height:10.7%;
+  display:grid;
+  grid-template-columns:1.35fr 1fr 1fr;
+  align-items:center;
+  padding:0 2.6%;
+  color:var(--v3-text);
+  font:500 clamp(8px,.82vw,12px)/1 var(--font-mono);
+}
+#looper .deckVolumeControl,
+#looper .deckJack {
+  position:relative;
+  min-width:0;
+  height:100%;
+  display:grid;
+  justify-items:center;
+  align-content:center;
+  gap:7%;
+}
+#looper .deckVolumeControl { border-right:1px solid #5b5d5d; }
+#looper .deckJack + .deckJack { border-left:1px solid #5b5d5d; }
+#looper .deckVolumeControl label,
+#looper .deckJack span { letter-spacing:.04em; }
+#looper .deckVolumeKnob {
+  position:relative;
+  width:44%;
+  aspect-ratio:1;
+  border-radius:50%;
+  border:2px solid #070808;
+  background:
+    radial-gradient(circle at 42% 36%,#3b3e3f 0 17%,#222425 18% 48%,#0b0c0d 49% 67%,#242627 68% 100%);
+  box-shadow:inset 0 1px #707272,0 2px 4px #000;
+  transform:rotate(var(--deck-volume-angle,-126deg));
+}
+#looper .deckVolumeKnob::after {
+  content:"";
+  position:absolute;
+  top:5%;
+  left:48%;
+  width:7%;
+  height:31%;
+  border-radius:2px;
+  background:var(--v3-amber);
+  box-shadow:0 0 4px rgba(255,157,20,.35);
+}
+#looper #deckVolume {
+  position:absolute;
+  left:18%;
+  bottom:9%;
+  width:64%;
+  height:58%;
+  opacity:0;
+  cursor:pointer;
+}
+#looper .deckJack i {
+  display:block;
+  width:38%;
+  aspect-ratio:1;
+  border-radius:50%;
+  border:3px solid #111;
+  background:radial-gradient(circle,#030303 0 30%,#6b6257 31% 40%,#18191a 41% 60%,#a79683 61% 69%,#1a1b1b 70%);
+  box-shadow:inset 0 1px #b2aa9f,0 2px 3px #000;
+}
+
+/* ---------- Pitch ---------- */
+#looper .deckPitchModule {
+  top:13.9%;
+  left:31.1%;
+  width:8.2%;
+  height:41.1%;
+  overflow:visible;
+  isolation:isolate;
+}
+#looper .deckPitchHeader {
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+#looper .deckPitchHeader label {
+  position:absolute;
+  top:4%;
+  left:0;
+  width:100%;
+  opacity:1;
+  color:#d3d3cf;
+  font:500 clamp(10px,1.05vw,15px)/1 var(--font-mono);
+  text-align:center;
+}
+#looper .deckPitchHeader output {
+  position:absolute;
+  left:10%;
+  bottom:4%;
+  width:80%;
+  opacity:1;
+  color:var(--v3-amber);
+  background:#111312;
+  border:1px solid #313334;
+  padding:7% 0;
+  font:500 clamp(8px,.92vw,13px)/1 var(--font-mono);
+  text-align:center;
+  box-shadow:inset 0 0 8px #000;
+}
+#looper .deckPitchScale {
+  position:absolute;
+  top:14%;
+  right:5%;
+  bottom:18%;
+  left:54%;
+  opacity:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  align-items:flex-end;
+  color:#c7c7c3;
+  font:500 clamp(7px,.72vw,10px)/1 var(--font-mono);
+  pointer-events:none;
+}
+#looper #deckPitch {
+  position:absolute;
+  z-index:5;
+  top:15%;
+  left:21%;
+  width:36%;
+  height:62%;
+  margin:0;
+  opacity:1;
+  appearance:none;
+  -webkit-appearance:none;
+  writing-mode:vertical-lr;
+  direction:rtl;
+  background:transparent!important;
+  cursor:ns-resize;
+}
+#looper #deckPitch::-webkit-slider-runnable-track {
+  width:8px;
+  height:100%;
+  border-radius:5px;
+  background:#050606;
+  box-shadow:inset 0 0 0 1px #3c3f40;
+}
+#looper #deckPitch::-webkit-slider-thumb {
+  width:36px;
+  height:18px;
+  margin-left:-14px;
+  border:1px solid #090909;
+  border-radius:2px;
+  background:linear-gradient(#505355 0 28%,#151617 29% 45%,#f39b18 46% 56%,#151617 57% 72%,#484b4c 73%);
+  box-shadow:0 2px 4px #000,inset 0 1px #777;
+  -webkit-appearance:none;
+}
+#looper #deckPitch::-moz-range-track {
+  width:8px;height:100%;border:0;border-radius:5px;background:#050606;box-shadow:inset 0 0 0 1px #3c3f40;
+}
+#looper #deckPitch::-moz-range-thumb {
+  width:36px;height:18px;border:1px solid #090909;border-radius:2px;background:#3c3f40;box-shadow:0 2px 4px #000;
+}
+#looper .deckPitchModule::after { display:none!important; }
+#looper .deckAutoKey { display:none!important; }
+
+/* ---------- Cassette: reels live behind the cassette shell ---------- */
+#looper .cassetteMechanism {
+  top:13.4%;
+  left:41.2%;
+  width:37.5%;
+  height:auto;
+  aspect-ratio:3/2;
+  overflow:hidden;
+  border:0;
+  background:#080a0b;
+  box-shadow:inset 0 0 24px #000;
+  isolation:isolate;
+  container-type:inline-size;
+  pointer-events:none;
+}
+#looper .cassetteMechanism > * { position:absolute;pointer-events:none;user-select:none; }
+#looper .cassetteTape,
+#looper .cassetteLabel,
+#looper .cassetteBayForeground { inset:0;width:100%;height:100%;display:block; }
+/* The rotating reels are deliberately behind the cassette body. */
+#looper .cassetteReel { z-index:1;top:38.333333%;width:14.222222%;aspect-ratio:1;transform-origin:50% 50%; }
+#looper .cassetteReelLeft { left:24.888889%; }
+#looper .cassetteReelRight { left:60.888889%; }
+#looper .cassetteTape { z-index:2; }
+#looper .cassetteLabel { z-index:3; }
+#looper .cassetteBeatName {
+  z-index:4;
+  top:18.5%;
+  left:20%;
+  width:60%;
+  height:7.5%;
+  margin:0;
+  overflow:hidden;
+  color:#171a1b;
+  font:700 3.2cqw/1.4 var(--font-mono);
+  text-align:center;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  letter-spacing:.01em;
+}
+#looper .cassetteCssLight {
+  z-index:5;
+  inset:8% 5.5% 10%;
+  opacity:0;
+  background:radial-gradient(ellipse at 50% 42%,rgba(80,127,163,.11),transparent 66%);
+  box-shadow:inset 0 0 15px rgba(62,113,151,.14);
+  transition:opacity .22s linear;
+}
+#looper .cassetteBayForeground { z-index:6; }
+#looper .cassetteDeck.loaded .cassetteCssLight { opacity:.32; }
+#looper .cassetteDeck.playing .cassetteCssLight { opacity:.6; }
+
+/* ---------- Import panel ---------- */
+#looper .looperImportDock {
+  top:13.8%;
+  left:80.5%;
+  width:16.2%;
+  height:41.2%;
+  display:grid;
+  grid-template-rows:auto 1fr auto auto auto;
+  gap:3%;
+  padding:2.2% 1.4% 1.5%;
+  color:var(--v3-text);
+  pointer-events:auto;
+}
+#looper .deckImportTitle {
+  font:600 clamp(9px,1vw,14px)/1 var(--font-mono);
+  letter-spacing:.03em;
+  text-align:left;
+}
+#looper .deckDropHint {
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:8%;
+  min-height:0;
+  border:1px dashed #7f8181;
+  border-radius:3px;
+  color:#b7b8b6;
+  font:500 clamp(7px,.78vw,11px)/1.45 var(--font-mono);
+  text-align:center;
+  pointer-events:none;
+}
+#looper .deckDropHint::before {
+  content:"";
+  width:25%;
+  aspect-ratio:1.25;
+  border-radius:2px;
+  background:linear-gradient(#bbb,#999);
+  clip-path:polygon(0 18%,35% 18%,43% 0,100% 0,100% 100%,0 100%);
+  opacity:.75;
+}
+#looper .deckImportMeta {
+  color:#a9aaa7;
+  font:500 clamp(6px,.67vw,9px)/1.45 var(--font-mono);
+  text-align:left;
+  letter-spacing:.03em;
+}
+
+/* ---------- Shared illuminated physical buttons ---------- */
+#looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton) {
+  --light-strength:0;
+  --light-r:var(--v3-glow-r);
+  --light-g:var(--v3-glow-g);
+  --light-b:var(--v3-glow-b);
+  position:relative;
+  overflow:visible;
+  border:1px solid #090a0a;
+  border-radius:4px;
+  color:#e5e5df;
+  background:
+    linear-gradient(#343738 0 5%,#252728 6% 64%,#151718 65% 100%);
+  box-shadow:
+    inset 0 1px #5f6263,
+    inset 0 -3px #090a0a,
+    inset 0 0 0 3px #1a1c1d,
+    0 2px 4px #000;
+  isolation:isolate;
+  cursor:pointer;
+}
+#looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton)::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:-24% -18%;
+  opacity:calc(var(--light-strength) * .23);
+  border-radius:18%;
+  background:radial-gradient(ellipse at 50% 52%,rgba(var(--light-r),var(--light-g),var(--light-b),.42),rgba(var(--light-r),var(--light-g),var(--light-b),.08) 44%,transparent 72%);
+  filter:blur(5px);
+  mix-blend-mode:screen;
+  pointer-events:none;
+  transition:opacity .15s linear;
+}
+#looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton)::after {
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset:5%;
+  opacity:calc(var(--light-strength) * .72);
+  border-radius:3px;
+  background:radial-gradient(ellipse at 50% 42%,rgba(255,205,94,.34),rgba(255,151,20,.12) 48%,transparent 78%);
+  box-shadow:inset 0 0 8px rgba(255,174,38,.12);
+  mix-blend-mode:screen;
+  pointer-events:none;
+  transition:opacity .15s linear;
+}
+#looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton):is(:hover,:focus-visible) { --light-strength:.24; }
+#looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton):active { --light-strength:.52;transform:translateY(1px); }
+#looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton):focus-visible {
+  outline:2px solid #ffac35!important;
+  outline-offset:3px!important;
+}
+
+#looper .deckLoadKey {
+  width:100%;
+  min-height:44px;
+  padding:0 4%;
+  font:700 clamp(8px,.85vw,12px)/1 var(--font-mono);
+}
+#looper .deckLoadKey strong { position:relative;z-index:1;opacity:1;color:inherit;font:inherit; }
+
+/* ---------- Transport ---------- */
+#looper .deckTransportVisual { display:none!important; }
+#looper .deckTransport {
+  top:39.3%;
+  left:41.2%;
+  width:37.5%;
+  height:15.7%;
+  display:grid;
+  grid-template-columns:28fr 40fr 32fr;
+  gap:2.2%;
+  align-items:stretch;
+  padding:1.25%;
+  pointer-events:auto;
+  overflow:visible;
+}
+#looper .deckHotspot {
+  width:100%;
+  height:100%;
+  min-width:44px;
+  min-height:44px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:8%;
+  font-family:var(--font-mono);
+}
+#looper .deckKeySymbol {
+  position:relative;
+  z-index:1;
+  width:22%;
+  height:auto;
+  opacity:1;
+  fill:#e9e9e4;
+}
+#looper .deckKeyLabel {
+  position:relative;
+  z-index:1;
+  opacity:1;
+  color:#e8e8e2;
+  font:700 clamp(8px,.95vw,13px)/1 var(--font-mono);
+  letter-spacing:.02em;
+}
+#looper .deckKeyCaption { display:none; }
+#looper #playBeat {
+  --light-strength:.10;
+  background:linear-gradient(#8e571b 0 5%,#6f451b 6% 64%,#3e2817 65% 100%);
+  border-color:#4c2b0e;
+}
+#looper #playBeat::after {
+  opacity:calc(var(--light-strength) * .95);
+  background:radial-gradient(ellipse at 50% 42%,rgba(255,223,134,.58),rgba(255,157,21,.28) 42%,rgba(255,132,5,.10) 66%,transparent 82%);
+}
+#looper .cassetteDeck.playing #playBeat {
+  --light-strength:.86;
+  color:#14120d;
+  background:linear-gradient(#ffc457 0 5%,#ffa421 6% 66%,#c86e08 67% 100%);
+  box-shadow:inset 0 1px #ffe6a6,inset 0 -3px #713800,inset 0 0 0 3px #e38108,0 2px 4px #000;
+}
+#looper .cassetteDeck.playing #playBeat .deckKeySymbol { fill:#211607; }
+#looper .cassetteDeck.playing #playBeat .deckKeyLabel { color:#17130c; }
+#looper .cassetteDeck:not(.playing).loaded #stopBeat { --light-strength:.08; }
+#looper #autoLooperToggle {
+  display:grid;
+  grid-template-columns:1fr;
+  grid-template-rows:auto 1fr;
+  align-content:center;
+  padding:8% 7%;
+}
+#looper #autoLooperToggle .deckKeySymbol { display:none; }
+#looper #autoLooperToggle .deckKeyLabel {
+  align-self:end;
+  font-size:clamp(7px,.78vw,11px);
+}
+#looper .deckRateVisualSegments {
+  position:relative;
+  z-index:1;
+  top:auto;
+  left:auto;
+  width:100%;
+  height:auto;
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:7%;
+  align-items:end;
+}
+#looper .deckRateVisualSegments i {
+  position:relative;
+  display:block;
+  width:100%;
+  aspect-ratio:1;
+  border:1px solid #4e3717;
+  border-radius:50%;
+  background:#30210e;
+  box-shadow:inset 0 1px #60451e;
+}
+#looper .deckRateVisualSegments i::after {
+  content:attr(data-level);
+  position:absolute;
+  top:135%;
+  left:50%;
+  transform:translateX(-50%);
+  color:#d6d6d2;
+  font:500 clamp(6px,.65vw,9px)/1 var(--font-mono);
+}
+#looper .deckRateHotspot[data-speed-level="1"] { --light-strength:.16; }
+#looper .deckRateHotspot[data-speed-level="2"] { --light-strength:.22; }
+#looper .deckRateHotspot[data-speed-level="3"] { --light-strength:.30; }
+#looper .deckRateHotspot[data-speed-level="4"] { --light-strength:.38; }
+#looper .deckRateHotspot[data-speed-level="5"] { --light-strength:.48; }
+#looper .deckRateHotspot[data-speed-level="1"] .deckRateVisualSegments i:nth-child(-n+1),
+#looper .deckRateHotspot[data-speed-level="2"] .deckRateVisualSegments i:nth-child(-n+2),
+#looper .deckRateHotspot[data-speed-level="3"] .deckRateVisualSegments i:nth-child(-n+3),
+#looper .deckRateHotspot[data-speed-level="4"] .deckRateVisualSegments i:nth-child(-n+4),
+#looper .deckRateHotspot[data-speed-level="5"] .deckRateVisualSegments i:nth-child(-n+5) {
+  background:#ffa31a;
+  border-color:#ffbd4a;
+  box-shadow:0 0 5px rgba(255,158,25,.72),0 4px 9px rgba(255,137,10,.18),inset 0 1px #ffe5a0;
+}
+
+/* ---------- Lower library / crates ---------- */
+#looper .beatCratePanel::before,
+#looper .beatCrateHeading,
+#looper .beatCrateControls,
+#looper .library,
+#looper .beatCrateTransport { display:none!important; }
+#looper .crate120927Panel {
+  position:absolute;
+  top:58.1%;
+  left:5.1%;
+  width:24.2%;
+  height:33.3%;
+  padding:1.2%;
+  color:var(--v3-text);
+  pointer-events:auto;
+}
+#looper .beat120927Panel {
+  position:absolute;
+  top:58.1%;
+  left:29.9%;
+  width:66.6%;
+  height:33.3%;
+  padding:1.2% 1%;
+  color:var(--v3-text);
+  pointer-events:auto;
+}
+#looper .crate120927Title,
+#looper .beat120927Title {
+  display:flex;
+  align-items:center;
+  gap:.5em;
+  height:12%;
+  margin:0;
+  color:#deded9;
+  font:700 clamp(10px,1.08vw,15px)/1 var(--font-mono);
+  letter-spacing:.03em;
+}
+#looper .crate120927Title::before { content:"▣";color:#d9d9d4; }
+#looper .beat120927Title::before { content:"♪";color:#d9d9d4; }
+#looper #crate120927Filters {
+  display:grid;
+  gap:1.5%;
+  height:77%;
+  align-content:start;
+  overflow:auto;
+}
+#looper .crateFilterButton {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  min-height:38px;
+  padding:0 8%;
+  border-radius:2px;
+  background:#111313;
+  box-shadow:none;
+  color:#d4d4cf;
+  font:500 clamp(8px,.86vw,12px)/1 var(--font-mono);
+  text-align:left;
+}
+#looper .crateFilterButton[aria-pressed="true"] {
+  --light-strength:.42;
+  color:#151109;
+  background:linear-gradient(#ffb03b,#ed9217);
+  border-color:#b25f08;
+  box-shadow:inset 0 1px #ffd47f,inset 0 -2px #a65105;
+}
+#looper .crate120927Count {
+  position:absolute;
+  left:5%;
+  bottom:3.4%;
+  color:#bdbdb8;
+  font:500 clamp(7px,.74vw,10px)/1 var(--font-mono);
+}
+#looper .beat120927Header,
+#looper .beat120927Row {
+  display:grid;
+  grid-template-columns:8% minmax(0,1fr) 18%;
+  align-items:center;
+}
+#looper .beat120927Header {
+  height:9%;
+  padding:0 1.3%;
+  color:#c6c7c3;
+  font:500 clamp(7px,.72vw,10px)/1 var(--font-mono);
+  border-bottom:1px solid #313334;
+}
+#looper #beat120927List {
+  height:79%;
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-width:thin;
+  scrollbar-color:#56595a #101111;
+}
+#looper .beat120927Row {
+  width:100%;
+  min-height:32px;
+  padding:0 1.3%;
+  border:0;
+  border-bottom:1px solid #292b2b;
+  border-radius:0;
+  background:#101212;
+  color:#d3d4d0;
+  font:500 clamp(8px,.83vw,12px)/1 var(--font-mono);
+  text-align:left;
+  cursor:pointer;
+}
+#looper .beat120927Row:hover,
+#looper .beat120927Row:focus-visible { background:#191b1b;color:#fff;outline:1px solid #6d6f70;outline-offset:-1px; }
+#looper .beat120927Row[aria-current="true"] {
+  color:#18130b;
+  background:linear-gradient(90deg,#ffa31a,#ef9b26);
+  border-bottom-color:#bc6a0c;
+}
+#looper .beat120927Row span:last-child { text-align:right; }
+#looper .beat120927Empty {
+  padding:8% 4%;
+  color:#a7a8a4;
+  font:500 clamp(8px,.85vw,12px)/1.5 var(--font-mono);
+  text-align:center;
+}
+
+#looper #deckTrackDetails {
+  border:1px solid #5b5e5f;
+  background:#151718 var(--deck-texture) center/128px;
+  color:#e4e4df;
+}
+
+/* A light projection must be able to escape every physical button container. */
+#looper :is(.deckTransport,.looperImportDock,.crate120927Panel) { overflow:visible; }
+
+@media (prefers-reduced-motion:reduce) {
+  #looper .cassetteReel { animation:none!important; }
+  #looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton)::before,
+  #looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton)::after { transition:none; }
+}
+
+/* Mobile keeps the existing semantic controls but rearranges the approved visual language. */
+@media (max-width:680px) {
+  #looper .looper66Shell { width:min(100%,441px);padding-bottom:0; }
+  #looper .looper66Workspace { aspect-ratio:441/1180;overflow:hidden; }
+  #looper .looper66Workspace::before { left:4%;right:4%;height:6%; }
+  #looper .looper66Workspace::after { top:5%;left:2%;right:2%;bottom:1.5%; }
+
+  #looper .deckReadout { top:7.5%;left:7%;width:86%;height:12.5%; }
+  #looper .deckReadoutTrack { font-size:13px; }
+  #looper .deckReadoutTime,#looper .deckReadoutRateRow,#looper .deckReadoutState { font-size:10px; }
+
+  #looper .cassetteMechanism { top:21.5%;left:7%;width:86%; }
+  #looper .deckTransport { top:42.7%;left:7%;width:86%;height:10.5%;grid-template-columns:1fr 1.25fr;grid-template-rows:1fr 1fr;gap:4%; }
+  #looper #autoLooperToggle { grid-column:1/-1; }
+  #looper .deckKeyLabel { font-size:12px; }
+
+  #looper .deckPitchModule { top:54.5%;left:7%;width:41%;height:8.5%; }
+  #looper .deckPitchHeader label { top:7%;font-size:11px; }
+  #looper #deckPitch { top:46%;left:9%;width:66%;height:42px;writing-mode:horizontal-tb;direction:ltr;cursor:ew-resize; }
+  #looper #deckPitch::-webkit-slider-runnable-track { width:100%;height:8px; }
+  #looper #deckPitch::-webkit-slider-thumb { width:22px;height:30px;margin-top:-11px;margin-left:0; }
+  #looper .deckPitchScale { top:51%;right:8%;bottom:auto;left:8%;flex-direction:row;align-items:center; }
+  #looper .deckPitchHeader output { left:66%;bottom:12%;width:28%;padding:5% 0; }
+
+  #looper .deckUtilityPanel { top:54.5%;left:52%;width:41%;height:8.5%;padding:0 2%; }
+  #looper .deckVolumeControl label,#looper .deckJack span { font-size:8px; }
+
+  #looper .looperImportDock { top:64.3%;left:7%;width:86%;height:11.3%;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr auto;gap:4%;padding:3%; }
+  #looper .deckImportTitle { grid-column:1/-1; }
+  #looper .deckDropHint { display:none; }
+  #looper .deckImportMeta { grid-column:1/-1; }
+
+  #looper .crate120927Panel { top:77.1%;left:7%;width:86%;height:8.6%;padding:2%; }
+  #looper .crate120927Title { height:25%;font-size:11px; }
+  #looper #crate120927Filters { height:62%;display:flex;gap:2%;overflow-x:auto;overflow-y:hidden; }
+  #looper .crateFilterButton { min-width:110px;min-height:44px;padding:0 12px; }
+  #looper .crate120927Count { display:none; }
+
+  #looper .beat120927Panel { top:86.2%;left:7%;width:86%;height:11.2%;padding:2%; }
+  #looper .beat120927Title { height:18%;font-size:11px; }
+  #looper .beat120927Header { height:14%; }
+  #looper #beat120927List { height:68%; }
+  #looper .beat120927Row { min-height:44px;font-size:11px; }
+}
