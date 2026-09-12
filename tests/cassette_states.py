@@ -53,16 +53,14 @@ with contextlib.ExitStack() as stack:
             page.on('pageerror', lambda error: errors.append(str(error)))
             page.goto(f'http://127.0.0.1:{server.server_address[1]}/index.html', wait_until='networkidle')
             page.wait_for_function('window.__SP?.ready === true')
+            page.wait_for_function('window.__SP?.ui120927Ready === true')
             page.wait_for_function("[...document.querySelectorAll('.cassetteMechanism img')].every(i=>i.complete && i.naturalWidth>0)")
             mechanism = page.locator('.cassetteMechanism')
             box = mechanism.bounding_box()
             assert abs(box['width']/box['height']-1.5) < .001
             assert page.evaluate('document.body.scrollWidth <= innerWidth+2')
-            # Empty must be a truly opaque cavity: changing the underlying skin
-            # must not change a single pixel in the mechanism.
-            # Locator screenshots round fractional CSS edges outwards, which
-            # includes a row/column belonging to the surrounding workstation.
-            # Compare integer pixels strictly inside the component instead.
+            # Empty must be a truly opaque cavity: changing the retired skin
+            # must not change a single pixel in the new self-contained mechanism.
             interior = {'x':math.ceil(box['x'])+1, 'y':math.ceil(box['y'])+1,
                         'width':math.floor(box['width'])-3, 'height':math.floor(box['height'])-3}
             before = page.screenshot(clip=interior)
@@ -74,7 +72,7 @@ with contextlib.ExitStack() as stack:
                 assert not page.locator(selector).is_visible(), ('empty', selector)
             if label in ('desktop','mobile'): capture(page, f'{label}-empty')
             page.evaluate("commitLoadedTrack({name:'MIDNIGHT SESSION.wav'}, new AudioBuffer({length:44100,sampleRate:44100,numberOfChannels:1}))")
-            page.wait_for_function("Math.abs(+getComputedStyle(document.querySelector('.cassetteCssLight')).opacity-.3)<.01")
+            page.wait_for_function("Math.abs(+getComputedStyle(document.querySelector('.cassetteCssLight')).opacity-.32)<.01")
             assert page.locator('#cassetteBeatName').inner_text() == 'MIDNIGHT SESSION.WAV'
             assert page.locator('.cassetteReelLeft').evaluate('el=>getComputedStyle(el).animationPlayState') == 'paused'
             metrics = mechanism.evaluate('''el=>{
@@ -85,11 +83,13 @@ with contextlib.ExitStack() as stack:
                   w:c.width/b.width,h:c.height/b.height,z:+s.zIndex,visible:s.visibility,filter:s.filter};
               });
             }''')
-            assert [m['z'] for m in metrics] == [1,2,2,3,4,5,6], metrics
+            # 120927 deliberately puts the rotating reels below the opaque
+            # cassette shell. They can only be seen through its cut-outs.
+            assert [m['z'] for m in metrics] == [2,1,1,3,4,5,6], metrics
             assert all(m['visible']=='visible' and m['filter']=='none' for m in metrics)
             for m in metrics:
                 assert m['x']>=-.001 and m['y']>=-.001 and m['x']+m['w']<=1.001 and m['y']+m['h']<=1.001, m
-            # Native reel centres match the tape asset; label stays centred.
+            # Native reel centres match the cassette apertures; title stays centred.
             for m, cx in zip(metrics[1:3], (.32,.68)):
                 assert abs(m['x']+m['w']/2-cx)<.001
                 assert abs(m['y']+m['h']/2-.49)<.001
@@ -105,7 +105,7 @@ with contextlib.ExitStack() as stack:
             # Use actual PLAY/STOP buttons: no synthetic .playing class.
             page.locator('#playBeat').click()
             page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('playing')")
-            page.wait_for_function("Math.abs(+getComputedStyle(document.querySelector('.cassetteCssLight')).opacity-.86)<.01")
+            page.wait_for_function("Math.abs(+getComputedStyle(document.querySelector('.cassetteCssLight')).opacity-.6)<.01")
             assert mechanism.bounding_box() == box
             assert mechanism.evaluate('el=>[...el.children].map(c=>[c.offsetLeft,c.offsetTop,c.offsetWidth,c.offsetHeight])') == layout
             assert page.locator('.cassetteReel').evaluate_all("els=>els.every(el=>getComputedStyle(el).animationPlayState==='running')")
@@ -128,4 +128,4 @@ with contextlib.ExitStack() as stack:
             assert not page.locator('.cassetteTape').is_visible()
             assert not errors, errors
             page.close()
-print('OK: cassette states, rotation, layers, shared geometry, opaque empty bay and visual references')
+print('OK: 120927 cassette states, masked rotation, layers, shared geometry and reviewed references')
