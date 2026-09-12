@@ -1,14 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
   <defs>
-    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#315b78" stop-opacity=".54"/><stop offset=".36" stop-color="#173246" stop-opacity=".34"/><stop offset="1" stop-color="#07131d" stop-opacity=".58"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#315774" stop-opacity=".34"/>
+      <stop offset=".42" stop-color="#173248" stop-opacity=".20"/>
+      <stop offset="1" stop-color="#08131c" stop-opacity=".36"/>
+    </linearGradient>
   </defs>
-  <!-- one static coherent asset: opening gap + door + full-size glass -->
-  <rect x="18" y="18" width="864" height="564" rx="18" fill="none" stroke="#050708" stroke-width="18"/>
-  <rect x="31" y="31" width="838" height="538" rx="12" fill="url(#glass)" stroke="#52616a" stroke-width="3"/>
-  <!-- subtle reflections only; no screws on glass -->
-  <path d="M48 45h78L36 150V87Z" fill="#9fcbe3" opacity=".18"/>
-  <path d="M116 43h49L52 187v-39Z" fill="#d7eef7" opacity=".08"/>
-  <path d="M829 79h18v408h-18" fill="#020507" opacity=".24"/>
-  <!-- lower edge/latch relief kept inside door body, not on glass -->
-  <path d="M380 557h140l-12 19H392Z" fill="#15191b" stroke="#080a0b" stroke-width="3"/>
+
+  <!-- The whole visible opening is one coherent door/glass asset. -->
+  <!-- Slight gap around the opening: this is the only opening cue. -->
+  <rect x="15" y="15" width="870" height="570" rx="20" fill="none" stroke="#020405" stroke-width="13"/>
+  <rect x="25" y="25" width="850" height="550" rx="15" fill="none" stroke="#68737a" stroke-opacity=".46" stroke-width="2"/>
+
+  <!-- Full-size night-blue glass. No screws, latch, vent or pull hardware. -->
+  <rect x="31" y="31" width="838" height="538" rx="12" fill="url(#glass)"/>
+
+  <!-- restrained reflections, kept inside the glass -->
+  <path d="M40 46h118L47 180H31V92Z" fill="#a9d2e8" opacity=".14"/>
+  <path d="M122 38h58L55 195H34v-34Z" fill="#e2f3fb" opacity=".055"/>
+  <path d="M815 54h34v438h-15Z" fill="#d2eefb" opacity=".035"/>
 </svg>
