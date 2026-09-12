@@ -12,17 +12,30 @@ window.addEventListener("error",event=>window.__SP.report("RUNTIME",event.error|
 window.addEventListener("unhandledrejection",event=>window.__SP.report("PROMISE",event.reason));
 
 // Branch 120927 is a visual migration over the maintained Looper engine.
-// Start loading both assets immediately; the adapter itself waits for
-// DOMContentLoaded before touching the Looper globals defined by defer scripts.
-if(!document.querySelector('link[data-looper-120927="1"]')){
-  const link=document.createElement("link");
-  link.rel="stylesheet";
-  link.href="./css/looper-120927.css";
-  link.dataset.looper120927="1";
-  link.onload=()=>{ window.__SP.ui120927CssReady=true; };
-  link.onerror=()=>window.__SP.report("LOOPER 120927 CSS",new Error("120927 stylesheet failed to load"));
-  document.head.appendChild(link);
+// Load the broad migration then its review-tuning sheet in deterministic DOM
+// order. Readiness is exposed only after both have actually loaded.
+{
+  let pendingCss=0;
+  const markCssLoaded=()=>{
+    pendingCss--;
+    if(pendingCss<=0)window.__SP.ui120927CssReady=true;
+  };
+  const addCss=(href,key)=>{
+    if(document.querySelector(`link[data-${key}="1"]`))return;
+    pendingCss++;
+    const link=document.createElement("link");
+    link.rel="stylesheet";
+    link.href=href;
+    link.dataset[key]="1";
+    link.onload=markCssLoaded;
+    link.onerror=()=>window.__SP.report("LOOPER 120927 CSS",new Error(`${href} failed to load`));
+    document.head.appendChild(link);
+  };
+  addCss("./css/looper-120927.css","looper120927");
+  addCss("./css/looper-120927-tuning.css","looper120927Tuning");
+  if(pendingCss===0)window.__SP.ui120927CssReady=true;
 }
+
 if(location.protocol!=="about:" && location.protocol!=="data:" && !document.querySelector('script[data-looper-120927="1"]')){
   const script=document.createElement("script");
   script.src="./js/looper-120927.js";
