@@ -1,0 +1,1 @@
+120927 visual assets are derived from the approved reference mockup. The deck scene is the immutable physical layer; live HTML/CSS is overlaid only for stateful controls, readout, pitch, cassette reels, crates and beat rows.
