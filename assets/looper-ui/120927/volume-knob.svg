@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <defs>
+    <radialGradient id="face" cx="38%" cy="33%" r="70%">
+      <stop offset="0" stop-color="#5e6263"/>
+      <stop offset=".22" stop-color="#363a3b"/>
+      <stop offset=".58" stop-color="#202324"/>
+      <stop offset=".78" stop-color="#0b0d0e"/>
+      <stop offset="1" stop-color="#232728"/>
+    </radialGradient>
+    <filter id="s"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".7"/></filter>
+  </defs>
+  <g filter="url(#s)">
+    <circle cx="48" cy="48" r="42" fill="#08090a" stroke="#777b7c" stroke-width="2"/>
+    <circle cx="48" cy="48" r="36" fill="url(#face)" stroke="#151718" stroke-width="2"/>
+    <circle cx="48" cy="48" r="25" fill="#1e2223" stroke="#2f3334" stroke-width="1"/>
+  </g>
+  <rect x="45" y="10" width="6" height="28" rx="2" fill="#ffa31a"/>
+  <rect x="46.5" y="11" width="3" height="24" rx="1.5" fill="#ffd06a" opacity=".65"/>
+</svg>
