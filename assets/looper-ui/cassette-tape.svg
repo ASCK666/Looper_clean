@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
+  <!-- Cassette body and wound tape, drawn independently of the workstation skin. -->
+  <path fill="#262b25" stroke="#777969" stroke-width="3" d="M96 86H804L818 100V464L801 487H99L82 464V100Z"/>
+  <path fill="none" stroke="#424a3d" stroke-width="2" d="M101 96H799L808 106V456L794 475H106L92 456V106Z"/>
+  <rect x="159" y="203" width="582" height="184" rx="82" fill="#101511" stroke="#535b49" stroke-width="3"/>
+  <g fill="#382a1c" stroke="#63503a" stroke-width="3">
+    <circle cx="288" cy="294" r="86"/><circle cx="612" cy="294" r="86"/>
+  </g>
+  <g fill="none" stroke="#8b6b43" stroke-opacity=".36" stroke-width="2">
+    <circle cx="288" cy="294" r="79"/><circle cx="288" cy="294" r="72"/>
+    <circle cx="612" cy="294" r="79"/><circle cx="612" cy="294" r="72"/>
+  </g>
+  <path fill="#1c211b" stroke="#626a56" stroke-width="3" d="M280 420H620L647 481H253Z"/>
+  <g fill="#090d09" stroke="#666c59" stroke-width="3">
+    <circle cx="143" cy="439" r="18"/><circle cx="757" cy="439" r="18"/>
+    <circle cx="343" cy="456" r="12"/><circle cx="557" cy="456" r="12"/>
+  </g>
+  <path fill="#907247" d="M414 447H486V474H414Z"/>
+  <path stroke="#b2ac8d" stroke-width="2" d="M112 119H125M775 119H788M112 461H125M775 461H788"/>
+</svg>

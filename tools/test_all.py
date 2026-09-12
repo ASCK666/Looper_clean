@@ -8,6 +8,7 @@ steps=[
   ['tests/assets_health.py'],
   ['tests/validate.py'],
   ['tests/looper66_contract.py'],
+  ['tests/cassette_contract.py'],
   ['tests/js_health.py'],
   ['tests/core_unit.js'],
   ['tests/auto_mix_unit.js'],
@@ -36,6 +37,7 @@ steps=[
   ['tests/http_smoke.py'],
   ['tests/browser_smoke.py'],
   ['tests/asset_render.py'],
+  ['tests/cassette_states.py'],
   ['tests/css_layout.py'],
   ['tests/header_responsive.py'],
 ]

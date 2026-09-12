@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <circle cx="64" cy="64" r="59" fill="#b6a17a" stroke="#645c45" stroke-width="4"/>
+  <circle cx="64" cy="64" r="46" fill="#282e24" stroke="#d1c3a0" stroke-width="3"/>
+  <g fill="#c5b58f">
+    <path id="spoke" d="M57 10H71L69 45H59Z"/>
+    <use href="#spoke" transform="rotate(60 64 64)"/><use href="#spoke" transform="rotate(120 64 64)"/>
+    <use href="#spoke" transform="rotate(180 64 64)"/><use href="#spoke" transform="rotate(240 64 64)"/>
+    <use href="#spoke" transform="rotate(300 64 64)"/>
+  </g>
+  <circle cx="64" cy="64" r="24" fill="#706950" stroke="#dfd0a8" stroke-width="3"/>
+  <path fill="#090d09" d="M58 46H70L72 53L81 56V71L73 74L70 82H57L54 74L47 70V57L54 53Z"/>
+  <circle cx="64" cy="64" r="7" fill="#242a20"/>
+  <path stroke="#e9d9b4" stroke-width="3" d="M60 17H68"/>
+</svg>

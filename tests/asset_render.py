@@ -32,7 +32,7 @@ with contextlib.ExitStack() as stack:
         page.wait_for_function("document.querySelectorAll('.cassetteReel').length === 2",timeout=10000)
         page.wait_for_function("""() => {
           const bay=document.querySelector('.cassetteBayForeground');
-          return bay instanceof HTMLImageElement && bay.complete && bay.naturalWidth===793 && bay.naturalHeight===496;
+          return bay instanceof HTMLImageElement && bay.complete && bay.naturalWidth===900 && bay.naturalHeight===600;
         }""",timeout=10000)
 
         info=page.evaluate('''() => {
@@ -62,15 +62,14 @@ with contextlib.ExitStack() as stack:
             emptyPlayAnimation:getComputedStyle(document.querySelector('#playBeat'),'::before').animationName
           };
         }''')
-        assert len(info['layers'])==6,info
+        assert len(info['layers'])==7,info
         assert [layer[0] for layer in info['layers']]==[
-            'cassetteReel cassetteReelLeft','cassetteReel cassetteReelRight',
-            'cassetteBeatName','cassetteBayForeground',
-            'cassetteCssLight','cassetteGlass'
+            'cassetteTape','cassetteReel cassetteReelLeft','cassetteReel cassetteReelRight',
+            'cassetteLabel','cassetteBeatName','cassetteCssLight','cassetteBayForeground'
         ],info
         assert info['bay']=={
-            'tag':'IMG','complete':True,'naturalWidth':793,'naturalHeight':496,
-            'src':'assets/looper-ui/looper66-cassette-bay-d7d5e6d4.png'
+            'tag':'IMG','complete':True,'naturalWidth':900,'naturalHeight':600,
+            'src':'assets/looper-ui/cassette-frame.svg'
         },info
         assert all(c['display']!='none' and c['width']>=44 and c['height']>=44 for c in info['controls']),info
         stop,play,speed=info['transport']
@@ -85,11 +84,6 @@ with contextlib.ExitStack() as stack:
         cassette_left=info['workspace']['x']+info['workspace']['width']*.423
         cassette_right=cassette_left+info['workspace']['width']*.417
         assert abs(transport_left-cassette_left)<1 and abs(transport_right-cassette_right)<1,info
-        expected_centers=((601,238),(763,238))
-        for reel,(expected_x,expected_y) in zip(info['reels'],expected_centers):
-          center_x=(reel['x']+reel['width']/2-info['workspace']['x'])/info['workspace']['width']*1086
-          center_y=(reel['y']+reel['height']/2-info['workspace']['y'])/info['workspace']['height']*1009
-          assert abs(center_x-expected_x)<1 and abs(center_y-expected_y)<1,(center_x,center_y)
         assert info['rackSlots']==9,info
         assert info['title']=='AUCUN BEAT CHARGÉ' and info['skin'].endswith('looper66-desktop-pitch-clean-1e6d4f36.webp'),info
         assert info['emptyPlayAnimation']=='looper66EmptyPlayPulse',info
@@ -126,15 +120,14 @@ with contextlib.ExitStack() as stack:
               const lamp=get('.cassetteCssLight'),bay=get('.cassetteBayForeground');
               const l=lamp.getBoundingClientRect(),b=bay.getBoundingClientRect();
               const label=get('.cassetteBeatName').getBoundingClientRect();
-              const glass=get('.cassetteGlass').getBoundingClientRect();
+              const paper=get('.cassetteLabel').getBoundingClientRect();
               const reel=get('.cassetteReel').getBoundingClientRect();
               return {inside:l.left>b.left&&l.right<b.right&&l.top>b.top&&l.bottom<b.bottom,
-                labelClear:label.left>glass.left && label.right<glass.right && label.top>glass.top && label.bottom<reel.top,
-                belowGlass:Number(getComputedStyle(lamp).zIndex)<Number(getComputedStyle(get('.cassetteGlass')).zIndex),
+                labelClear:label.left>paper.left && label.right<paper.right && label.top>paper.top && label.bottom<reel.top,
                 belowFrame:Number(getComputedStyle(lamp).zIndex)<Number(getComputedStyle(bay).zIndex),
                 states:[...document.querySelectorAll('.cassetteReel')].map(el=>getComputedStyle(el).animationPlayState)};
             }''')
-            assert light['inside'] and light['belowGlass'] and light['belowFrame'],light
+            assert light['inside'] and light['belowFrame'],light
             assert light['labelClear'],(width,light)
             assert light['states']==['running','running'],light
             for pitch in (-8,0,8):

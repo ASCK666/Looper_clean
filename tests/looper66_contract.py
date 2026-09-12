@@ -40,7 +40,7 @@ assert 'class="deckTransportVisual"' in HTML
 crate=HTML[HTML.index('<section class="panel beatCratePanel"'):]
 assert crate.index('id="prevBeat"') < crate.index('id="nextBeat"')
 
-ordered=['cassetteReelLeft','cassetteReelRight','cassetteBeatName','cassetteBayForeground','cassetteCssLight','cassetteGlass']
+ordered=['cassetteTape','cassetteReelLeft','cassetteReelRight','cassetteLabel','cassetteBeatName','cassetteCssLight','cassetteBayForeground']
 positions=[HTML.index(token) for token in ordered]
 assert positions==sorted(positions),positions
 assert HTML.count('class="cassetteReel ')==2
@@ -97,45 +97,10 @@ assert 'id="deckPitchModule"' in HTML
 assert 'pitchModule.style.setProperty("--pitch-x"' in LOOPER
 assert 'pitchModule.style.setProperty("--pitch-y"' in LOOPER
 assert 'pitchControl.setAttribute("aria-valuetext"' in LOOPER
-assert 'cassetteShell' not in HTML+CSS
-assert HTML.count('class="cassetteBayForeground"')==1
-assert re.search(r'<img\b[^>]*class="cassetteBayForeground"[^>]*src="assets/looper-ui/looper66-cassette-bay-d7d5e6d4\.png"',HTML)
-assert re.search(r'\.cassetteMechanism\s*\{[^}]*overflow:hidden;',CSS)
-mechanism_rule = re.search(r'\.cassetteMechanism\s*\{([^}]+)\}',CSS).group(1)
-assert '--tape-shadow:rgba(36,22,15,.20);' in mechanism_rule
-assert '--tape-mid:rgba(90,57,35,.34);' in mechanism_rule
-assert '--tape-edge:rgba(122,82,52,.30);' in mechanism_rule
-tape_rule = re.search(r'\.cassetteMechanism::before\s*\{([^}]+)\}',CSS).group(1)
-assert tape_rule.count('radial-gradient(circle at var(--hub-') == 2
-assert 'radial-gradient(circle at var(--hub-left)' in tape_rule
-assert 'radial-gradient(circle at var(--hub-right)' in tape_rule
-assert tape_rule.count('transparent 0 7.2%') == 2
-assert 'var(--tape-mid)' in tape_rule and 'var(--tape-edge)' in tape_rule
-assert 'linear-gradient(#1c1b17,#0e100d)' not in tape_rule
-assert 'linear-gradient(111deg' not in tape_rule and 'linear-gradient(69deg' not in tape_rule
-assert 'center 70%/48% 2.5% no-repeat' not in tape_rule
-assert 'radial-gradient(ellipse 10.8%' not in tape_rule
-assert re.search(r'\.cassetteBeatName\s*\{[^}]*border:0;[^}]*background:transparent;[^}]*box-shadow:none;',CSS)
-assert re.search(r'\.cassetteMechanism::after\s*\{[^}]*clip-path:polygon\(evenodd,',CSS)
-assert '.cassetteGlass { position:absolute;z-index:4;' in CSS
-# Glass reflections and the recess shadow cover the moving hubs, below the door.
-assert re.search(r'\.cassetteGlass\s*\{[^}]*background:linear-gradient[^;]+;box-shadow:inset[^;]+;pointer-events:none;',CSS)
-assert '.cassetteBayForeground { position:absolute;z-index:5;inset:0;' in CSS
-# Illumination belongs inside the aperture, below the label/glass/door. A
-# full-frame overlay would brighten the hinges and obscure the printed label.
-light_rule = re.search(r'\.cassetteCssLight\s*\{([^}]+)\}', CSS).group(1)
-assert re.search(r'z-index:\s*2;', light_rule)
-assert re.search(r'inset:\s*17\.5% 10\.5% 29%;', light_rule)
-assert 'clip-path:polygon(' in light_rule
-assert re.search(r'opacity:\s*0;', light_rule)
-assert 'animation:' not in light_rule
-assert 'mix-blend-mode:screen' in light_rule
-assert '.cassetteDeck.loaded .cassetteCssLight { opacity:calc(.3 * var(--backlight-opacity)); }' in CSS
-assert '.cassetteDeck.playing .cassetteCssLight { opacity:calc(.86 * var(--backlight-opacity)); }' in CSS
-assert re.search(r'\.cassetteBayForeground\s*\{[^}]*display:block;[^}]*width:100%;[^}]*height:100%;[^}]*object-fit:fill;',CSS)
-assert 'looper66-cassette-bay-d7d5e6d4.png' not in CSS
-assert 'cassetteSupportForeground' not in HTML+CSS
-assert 'clip-path:circle(44%)' in CSS
+# Cassette assets and responsive/state geometry have their own focused gates.
+for retired in ('cassetteGlass', '--looper-skin-image', '--hub-left', '--tape-dark',
+                'cassetteMechanism::before', 'cassetteMechanism::after'):
+    assert retired not in HTML+CSS, retired
 assert 'transform-origin:50% 50%' in CSS
 assert 'animation:looper66ReelSpin var(--supply-reel-cycle)' in CSS
 assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
@@ -161,7 +126,6 @@ references={
     'looper66-mobile-transport-fbd6a0d3.webp':((379,215),'fbd6a0d378eb43526ffbb1c9b6109c6894522d516310d003abe3f47edfd51bc5'),
     'looper66-desktop-transport-square-3d62809d.webp':((750,224),'3d62809d2fd4dd16021e166ec8b648cb0b6304987354da52f58673c718fdafd7'),
     'looper66-crate-cassettes.webp':((560,62),'12256e2ec27d0a2976ce0a15184f578a04034c5318bbff8819deab05d0d6e3c9'),
-    'looper66-cassette-bay-d7d5e6d4.png':((793,496),'d7d5e6d4d5a23a5c972bd37aaeb33bcbfa08af92acb3322658ad0669de85081b'),
 }
 for name,(expected_size,expected_sha) in references.items():
     path=ROOT/'assets/looper-ui'/name
@@ -169,17 +133,4 @@ for name,(expected_size,expected_sha) in references.items():
     assert Image.open(path).size==expected_size,(name,Image.open(path).size)
     assert hashlib.sha256(path.read_bytes()).hexdigest()==expected_sha,name
 
-# The foreground must remain a real cutout: opaque/checkerboard exports can
-# satisfy image-load checks while hiding both independently animated reels.
-with Image.open(ROOT/'assets/looper-ui/looper66-cassette-bay-d7d5e6d4.png') as bay:
-    assert bay.mode == 'RGBA', 'cassette foreground must carry alpha'
-    alpha = bay.getchannel('A')
-    for region in ((.23,.38,.39,.63), (.59,.38,.76,.63), (.22,.18,.78,.23)):
-        box = tuple(round(value * size) for value,size in zip(region,(793,496,793,496)))
-        assert alpha.crop(box).getextrema()[1] == 0, ('foreground hides reel or label', box)
-    for point in ((0,0),(792,0),(0,495),(792,495)):
-        assert alpha.getpixel(point) == 0, ('opaque exterior', point)
-    for point in ((396,40),(96,440),(690,440)):
-        assert alpha.getpixel(point) >= 250, ('missing latch or lower hinge', point)
-
-print('OK: Looper66 v2 uses responsive production skins, native controls, deck-specific transport artwork, circular translucent cassette tape packs with open reel gap, separate animated reels and CSS-only state lights')
+print('OK: Looper66 controls, unchanged workstation assets and independent cassette hooks')
