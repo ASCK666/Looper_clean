@@ -1,1 +1,156 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1448" height="1086" viewBox="0 0 1448 1086"><rect width="1448" height="1086" fill="#5b2e17"/><g fill="#26292a" stroke="#0a0b0c" stroke-width="6"><rect x="36" y="100" width="1348" height="908" rx="18"/><rect x="62" y="146" width="364" height="330" rx="10"/><rect x="438" y="138" width="113" height="456" rx="10"/><rect x="565" y="138" width="533" height="442" rx="12"/><rect x="1112" y="138" width="244" height="456" rx="12"/><rect x="62" y="612" width="344" height="356" rx="8"/><rect x="408" y="612" width="948" height="356" rx="8"/></g><g fill="#151819" stroke="#4b4e4f" stroke-width="3"><rect x="82" y="176" width="323" height="270" rx="8"/><rect x="64" y="486" width="360" height="108" rx="8"/><rect x="596" y="176" width="468" height="296" rx="12"/></g><g fill="#151819"><rect x="1128" y="198" width="212" height="160" rx="6"/></g><g fill="none" stroke="#8b8d8d" stroke-width="2" stroke-dasharray="9 6"><rect x="1128" y="198" width="212" height="160" rx="6"/></g><g fill="#e8dfce" stroke="#6a6256" stroke-width="2"><rect x="1128" y="374" width="212" height="49" rx="5"/><rect x="1128" y="435" width="212" height="49" rx="5"/></g><g fill="#17191a" stroke="#08090a" stroke-width="4"><rect x="583" y="486" width="151" height="94" rx="7"/><rect x="744" y="486" width="140" height="94" rx="7"/><rect x="896" y="486" width="190" height="94" rx="7"/></g><rect x="748" y="490" width="132" height="86" rx="5" fill="#ffb035" stroke="#e58b0a" stroke-width="3"/><g fill="#d9dbd9" font-family="monospace" font-size="24" font-weight="700"><text x="116" y="648">CRATES</text><text x="472" y="648">BEATS</text><text x="1150" y="177">IMPORT SAMPLES</text><text x="468" y="169">PITCH</text><text x="103" y="511">VOLUME</text><text x="246" y="511">MIC</text><text x="337" y="511">PHONES</text></g><g fill="#121415"><rect x="73" y="660" width="322" height="298"/><rect x="424" y="660" width="916" height="298"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1448" height="1086" viewBox="0 0 1448 1086">
+  <defs>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7a3e1e"/><stop offset=".45" stop-color="#6b3419"/><stop offset="1" stop-color="#512811"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b3f40"/><stop offset=".45" stop-color="#2c3031"/><stop offset="1" stop-color="#242728"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#25292a"/><stop offset="1" stop-color="#171a1b"/>
+    </linearGradient>
+    <linearGradient id="button" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#333637"/><stop offset=".55" stop-color="#202223"/><stop offset="1" stop-color="#121415"/>
+    </linearGradient>
+    <linearGradient id="play" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffbd52"/><stop offset=".55" stop-color="#f7a526"/><stop offset="1" stop-color="#df7f08"/>
+    </linearGradient>
+    <linearGradient id="ivory" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0e8da"/><stop offset="1" stop-color="#d8cdbb"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#27485f" stop-opacity=".58"/><stop offset=".35" stop-color="#132938" stop-opacity=".38"/><stop offset="1" stop-color="#07131d" stop-opacity=".56"/>
+    </linearGradient>
+    <pattern id="diamond" width="12" height="12" patternUnits="userSpaceOnUse">
+      <path d="M0 6 6 0l6 6-6 6Z" fill="none" stroke="#747778" stroke-opacity=".12" stroke-width="1"/>
+    </pattern>
+    <pattern id="grain" width="92" height="20" patternUnits="userSpaceOnUse">
+      <path d="M0 6C20 1 44 11 92 4M0 16C30 9 56 22 92 13" fill="none" stroke="#2c1208" stroke-opacity=".18" stroke-width="2"/>
+      <path d="M0 10C28 6 63 14 92 8" fill="none" stroke="#b76b36" stroke-opacity=".10" stroke-width="1"/>
+    </pattern>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#000" flood-opacity=".48"/></filter>
+    <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7"/></filter>
+  </defs>
+
+  <!-- continuous clean wood desk -->
+  <rect width="1448" height="1086" fill="url(#wood)"/>
+  <rect width="1448" height="1086" fill="url(#grain)"/>
+  <g opacity=".18" fill="#2d1108"><rect y="34" width="1448" height="3"/><rect y="84" width="1448" height="2"/><rect y="1018" width="1448" height="3"/></g>
+
+  <!-- rear power + two XLR leads -->
+  <g fill="none" stroke="#121516" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M340 101C339 75 340 43 358 0" stroke-width="24"/>
+    <path d="M1024 102V34C1024 12 1029 4 1034 0" stroke-width="19"/>
+    <path d="M1135 102V34C1135 13 1139 4 1144 0" stroke-width="19"/>
+  </g>
+  <g fill="#242829" stroke="#08090a" stroke-width="3">
+    <rect x="314" y="51" width="52" height="50" rx="9"/><rect x="1001" y="6" width="50" height="96" rx="8"/><rect x="1112" y="6" width="50" height="96" rx="8"/>
+  </g>
+  <g fill="#b3aea3" stroke="#393939" stroke-width="3"><rect x="1006" y="52" width="40" height="50" rx="3"/><rect x="1117" y="52" width="40" height="50" rx="3"/></g>
+  <g fill="#17191a"><rect x="309" y="68" width="62" height="7" rx="3"/><rect x="309" y="82" width="62" height="7" rx="3"/></g>
+
+  <!-- machine body -->
+  <g filter="url(#shadow)">
+    <rect x="34" y="101" width="1352" height="906" rx="22" fill="url(#metal)" stroke="#111314" stroke-width="7"/>
+    <rect x="42" y="108" width="1336" height="891" rx="16" fill="url(#diamond)" opacity=".95"/>
+    <rect x="46" y="112" width="1328" height="883" rx="14" fill="none" stroke="#6a6d6e" stroke-opacity=".45" stroke-width="2"/>
+  </g>
+
+  <!-- outer chassis screws -->
+  <g fill="#080a0b" stroke="#9a9c9b" stroke-width="2"><circle cx="58" cy="130" r="10"/><circle cx="1358" cy="130" r="10"/><circle cx="58" cy="979" r="10"/><circle cx="1358" cy="979" r="10"/></g>
+  <g stroke="#2a2c2d" stroke-width="2"><path d="m54 126 8 8m0-8-8 8M1354 126l8 8m0-8-8 8M54 975l8 8m0-8-8 8M1354 975l8 8m0-8-8 8"/></g>
+
+  <!-- left readout housing -->
+  <rect x="62" y="145" width="365" height="332" rx="11" fill="url(#panel)" stroke="#0b0d0e" stroke-width="4"/>
+  <rect x="76" y="165" width="337" height="292" rx="9" fill="#050503" stroke="#5a5d5e" stroke-width="3"/>
+  <rect x="82" y="175" width="323" height="272" rx="6" fill="#040403" stroke="#151515" stroke-width="2"/>
+  <g fill="#080a0b" stroke="#9a8b75" stroke-width="2"><circle cx="79" cy="160" r="7"/><circle cx="407" cy="160" r="7"/><circle cx="79" cy="461" r="7"/><circle cx="407" cy="461" r="7"/></g>
+
+  <!-- utility strip under readout -->
+  <rect x="62" y="483" width="365" height="113" rx="10" fill="url(#panel)" stroke="#0b0d0e" stroke-width="4"/>
+  <g fill="#d5d6d2" font-family="monospace" font-size="20" font-weight="700"><text x="104" y="513">VOLUME</text><text x="245" y="513">MIC</text><text x="336" y="513">PHONES</text></g>
+  <g stroke="#c7c8c5" stroke-opacity=".65" stroke-width="2"><path d="M207 508v69M310 508v69"/></g>
+  <g fill="none" stroke="#c8c8c3" stroke-width="2" stroke-dasharray="2 8"><circle cx="132" cy="551" r="42"/></g>
+  <g fill="#08090a" stroke="#8b7f70" stroke-width="4"><circle cx="259" cy="550" r="21"/><circle cx="366" cy="550" r="21"/></g>
+  <g fill="#050606"><circle cx="259" cy="550" r="10"/><circle cx="366" cy="550" r="10"/></g>
+  <g fill="#080a0b" stroke="#9a8b75" stroke-width="2"><circle cx="79" cy="500" r="7"/><circle cx="79" cy="583" r="7"/></g>
+
+  <!-- pitch module -->
+  <rect x="437" y="137" width="115" height="459" rx="10" fill="url(#metal)" stroke="#17191a" stroke-width="3"/>
+  <text x="468" y="170" fill="#e3e4df" font-family="monospace" font-size="22" font-weight="700">PITCH</text>
+  <rect x="482" y="184" width="18" height="288" rx="8" fill="#070808" stroke="#3c3f40" stroke-width="2"/>
+  <g stroke="#868988" stroke-opacity=".55" stroke-width="1"><path d="M461 208h12M461 238h12M461 268h12M461 298h12M461 328h12M461 358h12M461 388h12M461 418h12M461 448h12"/></g>
+  <g fill="#d6d7d3" font-family="monospace" font-size="18"><text x="507" y="212">+12</text><text x="527" y="332">0</text><text x="507" y="448">-12</text></g>
+  <rect x="451" y="484" width="91" height="47" rx="6" fill="#111414" stroke="#333637" stroke-width="2"/>
+
+  <!-- cassette bay outer panel -->
+  <rect x="565" y="137" width="534" height="441" rx="12" fill="url(#metal)" stroke="#101213" stroke-width="4"/>
+  <g fill="#080a0b" stroke="#9a9c9b" stroke-width="2"><circle cx="586" cy="157" r="8"/><circle cx="1076" cy="157" r="8"/><circle cx="586" cy="458" r="8"/><circle cx="1076" cy="458" r="8"/></g>
+
+  <!-- opening/door gap and one coherent glass opening -->
+  <rect x="594" y="173" width="472" height="302" rx="11" fill="#081018" stroke="#08090a" stroke-width="7"/>
+  <rect x="601" y="180" width="458" height="288" rx="8" fill="#0e1c26" stroke="#4b5961" stroke-width="2"/>
+
+  <!-- cassette body -->
+  <path d="M647 219H1008L1021 233V365L1009 379H646L633 366V233Z" fill="#b7bdbe" stroke="#737a7c" stroke-width="3"/>
+  <rect x="649" y="220" width="352" height="44" rx="5" fill="#d4d8d8"/>
+  <!-- title sticker kept blank for dynamic HTML title -->
+  <rect x="677" y="224" width="298" height="35" rx="4" fill="#c6cccd"/>
+  <!-- reel wells -->
+  <g fill="#101820" stroke="#667176" stroke-width="5"><circle cx="761" cy="313" r="44"/><circle cx="934" cy="313" r="44"/></g>
+  <g fill="#b7bdbe" stroke="#5d6669" stroke-width="4"><circle cx="761" cy="313" r="30"/><circle cx="934" cy="313" r="30"/></g>
+  <g fill="#11181c"><circle cx="761" cy="313" r="25"/><circle cx="934" cy="313" r="25"/></g>
+  <!-- center tape window -->
+  <rect x="786" y="279" width="123" height="66" rx="5" fill="#1e2427" stroke="#5c6466" stroke-width="3"/>
+  <rect x="798" y="287" width="98" height="50" rx="3" fill="#59442f"/>
+  <path d="M815 287c-8 18-8 32 0 50M842 287c-8 18-8 32 0 50M870 287c-8 18-8 32 0 50" fill="none" stroke="#77583b" stroke-width="10" opacity=".55"/>
+  <!-- A / 90 type markings -->
+  <rect x="656" y="287" width="31" height="38" rx="3" fill="#374044"/>
+  <text x="663" y="318" fill="#c4c8c8" font-family="monospace" font-size="30" font-weight="700">A</text>
+  <text x="974" y="307" fill="#313a3e" font-family="monospace" font-size="31" font-weight="700">90</text>
+  <text x="966" y="323" fill="#313a3e" font-family="monospace" font-size="11" font-weight="700">TYPE I</text>
+  <text x="963" y="339" fill="#313a3e" font-family="monospace" font-size="11" font-weight="700">NORMAL</text>
+  <!-- lower cassette shell -->
+  <path d="M687 376H968L990 452H665Z" fill="#182025" stroke="#566269" stroke-width="3"/>
+  <g fill="#05090b"><circle cx="726" cy="428" r="10"/><circle cx="766" cy="421" r="9"/><circle cx="837" cy="405" r="8"/><circle cx="913" cy="421" r="9"/><circle cx="950" cy="428" r="10"/></g>
+
+  <!-- static glass tint/reflections above cassette -->
+  <rect x="601" y="180" width="458" height="288" rx="8" fill="url(#glass)" opacity=".46"/>
+  <path d="M620 187h45L613 246v-45Z" fill="#79a8c4" opacity=".20"/><path d="M651 187h36L617 268v-26Z" fill="#b7d8e8" opacity=".10"/>
+  <rect x="594" y="173" width="472" height="302" rx="11" fill="none" stroke="#060708" stroke-width="7"/>
+
+  <!-- transport keys -->
+  <g fill="url(#button)" stroke="#08090a" stroke-width="4"><rect x="583" y="486" width="151" height="94" rx="7"/><rect x="896" y="486" width="190" height="94" rx="7"/></g>
+  <rect x="744" y="486" width="140" height="94" rx="7" fill="url(#button)" stroke="#08090a" stroke-width="4"/>
+  <g fill="#e8e8e2" font-family="monospace" font-weight="700"><text x="636" y="563" font-size="23">STOP</text><text x="793" y="564" font-size="23">PLAY</text><text x="948" y="517" font-size="16">SPEED AUTO</text></g>
+  <rect x="648" y="511" width="23" height="23" fill="#e8e8e2"/>
+  <path d="m803 509 32 17-32 18Z" fill="#191b1b"/>
+  <!-- speed lamps; dynamic CSS sits over these circles -->
+  <g fill="#3a2b17" stroke="#15110b" stroke-width="2"><circle cx="939" cy="535" r="8"/><circle cx="966" cy="535" r="8"/><circle cx="993" cy="535" r="8"/><circle cx="1020" cy="535" r="8"/><circle cx="1047" cy="535" r="8"/></g>
+  <g fill="#d8d8d4" font-family="monospace" font-size="18"><text x="933" y="566">1</text><text x="960" y="566">2</text><text x="987" y="566">3</text><text x="1014" y="566">4</text><text x="1041" y="566">5</text></g>
+
+  <!-- import panel -->
+  <rect x="1112" y="138" width="244" height="457" rx="12" fill="url(#panel)" stroke="#0b0d0e" stroke-width="4"/>
+  <g fill="#080a0b" stroke="#9a8b75" stroke-width="2"><circle cx="1128" cy="157" r="7"/><circle cx="1338" cy="157" r="7"/><circle cx="1338" cy="581" r="7"/></g>
+  <text x="1150" y="178" fill="#e6e6e1" font-family="monospace" font-size="22" font-weight="700">IMPORT SAMPLES</text>
+  <rect x="1128" y="198" width="212" height="160" rx="6" fill="#1a1d1e" stroke="#9a9c9c" stroke-width="2" stroke-dasharray="9 6"/>
+  <path d="M1208 237h25l10 9h23v31h-58Z" fill="#d9d9d5"/>
+  <g fill="#d1d2ce" font-family="monospace" font-size="16" text-anchor="middle"><text x="1234" y="308">DRAG &amp; DROP</text><text x="1234" y="331">AUDIO FILES HERE</text></g>
+  <g fill="url(#ivory)" stroke="#6d6356" stroke-width="2"><rect x="1128" y="374" width="212" height="49" rx="5"/><rect x="1128" y="435" width="212" height="49" rx="5"/></g>
+  <g fill="#191818" font-family="monospace" font-size="19" font-weight="700" text-anchor="middle"><text x="1234" y="405">IMPORT LIBRARY</text><text x="1234" y="466">IMPORT BEAT</text></g>
+  <path d="M1129 499h210" stroke="#5d6060"/>
+  <g fill="#b9bbb7" font-family="monospace" font-size="14"><text x="1140" y="530">SUPPORTED  FORMATS</text><text x="1140" y="553">WAV  MP3  FLAC  AIFF</text><text x="1140" y="575">MAX 100MB</text></g>
+
+  <!-- crates / beats lower panel -->
+  <rect x="62" y="612" width="344" height="356" rx="8" fill="#101314" stroke="#07090a" stroke-width="4"/>
+  <rect x="408" y="612" width="948" height="356" rx="8" fill="#101314" stroke="#07090a" stroke-width="4"/>
+  <rect x="72" y="621" width="324" height="40" fill="#181c1d"/><rect x="423" y="621" width="918" height="40" fill="#181c1d"/>
+  <!-- simple crate/music icons -->
+  <g fill="none" stroke="#e1e2de" stroke-width="4"><rect x="85" y="635" width="18" height="15" rx="3"/><path d="M89 635v-6a5 5 0 0 1 10 0v6M442 635v19M442 635l16-4v18M458 649a7 5 0 1 1-7-5M442 654a7 5 0 1 1-7-5"/></g>
+  <g fill="#e1e2de" font-family="monospace" font-size="24" font-weight="700"><text x="118" y="650">CRATES</text><text x="474" y="650">BEATS</text></g>
+  <!-- empty dynamic content beds -->
+  <rect x="74" y="661" width="320" height="296" fill="#101314"/><rect x="424" y="661" width="916" height="296" fill="#101314"/>
+  <g fill="#bfc1bd" font-family="monospace" font-size="15"><text x="451" y="687">#</text><text x="522" y="687">NAME</text><text x="1183" y="687">LENGTH</text></g>
+  <path d="M424 692h916" stroke="#222526"/>
+  <rect x="1328" y="692" width="12" height="264" rx="6" fill="#171a1b"/><rect x="1328" y="692" width="12" height="110" rx="6" fill="#636769"/>
+</svg>
