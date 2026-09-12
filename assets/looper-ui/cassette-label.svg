@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
-  <!-- Unprinted paper: the track name remains live HTML. -->
-  <path fill="#bdb496" stroke="#827c65" stroke-width="2" d="M143 116H757V186H143Z"/>
-  <path stroke="#dbd0b0" stroke-width="2" d="M151 124H749"/>
-  <path stroke="#8a8064" stroke-width="2" d="M158 174H742"/>
+  <!-- Blank cassette sticker; the real beat title stays live HTML above it. -->
+  <path fill="#d8dad7" stroke="#a5aaa9" stroke-width="3" d="M166 153H734L752 171V238H148V171Z"/>
+  <path stroke="#eef0ec" stroke-width="3" opacity=".85" d="M178 166H720"/>
+  <path stroke="#a6aaa7" stroke-width="2" opacity=".65" d="M178 224H722"/>
 </svg>
