@@ -5,7 +5,7 @@ The regular run always writes current screenshots to test-artifacts, then
 compares against those references with a small cross-platform raster tolerance.
 """
 from pathlib import Path
-import contextlib, http.server, os, socketserver, threading
+import contextlib, http.server, math, os, socketserver, threading
 from PIL import Image, ImageChops, ImageStat
 try:
     from playwright.sync_api import sync_playwright
@@ -42,9 +42,9 @@ with contextlib.ExitStack() as stack:
     stack.callback(server.server_close)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     stack.callback(server.shutdown)
-    with sync_playwright() as p:
+    with sync_playwright() as p, contextlib.ExitStack() as browser_stack:
         browser = p.chromium.launch(headless=True, executable_path=os.environ.get('CHROMIUM','/usr/bin/chromium'), args=['--no-sandbox','--disable-dev-shm-usage'])
-        stack.callback(browser.close)
+        browser_stack.callback(browser.close)
         geometry = None
         for width, height, label in [(1440,1100,'desktop'),(820,1000,'tablet'),(390,900,'mobile'),(320,812,'narrow'),(680,1000,'breakpoint'),(681,1000,'above-breakpoint')]:
             page = browser.new_page(viewport={'width':width,'height':height}, device_scale_factor=1)
@@ -59,9 +59,14 @@ with contextlib.ExitStack() as stack:
             assert page.evaluate('document.body.scrollWidth <= innerWidth+2')
             # Empty must be a truly opaque cavity: changing the underlying skin
             # must not change a single pixel in the mechanism.
-            before = mechanism.screenshot()
+            # Locator screenshots round fractional CSS edges outwards, which
+            # includes a row/column belonging to the surrounding workstation.
+            # Compare integer pixels strictly inside the component instead.
+            interior = {'x':math.ceil(box['x'])+1, 'y':math.ceil(box['y'])+1,
+                        'width':math.floor(box['width'])-3, 'height':math.floor(box['height'])-3}
+            before = page.screenshot(clip=interior)
             page.locator('.looper66Skin').evaluate("el=>el.style.visibility='hidden'")
-            assert before == mechanism.screenshot(), 'Baked-in cassette leaks through the cavity'
+            assert before == page.screenshot(clip=interior), 'Baked-in cassette leaks through the cavity'
             page.locator('.looper66Skin').evaluate("el=>el.style.visibility=''")
             assert page.locator('.cassetteBayForeground').is_visible()
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight','.cassetteLabel','.cassetteBeatName'):
