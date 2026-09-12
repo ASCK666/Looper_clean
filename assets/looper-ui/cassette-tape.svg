@@ -1,20 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
-  <!-- Cassette body and wound tape, drawn independently of the workstation skin. -->
-  <path fill="#262b25" stroke="#777969" stroke-width="3" d="M96 86H804L818 100V464L801 487H99L82 464V100Z"/>
-  <path fill="none" stroke="#424a3d" stroke-width="2" d="M101 96H799L808 106V456L794 475H106L92 456V106Z"/>
-  <rect x="159" y="203" width="582" height="184" rx="82" fill="#101511" stroke="#535b49" stroke-width="3"/>
-  <g fill="#382a1c" stroke="#63503a" stroke-width="3">
-    <circle cx="288" cy="294" r="86"/><circle cx="612" cy="294" r="86"/>
+  <!-- 120927 cassette shell. Reel apertures are real transparent cut-outs so
+       the two animated HTML reels remain physically behind the cassette face. -->
+  <path fill="#b9bec0" fill-rule="evenodd" stroke="#5d6264" stroke-width="4"
+        d="M128 122H772L794 144V448L774 474H126L106 448V144Z
+           M222 310a66 66 0 1 0 132 0a66 66 0 1 0-132 0
+           M546 310a66 66 0 1 0 132 0a66 66 0 1 0-132 0"/>
+  <path fill="none" stroke="#e0e3e2" stroke-width="3" opacity=".7" d="M145 137H755L777 157"/>
+  <path fill="#272b2d" stroke="#5b6061" stroke-width="3" d="M382 246H518L542 270V350L518 374H382L358 350V270Z"/>
+  <path fill="#3d2d21" d="M392 264H508V356H392Z"/>
+  <g fill="#6a4a31" opacity=".72">
+    <rect x="405" y="264" width="8" height="92"/><rect x="427" y="264" width="7" height="92"/>
+    <rect x="466" y="264" width="7" height="92"/><rect x="488" y="264" width="8" height="92"/>
   </g>
-  <g fill="none" stroke="#8b6b43" stroke-opacity=".36" stroke-width="2">
-    <circle cx="288" cy="294" r="79"/><circle cx="288" cy="294" r="72"/>
-    <circle cx="612" cy="294" r="79"/><circle cx="612" cy="294" r="72"/>
+  <!-- Block A marking, no SVG text dependency. -->
+  <path fill="#34393b" fill-rule="evenodd" d="M156 267H205L218 348H198L194 330H168L164 348H144ZM174 310H190L182 279Z"/>
+  <!-- Block 90 marking. -->
+  <path fill="#34393b" d="M700 274H734V309H711V321H734V348H700V333H720V324H700ZM748 274H782V348H748ZM761 289V333H769V289Z"/>
+  <path fill="#24282a" stroke="#53585a" stroke-width="3" d="M276 394H624L654 468H246Z"/>
+  <g fill="#080a0b" stroke="#54595b" stroke-width="3">
+    <circle cx="307" cy="438" r="14"/><circle cx="593" cy="438" r="14"/>
+    <circle cx="363" cy="446" r="10"/><circle cx="537" cy="446" r="10"/>
   </g>
-  <path fill="#1c211b" stroke="#626a56" stroke-width="3" d="M280 420H620L647 481H253Z"/>
-  <g fill="#090d09" stroke="#666c59" stroke-width="3">
-    <circle cx="143" cy="439" r="18"/><circle cx="757" cy="439" r="18"/>
-    <circle cx="343" cy="456" r="12"/><circle cx="557" cy="456" r="12"/>
-  </g>
-  <path fill="#907247" d="M414 447H486V474H414Z"/>
-  <path stroke="#b2ac8d" stroke-width="2" d="M112 119H125M775 119H788M112 461H125M775 461H788"/>
 </svg>

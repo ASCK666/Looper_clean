@@ -18,6 +18,7 @@ EXPECTED_VISUALS = {
     "looper-ui/cassette-tape.svg",
     "looper-ui/cassette-reel.svg",
     "looper-ui/cassette-label.svg",
+    "looper-ui/looper66-rear-cables.svg",
 }
 
 actual_visuals = {

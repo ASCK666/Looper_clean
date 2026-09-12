@@ -1,6 +1,6 @@
 "use strict";
 
-window.__SP={version:"200826-ui-pixel",ready:false,errors:[]};
+window.__SP={version:"120927-mockup-deck",ready:false,errors:[],ui120927CssReady:true};
 window.__SP.report=(scope,error)=>{
   const message=error?.message||String(error||"Unknown error");
   const item={scope,message,time:new Date().toISOString()};
@@ -44,8 +44,6 @@ if("caches" in window){
     .catch(error=>console.warn("Scratch Practice cache cleanup failed:",error));
 }
 
-// looper-next feature modules load after the maintained defer scripts so they
-// can extend the existing Chopper engine without changing its base files.
 window.addEventListener("DOMContentLoaded",()=>{
   if(location.protocol==="about:" || location.protocol==="data:")return;
   if(window.ChopperWaveSlices || document.querySelector('script[data-chopper-wave-slices="1"]'))return;
@@ -56,9 +54,6 @@ window.addEventListener("DOMContentLoaded",()=>{
   document.body.appendChild(script);
 },{once:true});
 
-// Keep the user's persisted KICK / SNARE / HAT folders authoritative. The
-// embedded boom-bap kit is installed only as the engine fallback once all defer
-// scripts (including the IndexedDB drum-library restore wrapper) are ready.
 window.addEventListener("DOMContentLoaded",()=>{
   if(location.protocol==="about:" || location.protocol==="data:")return;
   if(globalThis.LooperDefaultDrumKit?.installed || document.querySelector('script[data-default-drum-kit="1"]'))return;

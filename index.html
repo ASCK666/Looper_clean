@@ -50,19 +50,26 @@
   <section id="looper" class="screen active">
     <div class="looper66Shell">
       <div class="looper66Workspace">
-        <picture class="looper66Skin" aria-hidden="true">
-          <source media="(max-width:680px)" srcset="assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp">
-          <img src="assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp" alt="" draggable="false">
-        </picture>
-        <section class="panel looperMainPanel" aria-label="Deck Looper66">
-          <div id="looperDropzoneBtn" class="cassetteDeck" role="group" aria-label="Lecteur cassette pixel art et commandes du looper">
+        <section class="panel looperMainPanel" aria-label="Deck cassette du Looper">
+          <div id="looperDropzoneBtn" class="cassetteDeck" role="group" aria-label="Lecteur cassette et commandes du looper">
             <div class="deckReadout" role="status" aria-live="polite">
               <button id="deckReadoutTrack" class="deckReadoutTrack" type="button" popovertarget="deckTrackDetails" aria-label="Afficher le titre complet">NO BEAT LOADED</button>
-              <span id="deckReadoutHint" class="deckReadoutProgress">LOAD BEAT POUR COMMENCER</span>
-              <strong id="deckSpeedReadout" class="deckReadoutRate">100%</strong>
-              <div class="deckReadoutState"><small>STATE</small><strong id="deckTransportState">EMPTY</strong></div>
-              <div class="deckReadoutSpeed"><small>SPEED</small><strong id="deckSpeedEcho">100%</strong></div>
-              <span class="compatHidden"><span id="deckAutoReadout">OFF</span><span id="autoLooperCompactStatus">OFF</span></span>
+              <div class="deckReadoutState"><small>STATE:</small><strong id="deckTransportState">EMPTY</strong></div>
+              <div class="deckReadoutTime"><small>TIME:</small><span id="deckTimeCurrent">00:00</span><span>/</span><span id="deckTimeDuration">00:00</span></div>
+              <div class="deckReadoutMeter" aria-hidden="true"><i id="deckProgressFill"></i></div>
+              <div class="deckReadoutRateRow"><small>RATE:</small><strong id="deckSpeedReadout" class="deckReadoutRate">+0.0%</strong></div>
+              <span id="deckReadoutHint" class="compatHidden">LOAD BEAT POUR COMMENCER</span>
+              <span class="compatHidden"><span id="deckSpeedEcho">100%</span><span id="deckAutoReadout">OFF</span><span id="autoLooperCompactStatus">OFF</span></span>
+            </div>
+
+            <div class="deckUtilityPanel">
+              <div class="deckVolumeControl">
+                <label for="deckVolume">VOLUME</label>
+                <span class="deckVolumeKnob" aria-hidden="true"></span>
+                <input id="deckVolume" type="range" min="0" max="100" step="1" value="100" aria-label="Volume du lecteur">
+              </div>
+              <div class="deckJack" aria-label="Entrée micro décorative"><span>MIC</span><i aria-hidden="true"></i></div>
+              <div class="deckJack" aria-label="Prise casque décorative"><span>PHONES</span><i aria-hidden="true"></i></div>
             </div>
 
             <div id="deckPitchModule" class="deckPitchModule">
@@ -72,55 +79,63 @@
               </div>
               <input id="deckPitch" type="range" min="-8" max="8" step="0.1" value="0" aria-label="Pitch manuel du beat, moins huit à plus huit pour cent">
               <div class="deckPitchScale" aria-hidden="true"><span>-8</span><span>0</span><span>+8</span></div>
-              <button id="deckAutoToggle" class="deckAutoKey" type="button" aria-pressed="false">AUTO</button>
             </div>
 
             <div class="cassetteMechanism" aria-label="Mécanisme du lecteur cassette">
-              <img class="cassetteTape" src="assets/looper-ui/cassette-tape.svg" width="900" height="600" alt="" aria-hidden="true" draggable="false">
-              <img class="cassetteReel cassetteReelLeft" src="assets/looper-ui/cassette-reel.svg" width="128" height="128" alt="" aria-hidden="true" draggable="false">
-              <img class="cassetteReel cassetteReelRight" src="assets/looper-ui/cassette-reel.svg" width="128" height="128" alt="" aria-hidden="true" draggable="false">
-              <img class="cassetteLabel" src="assets/looper-ui/cassette-label.svg" width="900" height="600" alt="" aria-hidden="true" draggable="false">
+              <img class="cassetteReel cassetteReelLeft" src="assets/looper-ui/120927/cassette-reel.svg" width="128" height="128" alt="" aria-hidden="true" draggable="false">
+              <img class="cassetteReel cassetteReelRight" src="assets/looper-ui/120927/cassette-reel.svg" width="128" height="128" alt="" aria-hidden="true" draggable="false">
+              <img class="cassetteTape" src="assets/looper-ui/120927/cassette-body.svg" width="900" height="600" alt="" aria-hidden="true" draggable="false">
               <strong id="cassetteBeatName" class="cassetteBeatName">NO BEAT LOADED</strong>
               <div class="cassetteCssLight" aria-hidden="true"></div>
-              <img class="cassetteBayForeground" src="assets/looper-ui/cassette-frame.svg" width="900" height="600" alt="" aria-hidden="true" draggable="false">
+              <img class="cassetteBayForeground" src="assets/looper-ui/120927/cassette-frame.svg" width="900" height="600" alt="" aria-hidden="true" draggable="false">
             </div>
 
             <aside class="looperImportDock" aria-label="Chargement des beats">
-              <button id="importFolderBtn" class="deckLoadKey" type="button"><strong>LOAD LIBRARY</strong></button>
-              <button id="importBeatsBtn" class="deckLoadKey" type="button"><strong>LOAD BEAT</strong></button>
+              <div class="deckImportTitle">IMPORT SAMPLES</div>
+              <div class="deckDropHint" aria-hidden="true"><span>DRAG &amp; DROP<br>AUDIO FILES HERE</span></div>
+              <button id="importFolderBtn" class="deckLoadKey" type="button"><strong>IMPORT LIBRARY</strong></button>
+              <button id="importBeatsBtn" class="deckLoadKey" type="button"><strong>IMPORT BEAT</strong></button>
+              <div class="deckImportMeta">WAV&nbsp;&nbsp;MP3&nbsp;&nbsp;FLAC&nbsp;&nbsp;AIFF<br>MAX 100MB</div>
             </aside>
 
-            <div class="deckTransportVisual" aria-hidden="true"></div>
             <div class="deckTransport" role="group" aria-label="Transport du Looper">
               <button id="stopBeat" class="deckHotspot" type="button" aria-label="Stop">
                 <svg class="deckKeySymbol" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3h10v10H3z"/></svg>
                 <span class="deckKeyLabel">STOP</span>
               </button>
               <button id="playBeat" class="deckHotspot" type="button" aria-label="Lecture">
-                <svg class="deckKeySymbol" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 1h2v2h3v2h3v2h3v2h-3v2H8v2H5v2H3z"/></svg>
+                <svg class="deckKeySymbol" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 2 13 8 3 14Z"/></svg>
                 <span class="deckKeyLabel">PLAY</span>
               </button>
-              <button id="autoLooperToggle" class="deckHotspot deckRateHotspot" type="button" aria-label="Speed Up, plus un pour cent toutes les huit boucles" aria-pressed="false">
-                <span class="deckKeyLabel">SPEED UP</span>
-                <small class="deckKeyCaption">+1–5% / 8 LOOPS</small>
+              <button id="autoLooperToggle" class="deckHotspot deckRateHotspot" type="button" aria-label="Speed Auto, plus un pour cent toutes les huit boucles" aria-pressed="false">
+                <span class="deckKeyLabel">SPEED AUTO</span>
                 <span class="deckRateVisualSegments" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+                <span class="deckRateNumbers" aria-hidden="true"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i></span>
               </button>
             </div>
 
-            <div id="beatImportStatus" class="beatImportStatus compatHidden" aria-live="polite">READY • LOAD LIBRARY OR LOAD BEAT</div>
+            <div id="beatImportStatus" class="beatImportStatus compatHidden" aria-live="polite">READY • IMPORT LIBRARY OR IMPORT BEAT</div>
           </div>
         </section>
 
         <section class="panel beatCratePanel" aria-label="Bibliothèque de beats">
-          <div class="beatCrateHeading"><strong>BEAT CRATE</strong><span id="crateCount" role="status">0 beat</span></div>
-          <div class="grid2 beatCrateControls">
+          <section class="cratePanel" aria-label="Crates">
+            <h3>CRATES</h3>
+            <div id="crateFilters" class="crateFilters" role="group" aria-label="Filtrer les beats"></div>
+            <span id="crateCount" class="crateCount" role="status">0 beat</span>
+          </section>
+          <section class="beatListPanel" aria-label="Liste des beats">
+            <h3>BEATS</h3>
+            <div class="beatListHeader" aria-hidden="true"><span>#</span><span>NAME</span><span>LENGTH</span></div>
+            <div id="beatList" class="beatList" role="list"></div>
+          </section>
+
+          <div class="compatHidden" aria-hidden="true">
             <input id="librarySearch" type="search" aria-label="Rechercher un beat" placeholder="Rechercher un beat…">
             <select id="libraryOrder" aria-label="Trier les beats"><option value="name">Nom A–Z</option><option value="recent">Plus récents</option></select>
-          </div>
-          <div id="library" class="library" role="region" aria-label="Beats disponibles"></div>
-          <div class="beatCrateTransport" role="group" aria-label="Navigation dans le Beat Crate">
-            <button id="prevBeat" type="button" aria-label="Beat précédent"><span aria-hidden="true">◀</span> Beat précédent</button>
-            <button id="nextBeat" type="button" aria-label="Beat suivant">Beat suivant <span aria-hidden="true">▶</span></button>
+            <div id="library" class="library" role="region" aria-label="Beats disponibles"></div>
+            <button id="prevBeat" type="button" aria-label="Beat précédent">Beat précédent</button>
+            <button id="nextBeat" type="button" aria-label="Beat suivant">Beat suivant</button>
           </div>
         </section>
       </div>
@@ -309,19 +324,16 @@
           <input id="snareFolderFallback" class="hidden" type="file" accept="audio/*" webkitdirectory multiple>
           <input id="hatFolderFallback" class="hidden" type="file" accept="audio/*" webkitdirectory multiple>
         </div>
-
-
       </div>
     </div>
   </section>
-
-  
 </div>
 </div>
 
 <script src="./js/bootstrap.js"></script>
 <script src="./js/core.js" defer></script>
 <script src="./js/looper.js" defer></script>
+<script src="./js/looper-view.js" defer></script>
 <script src="./js/chopper.js" defer></script>
 <script src="./js/drums.js" defer></script>
 <script src="./js/events.js" defer></script>

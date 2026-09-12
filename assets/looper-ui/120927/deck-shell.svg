@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1448" height="1086" viewBox="0 0 1448 1086">
+  <defs>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#414647"/>
+      <stop offset=".22" stop-color="#363a3b"/>
+      <stop offset=".58" stop-color="#2f3334"/>
+      <stop offset="1" stop-color="#26292a"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#282c2d"/>
+      <stop offset="1" stop-color="#171a1b"/>
+    </linearGradient>
+    <linearGradient id="bezel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#202425"/>
+      <stop offset="1" stop-color="#0f1112"/>
+    </linearGradient>
+    <pattern id="diamond" width="12" height="12" patternUnits="userSpaceOnUse">
+      <path d="M0 6 6 0l6 6-6 6Z" fill="none" stroke="#8f9292" stroke-opacity=".095" stroke-width="1"/>
+      <path d="M0 0 6 6 12 0M0 12 6 6 12 12" fill="none" stroke="#000" stroke-opacity=".10" stroke-width="1"/>
+    </pattern>
+    <filter id="deckShadow" x="-10%" y="-20%" width="120%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#000" flood-opacity=".46"/>
+    </filter>
+    <filter id="innerShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="b"/>
+      <feOffset dy="3" result="o"/>
+      <feComposite in="o" in2="SourceAlpha" operator="out" result="cut"/>
+      <feColorMatrix in="cut" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .5 0"/>
+      <feBlend in="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <!-- chassis -->
+  <g filter="url(#deckShadow)">
+    <rect x="34" y="101" width="1352" height="906" rx="22" fill="url(#metal)" stroke="#111314" stroke-width="7"/>
+    <rect x="42" y="108" width="1336" height="891" rx="16" fill="url(#diamond)"/>
+    <rect x="46" y="112" width="1328" height="883" rx="14" fill="none" stroke="#747879" stroke-opacity=".35" stroke-width="2"/>
+  </g>
+
+  <!-- chassis screws -->
+  <g fill="#0a0c0d" stroke="#a1a3a1" stroke-width="2">
+    <circle cx="58" cy="130" r="10"/><circle cx="1358" cy="130" r="10"/>
+    <circle cx="58" cy="979" r="10"/><circle cx="1358" cy="979" r="10"/>
+  </g>
+  <g stroke="#313436" stroke-width="2">
+    <path d="m53 125 10 10m0-10-10 10M1353 125l10 10m0-10-10 10M53 974l10 10m0-10-10 10M1353 974l10 10m0-10-10 10"/>
+  </g>
+
+  <!-- readout frame: screen itself stays live HTML -->
+  <rect x="62" y="145" width="365" height="332" rx="11" fill="url(#panel)" stroke="#0b0d0e" stroke-width="4"/>
+  <rect x="76" y="165" width="337" height="292" rx="9" fill="#050503" stroke="#5d6061" stroke-width="3"/>
+  <rect x="82" y="176" width="323" height="269" rx="6" fill="#030302"/>
+  <g fill="#0a0c0d" stroke="#9b8d78" stroke-width="2"><circle cx="79" cy="160" r="7"/><circle cx="407" cy="160" r="7"/><circle cx="79" cy="461" r="7"/><circle cx="407" cy="461" r="7"/></g>
+
+  <!-- volume / mic / phones panel. knob itself is a live asset -->
+  <rect x="62" y="483" width="365" height="113" rx="10" fill="url(#panel)" stroke="#0b0d0e" stroke-width="4"/>
+  <g fill="#d5d6d2" font-family="monospace" font-size="20" font-weight="700"><text x="104" y="513">VOLUME</text><text x="245" y="513">MIC</text><text x="336" y="513">PHONES</text></g>
+  <g stroke="#c5c7c4" stroke-opacity=".5" stroke-width="2"><path d="M207 508v69M310 508v69"/></g>
+  <circle cx="132" cy="551" r="42" fill="none" stroke="#d0d1cd" stroke-opacity=".68" stroke-width="2" stroke-dasharray="2 8"/>
+  <g fill="#090a0b" stroke="#8f8273" stroke-width="4"><circle cx="259" cy="550" r="21"/><circle cx="366" cy="550" r="21"/></g>
+  <g fill="#030404"><circle cx="259" cy="550" r="10"/><circle cx="366" cy="550" r="10"/></g>
+
+  <!-- pitch bed. track/scale are static, thumb/value are live -->
+  <rect x="437" y="137" width="115" height="459" rx="10" fill="url(#metal)" stroke="#17191a" stroke-width="3"/>
+  <text x="467" y="170" fill="#e3e4df" font-family="monospace" font-size="22" font-weight="700">PITCH</text>
+  <rect x="482" y="184" width="18" height="288" rx="8" fill="#080909" stroke="#414546" stroke-width="2"/>
+  <g stroke="#8a8d8c" stroke-opacity=".5" stroke-width="1"><path d="M461 208h12M461 238h12M461 268h12M461 298h12M461 328h12M461 358h12M461 388h12M461 418h12M461 448h12"/></g>
+  <g fill="#d5d6d2" font-family="monospace" font-size="18"><text x="507" y="212">+8</text><text x="527" y="332">0</text><text x="507" y="448">-8</text></g>
+  <rect x="451" y="484" width="91" height="47" rx="6" fill="#101313" stroke="#343738" stroke-width="2"/>
+
+  <!-- cassette reader outer panel only; glass/door is a separate foreground asset -->
+  <rect x="565" y="137" width="534" height="441" rx="12" fill="url(#metal)" stroke="#101213" stroke-width="4"/>
+  <g fill="#090b0c" stroke="#a0a29f" stroke-width="2"><circle cx="586" cy="157" r="8"/><circle cx="1076" cy="157" r="8"/><circle cx="586" cy="458" r="8"/><circle cx="1076" cy="458" r="8"/></g>
+  <rect x="594" y="173" width="472" height="302" rx="11" fill="#030608" stroke="#08090a" stroke-width="7"/>
+  <rect x="602" y="181" width="456" height="286" rx="8" fill="#071018" stroke="#2d373d" stroke-width="2"/>
+
+  <!-- transport recesses; live buttons overlay these exactly -->
+  <g fill="url(#bezel)" stroke="#070809" stroke-width="5">
+    <rect x="583" y="486" width="151" height="94" rx="8"/>
+    <rect x="744" y="486" width="140" height="94" rx="8"/>
+    <rect x="896" y="486" width="190" height="94" rx="8"/>
+  </g>
+
+  <!-- import panel. drop zone and copy are static, the two ivory keys are live -->
+  <rect x="1112" y="138" width="244" height="457" rx="12" fill="url(#panel)" stroke="#0b0d0e" stroke-width="4"/>
+  <text x="1150" y="178" fill="#e6e6e1" font-family="monospace" font-size="22" font-weight="700">IMPORT SAMPLES</text>
+  <rect x="1128" y="198" width="212" height="160" rx="6" fill="#1a1d1e" stroke="#9a9c9c" stroke-width="2" stroke-dasharray="9 6"/>
+  <path d="M1208 237h25l10 9h23v31h-58Z" fill="#d9d9d5"/>
+  <g fill="#d1d2ce" font-family="monospace" font-size="16" text-anchor="middle"><text x="1234" y="308">DRAG &amp; DROP</text><text x="1234" y="331">AUDIO FILES HERE</text></g>
+  <g fill="url(#bezel)" stroke="#08090a" stroke-width="3"><rect x="1128" y="374" width="212" height="49" rx="5"/><rect x="1128" y="435" width="212" height="49" rx="5"/></g>
+  <path d="M1129 499h210" stroke="#5d6060"/>
+  <g fill="#b9bbb7" font-family="monospace" font-size="14"><text x="1140" y="530">SUPPORTED FORMATS</text><text x="1140" y="553">WAV  MP3  FLAC  AIFF</text><text x="1140" y="575">MAX 100MB</text></g>
+
+  <!-- lower library beds -->
+  <rect x="62" y="612" width="344" height="356" rx="8" fill="#101314" stroke="#07090a" stroke-width="4"/>
+  <rect x="408" y="612" width="948" height="356" rx="8" fill="#101314" stroke="#07090a" stroke-width="4"/>
+  <rect x="72" y="621" width="324" height="40" fill="#181c1d"/>
+  <rect x="423" y="621" width="918" height="40" fill="#181c1d"/>
+  <g fill="#e1e2de" font-family="monospace" font-size="24" font-weight="700"><text x="118" y="650">CRATES</text><text x="474" y="650">BEATS</text></g>
+  <g fill="none" stroke="#e1e2de" stroke-width="4"><rect x="85" y="635" width="18" height="15" rx="3"/><path d="M89 635v-6a5 5 0 0 1 10 0v6M442 635v19M442 635l16-4v18M458 649a7 5 0 1 1-7-5M442 654a7 5 0 1 1-7-5"/></g>
+  <g fill="#bfc1bd" font-family="monospace" font-size="15"><text x="451" y="687">#</text><text x="522" y="687">NAME</text><text x="1183" y="687">LENGTH</text></g>
+  <path d="M424 692h916" stroke="#222526"/>
+  <rect x="1328" y="692" width="12" height="264" rx="6" fill="#171a1b"/><rect x="1328" y="692" width="12" height="110" rx="6" fill="#636769"/>
+</svg>
