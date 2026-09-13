@@ -116,11 +116,11 @@
 #looper .cassetteTape{inset:0;width:100%;height:100%;display:block}
 #looper .cassetteTape{z-index:2}
 #looper .cassetteReel{
-  z-index:1;width:14.72%;height:auto;aspect-ratio:1;transform-origin:50% 50%;
+  z-index:1;width:13.79%;height:auto;aspect-ratio:1;transform-origin:50% 50%;
   animation:looperReelSpin var(--supply-reel-cycle) linear infinite;animation-play-state:paused;will-change:transform;
 }
-#looper .cassetteReelLeft{left:19.54%;top:30.53%}
-#looper .cassetteReelRight{left:61.61%;top:30.53%;animation-duration:var(--takeup-reel-cycle)}
+#looper .cassetteReelLeft{left:20%;top:31.30%}
+#looper .cassetteReelRight{left:62.07%;top:31.30%;animation-duration:var(--takeup-reel-cycle)}
 #looper .cassetteDeck.playing .cassetteReel { animation-play-state:running; }
 @keyframes looperReelSpin{to{transform:rotate(360deg)}}
 #looper .cassetteBeatName{

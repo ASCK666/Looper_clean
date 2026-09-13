@@ -18,7 +18,7 @@ EXPECTED_VISUALS={
     'looper-ui/120927/pitch-panel.webp',
     'looper-ui/120927/reader-mechanism.webp',
     'looper-ui/120927/cassette.webp',
-    'looper-ui/120927/reel-animation.svg',
+    'looper-ui/120927/reel-animation.webp',
 }
 actual={
     path.relative_to(ASSETS).as_posix()

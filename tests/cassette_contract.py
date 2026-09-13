@@ -1,7 +1,6 @@
 """Cassette contract for the approved 120927 three-asset deck."""
 from pathlib import Path
 import re
-import xml.etree.ElementTree as ET
 from PIL import Image
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -10,7 +9,7 @@ css=(ROOT/'css/looper.css').read_text(encoding='utf-8')
 assets=ROOT/'assets/looper-ui/120927'
 
 assert 'reader-mechanism.webp' in html
-assert html.count('reel-animation.svg') == 2
+assert html.count('reel-animation.webp') == 2
 assert 'cassette.webp' in html
 assert 'id="cassetteBeatName"' in html
 
@@ -22,9 +21,10 @@ assert reader.getpixel((275,190))[3] == 0
 assert cassette.getpixel((117,112))[3] == 0
 assert cassette.getpixel((300,112))[3] == 0
 
-reel=ET.parse(assets/'reel-animation.svg').getroot()
-assert reel.attrib['viewBox'] == '0 0 64 64'
-assert not list(reel.iter('{http://www.w3.org/2000/svg}mask'))
+reel=Image.open(assets/'reel-animation.webp').convert('RGBA')
+assert reel.size == (60,60)
+assert reel.getpixel((0,0))[3] == 0
+assert reel.getpixel((30,30))[3] == 255
 assert 'aspect-ratio:435/262' in css
 for selector,level in (('.cassetteReel',1),('.cassetteTape',2)):
     assert re.search(rf'{re.escape(selector)}\s*\{{[^}}]*z-index\s*:\s*{level}(?:\s*;|\s*\}})',css,re.S)

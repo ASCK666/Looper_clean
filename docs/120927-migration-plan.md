@@ -41,7 +41,7 @@ For every asset below:
 6. **Pitch panel** — `pitch-panel.webp`: static physical pitch panel only; live slider/thumb/readout owns state; no conflicting baked values.
 7. **Reader mechanism** — `reader-mechanism.webp`: only the fixed ring between the outer reader boundary and the cassette boundary; the cassette area is genuinely transparent.
 8. **Cassette** — `cassette.webp`: exact full cassette, blank title label for live HTML, and two transparent reel apertures.
-9. **Reel animation** — `reel-animation.svg`: one fully opaque mechanism reused twice; each instance overlaps its aperture so the background can never leak through the hub.
+9. **Reel animation** — `reel-animation.webp`: one circular mechanism cropped directly from the mockup, reused twice; its solid hub and aperture overlap prevent any background leak.
 10. **Cassette door/glass** — `cassette-frame.webp`: single door/glass/opening-seam foreground; exact openable area; no screws on glass.
 11. **STOP button** — `button-stop.webp`: physical face only; real button owns interaction.
 12. **PLAY button** — `button-play.webp`: physical face only; CSS owns subtle idle amber glow and stronger playing glow; no idle pulse.

@@ -33,7 +33,7 @@ assert (ROOT/'assets/looper-ui/120927/utility-panel.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/pitch-panel.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/reader-mechanism.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/cassette.webp').exists()
-assert (ROOT/'assets/looper-ui/120927/reel-animation.svg').exists()
+assert (ROOT/'assets/looper-ui/120927/reel-animation.webp').exists()
 mockup=ROOT/'assets/looper-ui/120927/mockup-reference.png'
 assert mockup.exists() and mockup.read_bytes()[:8]==b'\x89PNG\r\n\x1a\n'
 assert 'looper66StaticSkin' not in HTML+CSS
