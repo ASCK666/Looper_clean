@@ -33,7 +33,8 @@ with contextlib.ExitStack() as stack:
             page.wait_for_function("[...document.querySelectorAll('.cassetteMechanism img')].every(i=>i.complete && i.naturalWidth>0)")
             scene=page.locator('.looper66Workspace').evaluate('el=>getComputedStyle(el).backgroundImage')
             if width>680:
-                assert 'deck-scene-120927.svg' in scene,scene
+                for asset in ('deck-shell.svg','rear-cables.svg','desk-wood.svg'):
+                    assert asset in scene,(asset,scene)
             assert page.locator('#deckVolume').count()==1
             assert page.locator('#crateFilters').count()==1
             assert page.locator('#beatList').count()==1
