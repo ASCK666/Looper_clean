@@ -1,51 +1,43 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
   <defs>
     <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#b8c2c5"/>
-      <stop offset=".46" stop-color="#9eaaae"/>
-      <stop offset="1" stop-color="#849197"/>
+      <stop offset="0" stop-color="#96a4aa"/>
+      <stop offset=".46" stop-color="#82929a"/>
+      <stop offset="1" stop-color="#6c7c84"/>
     </linearGradient>
     <linearGradient id="label" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#d2d9da"/>
-      <stop offset="1" stop-color="#b8c3c6"/>
+      <stop offset="0" stop-color="#a9b5bb"/>
+      <stop offset="1" stop-color="#929fa5"/>
     </linearGradient>
   </defs>
 
-  <!-- Large blue-grey C90 shell. Reel apertures are real transparent holes. -->
-  <path d="M82 92H818L842 118V452L812 501H88L58 452V118Z" fill="#455158" opacity=".78"/>
-  <path fill="url(#body)" fill-rule="evenodd" stroke="#56646a" stroke-width="5"
+  <path d="M82 92H818L842 118V452L812 501H88L58 452V118Z" fill="#354249" opacity=".84"/>
+  <path fill="url(#body)" fill-rule="evenodd" stroke="#4d5c62" stroke-width="5"
     d="M88 82H812L834 105V444L807 487H93L66 444V105Z
        M239 309a62 62 0 1 0 124 0a62 62 0 1 0-124 0
        M537 309a62 62 0 1 0 124 0a62 62 0 1 0-124 0"/>
-  <path d="M91 91H807L825 110" fill="none" stroke="#e4e8e8" stroke-width="3" opacity=".52"/>
+  <path d="M91 91H807L825 110" fill="none" stroke="#cbd2d4" stroke-width="3" opacity=".43"/>
 
-  <!-- label area -->
-  <rect x="126" y="111" width="648" height="126" rx="8" fill="url(#label)" stroke="#8e9a9d" stroke-width="3"/>
-  <rect x="153" y="127" width="594" height="57" rx="5" fill="#c0cacc" opacity=".88"/>
-  <path d="M151 197H749" stroke="#879397" stroke-width="2" opacity=".58"/>
+  <rect x="126" y="111" width="648" height="126" rx="8" fill="url(#label)" stroke="#718087" stroke-width="3"/>
+  <rect x="153" y="127" width="594" height="57" rx="5" fill="#9eabb0" opacity=".86"/>
+  <path d="M151 197H749" stroke="#68777d" stroke-width="2" opacity=".62"/>
 
-  <!-- tape window -->
-  <path d="M374 251H526L550 274V348L526 371H374L350 348V274Z" fill="#273036" stroke="#66747a" stroke-width="5"/>
-  <rect x="390" y="270" width="120" height="82" rx="4" fill="#3b312d"/>
-  <path d="M401 271v80M426 271v80M474 271v80M499 271v80" stroke="#74533a" stroke-width="11" opacity=".72"/>
-  <path d="M427 271c15 17 31 20 46 0v80c-15-17-31-20-46 0Z" fill="#82624b" opacity=".56"/>
+  <path d="M374 251H526L550 274V348L526 371H374L350 348V274Z" fill="#20292e" stroke="#536168" stroke-width="5"/>
+  <rect x="390" y="270" width="120" height="82" rx="4" fill="#342d2a"/>
+  <path d="M401 271v80M426 271v80M474 271v80M499 271v80" stroke="#6a4c36" stroke-width="11" opacity=".74"/>
+  <path d="M427 271c15 17 31 20 46 0v80c-15-17-31-20-46 0Z" fill="#795b47" opacity=".54"/>
 
-  <!-- left A mark -->
-  <path fill="#3f4c52" d="M145 265h47l18 88h-20l-4-21h-34l-4 21h-20Zm12 50h25l-12-33Z"/>
-
-  <!-- 90 mark as vector blocks -->
-  <path fill="#354248" d="M694 268h10v10h-10Zm10 0h10v10h-10Zm10 0h10v10h-10Zm-20 10h10v10h-10Zm20 0h10v10h-10Zm-20 10h10v10h-10Zm10 0h10v10h-10Zm10 0h10v10h-10Zm10 10h10v10h-10Zm-20 10h10v10h-10Zm10 0h10v10h-10Zm10 0h10v10h-10Zm17-40h10v10h-10Zm10 0h10v10h-10Zm10 0h10v10h-10Zm-20 10h10v10h-10Zm20 0h10v10h-10Zm-20 10h10v10h-10Zm20 0h10v10h-10Zm-20 10h10v10h-10Zm20 0h10v10h-10Zm-20 10h10v10h-10Zm10 0h10v10h-10Zm10 0h10v10h-10Z"/>
-  <!-- TYPE I / NORMAL-like compact vector marks, intentionally not runtime text -->
-  <g fill="#354248" opacity=".9">
+  <path fill="#344147" d="M145 265h47l18 88h-20l-4-21h-34l-4 21h-20Zm12 50h25l-12-33Z"/>
+  <path fill="#2f3c42" d="M694 268h10v10h-10Zm10 0h10v10h-10Zm10 0h10v10h-10Zm-20 10h10v10h-10Zm20 0h10v10h-10Zm-20 10h10v10h-10Zm10 0h10v10h-10Zm10 0h10v10h-10Zm10 10h10v10h-10Zm-20 10h10v10h-10Zm10 0h10v10h-10Zm10 0h10v10h-10Zm17-40h10v10h-10Zm10 0h10v10h-10Zm10 0h10v10h-10Zm-20 10h10v10h-10Zm20 0h10v10h-10Zm-20 10h10v10h-10Zm20 0h10v10h-10Zm-20 10h10v10h-10Zm20 0h10v10h-10Zm-20 10h10v10h-10Zm10 0h10v10h-10Zm10 0h10v10h-10Z"/>
+  <g fill="#2f3c42" opacity=".92">
     <path d="M691 331h9v3h-3v12h-3v-12h-3Zm12 0h3v6h3v-6h3v6h-3v9h-3v-9h-3Zm12 0h6v3h-3v3h6v3h-6v6h-3Zm12 0h9v3h-6v3h3v3h-3v3h6v3h-9Zm18 0h9v3h-3v9h3v3h-9v-3h3v-9h-3Z"/>
     <path d="M688 353h3v3h3v3h3v-6h3v15h-3v-6h-3v-3h-3v9h-3Zm16 0h9v3h-6v9h6v3h-9Zm13 0h6v3h-3v3h6v3h-3v6h-3v-6h-3Zm13 0h3v6h6v-6h3v15h-3v-6h-6v6h-3Zm16 0h9v3h-6v3h3v3h-3v3h6v3h-9Z"/>
   </g>
 
-  <!-- lower cassette well -->
-  <path d="M248 383H652L690 474H210Z" fill="#232b30" stroke="#59676c" stroke-width="5"/>
-  <path d="M276 402H624L650 459H250Z" fill="#1b2327" stroke="#38464b" stroke-width="2"/>
-  <g fill="#060a0c" stroke="#6d797c" stroke-width="3">
+  <path d="M248 383H652L690 474H210Z" fill="#1c262b" stroke="#4e5d63" stroke-width="5"/>
+  <path d="M276 402H624L650 459H250Z" fill="#151e22" stroke="#334147" stroke-width="2"/>
+  <g fill="#05090b" stroke="#657276" stroke-width="3">
     <circle cx="281" cy="440" r="15"/><circle cx="351" cy="449" r="11"/><circle cx="450" cy="418" r="11"/><circle cx="549" cy="449" r="11"/><circle cx="619" cy="440" r="15"/>
   </g>
-  <g fill="#20282c"><circle cx="281" cy="440" r="6"/><circle cx="619" cy="440" r="6"/></g>
+  <g fill="#192226"><circle cx="281" cy="440" r="6"/><circle cx="619" cy="440" r="6"/></g>
 </svg>
