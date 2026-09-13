@@ -14,9 +14,12 @@ for control in ('playBeat','stopBeat','importFolderBtn','importBeatsBtn','autoLo
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
 assert 'deckAutoToggle' not in HTML+EVENTS
 
-# One visual source of truth, composed from clean 120927 assets.
+# One clean visual source set, layered directly by the Looper stylesheet.
 assert 'assets/looper-ui/120927/' in HTML
-assert 'deck-scene-120927.svg' in CSS
+for asset in ('deck-shell.svg','rear-cables.svg','desk-wood.svg'):
+    assert asset in CSS,asset
+assert 'deck-scene-120927.svg' not in CSS
+assert not (ROOT/'assets/looper-ui/120927/deck-scene-120927.svg').exists()
 for retired in (
     'looper66-desktop-pitch-clean','looper66-mobile-pitch-clean',
     'looper66-desktop-transport','looper66-mobile-transport','looper66-crate-cassettes',
@@ -48,7 +51,7 @@ assert '$("importBeatsBtn")' in EVENTS and '$("importFolderBtn")' in EVENTS
 assert HTML.count('<i></i>')>=5
 for level in range(1,6):
     assert f'data-speed-level="{level}"' in CSS
-assert '--light-strength:.10' in CSS  # subtle idle PLAY invitation
+assert '--light-strength:.10' in CSS
 assert '.cassetteDeck.playing #playBeat' in CSS
 assert 'rgba(var(--light-r),var(--light-g),var(--light-b)' in CSS
 assert 'mix-blend-mode:screen' in CSS
@@ -64,6 +67,7 @@ assert 'rowSource=row=>isFolderBeat(row)?"library":"imports"' in VIEW
 assert 'animation:looperReelSpin var(--supply-reel-cycle)' in CSS
 assert '.cassetteDeck.playing .cassetteReel { animation-play-state:running; }' in CSS
 assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
+assert 'height:auto' in CSS
 assert '--supply-reel-cycle' in LOOPER and '--takeup-reel-cycle' in LOOPER
 
 assert '@media (max-width:680px)' in CSS
