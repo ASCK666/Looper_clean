@@ -732,7 +732,7 @@ function refreshAutoLooperCompact(){
   if(speed)speed.textContent=formattedRate;
   if(speedEcho)speedEcho.textContent=formattedRate;
   if(auto)auto.textContent=autoLooperEnabledState ? "ON" : "OFF";
-  const pitchLabel=`${looperPitchPercent>0?"+":""}${looperPitchPercent.toFixed(1)}%`;
+  const pitchLabel=`${looperPitchPercent>=0?"+":""}${looperPitchPercent.toFixed(1)}%`;
   if(pitchReadout)pitchReadout.textContent=pitchLabel;
   if(pitchControl)pitchControl.setAttribute("aria-valuetext",pitchLabel);
   if(pitchModule){

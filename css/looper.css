@@ -100,11 +100,11 @@
 #looper #deckPitch::-webkit-slider-runnable-track{width:14px;height:100%;border:0;background:transparent}
 #looper #deckPitch::-moz-range-track{width:14px;height:100%;border:0;background:transparent}
 #looper #deckPitch::-webkit-slider-thumb{
-  width:54px;height:34px;margin-left:-20px;border:2px solid #08090a;border-radius:3px;
+  width:54px;height:64px;margin-left:-20px;border:2px solid #08090a;border-radius:3px;
   background:linear-gradient(#3c4041 0 31%,#111314 32% 43%,#ffa31a 44% 55%,#111314 56% 69%,#343839 70% 100%);
   box-shadow:0 3px 5px #000,inset 0 1px #727576;-webkit-appearance:none;
 }
-#looper #deckPitch::-moz-range-thumb{width:54px;height:34px;border:2px solid #08090a;border-radius:3px;background:linear-gradient(#3c4041 0 31%,#111314 32% 43%,#ffa31a 44% 55%,#111314 56% 69%,#343839 70% 100%);box-shadow:0 3px 5px #000,inset 0 1px #727576}
+#looper #deckPitch::-moz-range-thumb{width:54px;height:64px;border:2px solid #08090a;border-radius:3px;background:linear-gradient(#3c4041 0 31%,#111314 32% 43%,#ffa31a 44% 55%,#111314 56% 69%,#343839 70% 100%);box-shadow:0 3px 5px #000,inset 0 1px #727576}
 
 /* CASSETTE — reference-derived body, live reels behind it, subtle foreground glass. */
 #looper .cassetteMechanism{

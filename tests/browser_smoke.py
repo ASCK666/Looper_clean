@@ -141,7 +141,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.click('[data-tab="looper"]')
         page.set_input_files('#beatFiles',str(xss)); page.wait_for_timeout(500)
         assert page.locator('#autoLooperToggle').get_attribute('data-speed-level')=='0'
-        assert page.locator('#deckPitchReadout').inner_text()=='0.0%'
+        assert page.locator('#deckPitchReadout').inner_text()=='+0.0%'
         assert page.evaluate('window.__sp_xss') is None
         assert page.locator('#library img').count()==0
         assert page.evaluate("safeBeatFilename('CON.wav')")=='_CON'
