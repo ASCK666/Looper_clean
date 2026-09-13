@@ -39,9 +39,9 @@ For every asset below:
 4. **Readout background** — `readout-panel.webp`: static screen/frame material only; live HTML owns TRACK/STATE/TIME/progress/RATE.
 5. **Utility panel** — `utility-panel.webp`: volume/MIC/PHONES physical panel; live volume control remains functional.
 6. **Pitch panel** — `pitch-panel.webp`: static physical pitch panel only; live slider/thumb/readout owns state; no conflicting baked values.
-7. **Cassette support** — `cassette-support.webp`: empty static housing only; no cassette, rail, screw, stop or reel pixels.
-8. **Cassette shell** — `cassette-shell.svg`: exact shell/label/markings with transparent reel apertures.
-9. **Cassette spool** — `cassette-spool.svg`: one exact mechanism, reused twice and centered for supply/takeup rotation.
+7. **Reader mechanism** — `reader-mechanism.webp`: only the fixed ring between the outer reader boundary and the cassette boundary; the cassette area is genuinely transparent.
+8. **Cassette** — `cassette.webp`: exact full cassette, blank title label for live HTML, and two transparent reel apertures.
+9. **Reel animation** — `reel-animation.svg`: one fully opaque mechanism reused twice; each instance overlaps its aperture so the background can never leak through the hub.
 10. **Cassette door/glass** — `cassette-frame.webp`: single door/glass/opening-seam foreground; exact openable area; no screws on glass.
 11. **STOP button** — `button-stop.webp`: physical face only; real button owns interaction.
 12. **PLAY button** — `button-play.webp`: physical face only; CSS owns subtle idle amber glow and stronger playing glow; no idle pulse.

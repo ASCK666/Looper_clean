@@ -53,10 +53,16 @@
         <img class="looper66DeskSurface" src="assets/looper-ui/120927/desk-surface.webp" width="1448" height="1086" alt="" aria-hidden="true" draggable="false">
         <img class="looper66RearCables" src="assets/looper-ui/120927/rear-cables.webp" width="1448" height="1086" alt="" aria-hidden="true" draggable="false">
         <img class="looper66DeckShell" src="assets/looper-ui/120927/deck-shell.webp" width="1448" height="1086" alt="" aria-hidden="true" draggable="false">
-        <img class="looper66CassetteSupport" src="assets/looper-ui/120927/cassette-support.webp" width="550" height="366" alt="" aria-hidden="true" draggable="false">
+        <img class="looper66CassetteSupport" src="assets/looper-ui/120927/reader-mechanism.webp" width="550" height="366" alt="" aria-hidden="true" draggable="false">
         <img class="looper66ReadoutPanel" src="assets/looper-ui/120927/readout-panel.webp" width="380" height="355" alt="" aria-hidden="true" draggable="false">
         <section class="panel looperMainPanel" aria-label="Deck cassette du Looper">
           <div id="looperDropzoneBtn" class="cassetteDeck" role="group" aria-label="Lecteur cassette et commandes du looper">
+            <div class="cassetteMechanism" aria-hidden="true">
+              <img class="cassetteReel cassetteReelLeft" src="assets/looper-ui/120927/reel-animation.svg" alt="" draggable="false">
+              <img class="cassetteReel cassetteReelRight" src="assets/looper-ui/120927/reel-animation.svg" alt="" draggable="false">
+              <img class="cassetteTape" src="assets/looper-ui/120927/cassette.webp" width="435" height="262" alt="" draggable="false">
+              <span id="cassetteBeatName" class="cassetteBeatName">NO BEAT LOADED</span>
+            </div>
             <div class="deckReadout" role="status" aria-live="polite">
               <button id="deckReadoutTrack" class="deckReadoutTrack" type="button" popovertarget="deckTrackDetails" aria-label="Afficher le titre complet">NO BEAT LOADED</button>
               <div class="deckReadoutState"><small>STATE:</small><strong id="deckTransportState">EMPTY</strong></div>

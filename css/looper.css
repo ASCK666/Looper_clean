@@ -109,22 +109,22 @@
 
 /* CASSETTE — reference-derived body, live reels behind it, subtle foreground glass. */
 #looper .cassetteMechanism{
-  z-index:18;top:19.43%;left:44.75%;width:28.32%;aspect-ratio:442/252;overflow:hidden;border:0;
+  z-index:18;top:18.05%;left:44.06%;width:30.04%;aspect-ratio:435/262;overflow:hidden;border:0;
   background:transparent;box-shadow:none;isolation:isolate;container-type:inline-size;pointer-events:none;
 }
 #looper .cassetteMechanism>*{position:absolute;pointer-events:none;user-select:none}
 #looper .cassetteTape{inset:0;width:100%;height:100%;display:block}
 #looper .cassetteTape{z-index:2}
 #looper .cassetteReel{
-  z-index:1;width:16%;height:auto;aspect-ratio:1;transform-origin:50% 50%;
+  z-index:1;width:14.72%;height:auto;aspect-ratio:1;transform-origin:50% 50%;
   animation:looperReelSpin var(--supply-reel-cycle) linear infinite;animation-play-state:paused;will-change:transform;
 }
-#looper .cassetteReelLeft{left:21.41%;top:30.42%}
-#looper .cassetteReelRight{left:62.81%;top:30.02%;animation-duration:var(--takeup-reel-cycle)}
+#looper .cassetteReelLeft{left:19.54%;top:30.53%}
+#looper .cassetteReelRight{left:61.61%;top:30.53%;animation-duration:var(--takeup-reel-cycle)}
 #looper .cassetteDeck.playing .cassetteReel { animation-play-state:running; }
 @keyframes looperReelSpin{to{transform:rotate(360deg)}}
 #looper .cassetteBeatName{
-  z-index:3;top:6.75%;left:9.95%;width:84.84%;height:20.63%;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  z-index:3;top:8.40%;left:12.87%;width:74.71%;height:17.56%;display:flex;align-items:center;justify-content:center;overflow:hidden;
   color:#1b1d1e;background:transparent;border:0;
   font:900 clamp(13px,1.82vw,26px)/1 var(--font-condensed,"Arial Narrow",Arial,sans-serif);letter-spacing:.015em;text-align:center;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px rgba(255,255,255,.35);
 }

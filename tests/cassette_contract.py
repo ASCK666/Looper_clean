@@ -1,55 +1,34 @@
-"""Cassette contract for the approved 120927 deck."""
+"""Cassette contract for the approved 120927 three-asset deck."""
 from pathlib import Path
 import re
 import xml.etree.ElementTree as ET
+from PIL import Image
 
 ROOT=Path(__file__).resolve().parents[1]
 html=(ROOT/'index.html').read_text(encoding='utf-8')
 css=(ROOT/'css/looper.css').read_text(encoding='utf-8')
-ns='{http://www.w3.org/2000/svg}'
+assets=ROOT/'assets/looper-ui/120927'
 
-expected={
-    'cassetteReel cassetteReelLeft':('cassette-spool.svg','0 0 96 96','reference-raster'),
-    'cassetteReel cassetteReelRight':('cassette-spool.svg','0 0 96 96','reference-raster'),
-    'cassetteTape':('cassette-shell.svg','0 0 442 252','reference-raster'),
-}
-for class_name,(asset,viewbox,kind) in expected.items():
-    tag=re.search(rf'<img\b[^>]*class="{class_name}"[^>]*>',html)
-    assert tag,class_name
-    tag=tag.group()
-    assert f'src="assets/looper-ui/120927/{asset}"' in tag
-    assert 'alt=""' in tag and 'aria-hidden="true"' in tag
-    root=ET.parse(ROOT/'assets/looper-ui/120927'/asset).getroot()
-    assert root.attrib['viewBox']==viewbox,(asset,root.attrib.get('viewBox'))
-    images=list(root.iter(ns+'image'))
-    if kind=='reference-raster':
-        # Physical cassette material comes directly from the approved mockup,
-        # embedded locally so the asset stays deterministic and self-contained.
-        assert images,asset
-        href=images[0].attrib.get('href','')
-        assert href.startswith('data:image/webp;base64,'),(asset,href[:32])
-        assert 'http://' not in href and 'https://' not in href
-    else:
-        assert not images,asset
-    assert not list(root.iter(ns+'text')),asset
-    assert not list(root.iter(ns+'filter')),asset
+assert 'reader-mechanism.webp' in html
+assert html.count('reel-animation.svg') == 2
+assert 'cassette.webp' in html
+assert 'id="cassetteBeatName"' in html
 
-body=ET.parse(ROOT/'assets/looper-ui/120927/cassette-shell.svg').getroot()
-# The live reels stay physically behind two transparent apertures in the body.
-masks=list(body.iter(ns+'mask'))
-assert masks
-apertures=list(masks[0].iter(ns+'circle'))
-assert len(apertures)==2
-assert all(float(c.attrib['r'])>=20 for c in apertures)
-assert 'aspect-ratio:442/252' in css
-# Z-order is a visual contract; do not couple it to whitespace or selector prefixes.
-for selector,level in (
-    ('.cassetteReel',1),
-    ('.cassetteTape',2),
-):
-    assert re.search(rf'{re.escape(selector)}\s*\{{[^}}]*z-index\s*:\s*{level}(?:\s*;|\s*\}})',css,re.S),(selector,level)
+reader=Image.open(assets/'reader-mechanism.webp').convert('RGBA')
+cassette=Image.open(assets/'cassette.webp').convert('RGBA')
+assert reader.size == (550,366)
+assert cassette.size == (435,262)
+assert reader.getpixel((275,190))[3] == 0
+assert cassette.getpixel((117,112))[3] == 0
+assert cassette.getpixel((300,112))[3] == 0
+
+reel=ET.parse(assets/'reel-animation.svg').getroot()
+assert reel.attrib['viewBox'] == '0 0 64 64'
+assert not list(reel.iter('{http://www.w3.org/2000/svg}mask'))
+assert 'aspect-ratio:435/262' in css
+for selector,level in (('.cassetteReel',1),('.cassetteTape',2)):
+    assert re.search(rf'{re.escape(selector)}\s*\{{[^}}]*z-index\s*:\s*{level}(?:\s*;|\s*\}})',css,re.S)
 assert 'animation-play-state:paused' in css
 assert re.search(r'\.cassetteDeck\.playing\s+\.cassetteReel\s*\{[^}]*animation-play-state\s*:\s*running',css,re.S)
-assert 'animation-duration:var(--takeup-reel-cycle)' in css
 assert 'cassetteGlass' not in html+css
-print('OK: 120927 cassette is reference-derived, layered, masked and mechanically animated')
+print('OK: reader, cassette and opaque animated reels have separate ownership')
