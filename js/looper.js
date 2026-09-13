@@ -60,7 +60,7 @@ function refreshCassetteUI(){
   const loaded=!!deckBuffer;
   const playing=!!deckSource;
   const hint=$("deckReadoutHint");
-  if(hint)hint.textContent=zone.getAttribute("aria-busy")==="true" ? "CHARGEMENT…" : !loaded ? "LOAD BEAT POUR COMMENCER" : playing ? "EN LECTURE • BOUCLE" : "PRÊT • APPUYER SUR PLAY";
+  if(hint)hint.textContent=zone.getAttribute("aria-busy")==="true" ? "CHARGEMENT…" : !loaded ? "LOAD BEAT POUR COMMENCER" : playing ? "EN LECTURE" : "PRÊT • APPUYER SUR PLAY";
 
   zone.classList.toggle("loaded",loaded);
   zone.classList.toggle("playing",playing);
@@ -709,7 +709,6 @@ function refreshAutoLooperCompact(){
   const speed=$("deckSpeedReadout");
   const speedEcho=$("deckSpeedEcho");
   const auto=$("deckAutoReadout");
-  const autoButton=$("deckAutoToggle");
   const pitchControl=$("deckPitch");
   const pitchReadout=$("deckPitchReadout");
   const pitchModule=$("deckPitchModule");
@@ -729,7 +728,6 @@ function refreshAutoLooperCompact(){
     ? `Speed Up niveau ${looperSpeedRateLevel}, plus ${looperSpeedRateLevel} pour cent toutes les huit boucles`
     : "Speed Up désactivé"
   );
-  if(autoButton)autoButton.setAttribute("aria-pressed",autoLooperEnabledState ? "true" : "false");
   const formattedRate=formatDeckRate();
   if(speed)speed.textContent=formattedRate;
   if(speedEcho)speedEcho.textContent=formattedRate;
@@ -818,18 +816,6 @@ function toggleAutoLooper(){
     stopAutoLooperProgress();
   }
 
-  refreshAutoLooperCompact();
-}
-
-function toggleDeckAuto(){
-  if(!looperSpeedRateLevel)looperSpeedRateLevel=1;
-  autoLooperEnabledState=!autoLooperEnabledState;
-  if(autoLooperEnabledState){
-    if(deckSource)startAutoLooperProgress();
-    else resetAutoLooperProgress();
-  }else{
-    stopAutoLooperProgress();
-  }
   refreshAutoLooperCompact();
 }
 
