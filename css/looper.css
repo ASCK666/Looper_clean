@@ -9,13 +9,7 @@
   --takeup-reel-cycle:1.46s;
 }
 #looper .looper66Shell{width:min(100%,1448px);margin-inline:auto;background:transparent}
-#looper .looper66DeskSkin,
-#looper .looper66StaticSkin{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none}
-#looper .looper66DeskSkin{z-index:0}
-#looper .looper66StaticSkin{z-index:1}
-#looper .looper66StaticDeck{clip-path:inset(8.75% 2.1% 7.0% 2.0%)}
-#looper .looper66StaticCablePower{clip-path:polygon(20.5% 0,26.5% 0,26.5% 10.2%,20.5% 10.2%)}
-#looper .looper66StaticCableXlr{clip-path:polygon(67.8% 0,81.2% 0,81.2% 10.2%,67.8% 10.2%)}
+#looper .looper66StaticSkin{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none}
 #looper .looper66Workspace{
   position:relative;display:block!important;width:100%;aspect-ratio:1448/1086;overflow:hidden;
   background:transparent;
@@ -222,16 +216,6 @@
 #looper #deckTrackDetails::backdrop{background:rgba(0,0,0,.55)}
 #looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton,.beatListRow,#deckPitch,#deckVolume):focus-visible{outline:2px solid #ffad31;outline-offset:3px}
 
-/* Desktop uses the reference material directly where the control face is static.
-   Interaction remains on the real HTML controls above it. */
-@media (min-width:681px){
-  #looper .deckVolumeKnob{display:none}
-  #looper .deckLoadKey{background:transparent;border-color:transparent;box-shadow:none;color:transparent}
-  #looper .deckLoadKey strong{visibility:hidden}
-  #looper .cassetteDeck.playing #playBeat{background:transparent!important;border-color:transparent!important;box-shadow:none!important;color:transparent!important}
-  #looper .cassetteDeck.playing #playBeat :is(.deckKeySymbol,.deckKeyLabel){visibility:hidden}
-}
-
 @media (prefers-reduced-motion:reduce){
   #looper .cassetteReel{animation:none!important}
   #looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton){transition:none!important}
@@ -239,7 +223,7 @@
 
 /* Mobile is a functional reflow; desktop remains the exact approved scene. */
 @media (max-width:680px){
-  #looper .looper66DeskSkin,#looper .looper66StaticSkin{display:none}
+  #looper .looper66StaticSkin{display:none}
   #looper .looper66Shell{width:100%}
   #looper .looper66Workspace{aspect-ratio:auto;min-height:1260px;background:#633219}
   #looper .looper66Workspace::before{content:"";position:absolute;z-index:0;top:22px;left:10px;right:10px;bottom:20px;border:3px solid #111314;border-radius:12px;background:#303233;box-shadow:inset 0 0 0 2px #55595a,inset 0 0 0 5px #1a1c1d,0 8px 14px rgba(0,0,0,.35);pointer-events:none}
