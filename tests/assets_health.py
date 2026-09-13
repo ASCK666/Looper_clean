@@ -12,6 +12,7 @@ EXPECTED_VISUALS={
     'looper-ui/120927/mockup-reference.png',
     'looper-ui/120927/desk-surface.webp',
     'looper-ui/120927/rear-cables.webp',
+    'looper-ui/120927/deck-shell.webp',
     'looper-ui/120927/cassette-body.svg',
     'looper-ui/120927/cassette-reel.svg',
     'looper-ui/120927/cassette-frame.svg',
