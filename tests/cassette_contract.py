@@ -35,11 +35,11 @@ assert 'glass' in frame.lower()
 assert '<circle' not in frame  # no screws placed on the glass/door asset
 
 assert 'aspect-ratio:3/2' in css
-assert '.cassetteReel {\n  z-index:1;' in css
-assert '#looper .cassetteTape { z-index:2; }' in css
-assert '#looper .cassetteBayForeground { z-index:5; }' in css
+assert re.search(r'#looper\s+\.cassetteReel\s*\{[^}]*\bz-index\s*:\s*1\s*;',css,re.S)
+assert re.search(r'#looper\s+\.cassetteTape\s*\{[^}]*\bz-index\s*:\s*2\s*;',css,re.S)
+assert re.search(r'#looper\s+\.cassetteBayForeground\s*\{[^}]*\bz-index\s*:\s*5\s*;',css,re.S)
 assert 'animation-play-state:paused' in css
-assert '.cassetteDeck.playing .cassetteReel { animation-play-state:running; }' in css
+assert re.search(r'\.cassetteDeck\.playing\s+\.cassetteReel\s*\{[^}]*animation-play-state\s*:\s*running',css,re.S)
 assert 'animation-duration:var(--takeup-reel-cycle)' in css
 assert 'cassetteGlass' not in html+css
 print('OK: 120927 cassette is layered, masked and mechanically animated')
