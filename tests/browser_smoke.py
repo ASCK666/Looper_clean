@@ -66,9 +66,9 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert all(v[1]>=44 and v[2]>=44 and v[3]!='none' and v[4]=='visible' and v[5]>.5 for v in visible),visible
 
         page.set_input_files('#beatFiles',str(beat))
-        # The cassette display intentionally uppercases its physical label while
-        # deckTrack/currentTrack retain the original filename casing.
-        page.wait_for_function("document.getElementById('cassetteBeatName').textContent === 'TEST-BEAT.WAV'",timeout=10000)
+        # The cassette display uppercases its physical label and omits the file
+        # extension while deckTrack/currentTrack retain the original filename.
+        page.wait_for_function("document.getElementById('cassetteBeatName').textContent === 'TEST-BEAT'",timeout=10000)
         assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='none'
         assert page.evaluate("document.getElementById('deckTrack').textContent === 'test-beat.wav'") is True
         # The deck label updates before the asynchronous IndexedDB crate refresh.
