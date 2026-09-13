@@ -164,6 +164,21 @@
     if(duration)duration.textContent=deckBuffer?formatClock(deckBuffer.duration):"00:00";
   };
 
+  const cassetteDisplayName=()=>{
+    const name=String(currentTrack?.name||"").replace(/\.[^/.]+$/,'').trim();
+    return name?name.toUpperCase():"NO BEAT LOADED";
+  };
+  if(typeof refreshCassetteUI==="function"){
+    const refreshCassetteUIBase=refreshCassetteUI;
+    refreshCassetteUI=function(){
+      const result=refreshCassetteUIBase.apply(this,arguments);
+      const label=$("cassetteBeatName");
+      if(label)label.textContent=cassetteDisplayName();
+      updateReadout();
+      return result;
+    };
+  }
+
   const volume=$("deckVolume");
   const volumeKnob=document.querySelector("#looper .deckVolumeKnob");
   const applyVolume=value=>{
