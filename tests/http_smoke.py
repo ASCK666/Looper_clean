@@ -83,6 +83,7 @@ try:
         ("/assets/looper-ui/120927/readout-panel.webp","image/webp",20_000),
         ("/assets/looper-ui/120927/utility-panel.webp","image/webp",20_000),
         ("/assets/looper-ui/120927/pitch-panel.webp","image/webp",20_000),
+        ("/assets/looper-ui/120927/cassette-bay.webp","image/webp",20_000),
         ("/assets/looper-ui/120927/mockup-reference.png","image/png",100_000),
     ):
         with urlopen(Request(base_url + asset, method="HEAD"), timeout=5) as response:

@@ -11,6 +11,7 @@ Asset contract:
 - Readout frame is assets/looper-ui/120927/readout-panel.webp at native 380×355; its clean glass contains no baked state or track data.
 - Utility panel is assets/looper-ui/120927/utility-panel.webp at native 380×120; the stateful volume knob is intentionally transparent and remains live.
 - Pitch panel is assets/looper-ui/120927/pitch-panel.webp at native 118×475; thumb, scale values and rate text remain live.
+- Cassette bay is assets/looper-ui/120927/cassette-bay.webp at native 1448×1086 with a transparent mechanism aperture.
 - Fixed deck/cables stay separate from the desk so the desk texture is not baked into a full-scene fallback.
 - Dynamic readout, pitch, transport, import controls, library rows and cassette mechanics remain live HTML/CSS/JS.
 - Superseded assets must be removed rather than retained as hidden fallbacks.
