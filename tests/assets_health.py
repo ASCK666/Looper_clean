@@ -11,7 +11,6 @@ EXPECTED_VISUALS={
     'looper-ui/120927/desk-wood.svg',
     'looper-ui/120927/rear-cables.svg',
     'looper-ui/120927/deck-shell.svg',
-    'looper-ui/120927/deck-scene-120927.svg',
     'looper-ui/120927/cassette-body.svg',
     'looper-ui/120927/cassette-reel.svg',
     'looper-ui/120927/cassette-frame.svg',
