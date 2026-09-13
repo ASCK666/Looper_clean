@@ -22,9 +22,9 @@ assert cassette.getpixel((117,112))[3] == 0
 assert cassette.getpixel((300,112))[3] == 0
 
 reel=Image.open(assets/'reel-animation.webp').convert('RGBA')
-assert reel.size == (66,66)
+assert reel.size == (96,96)
 assert reel.getpixel((0,0))[3] == 0
-assert reel.getpixel((33,33))[3] == 255
+assert reel.getpixel((48,48))[3] == 255
 assert 'aspect-ratio:435/262' in css
 for selector,level in (('.cassetteReel',1),('.cassetteTape',2)):
     assert re.search(rf'{re.escape(selector)}\s*\{{[^}}]*z-index\s*:\s*{level}(?:\s*;|\s*\}})',css,re.S)
