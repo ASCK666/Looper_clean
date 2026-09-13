@@ -14,9 +14,12 @@ for control in ('playBeat','stopBeat','importFolderBtn','importBeatsBtn','autoLo
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
 assert 'deckAutoToggle' not in HTML+EVENTS
 
-# One clean visual source: the approved mockup-derived static scene.
+# One clean visual source: the approved mockup-derived static scene is an explicit
+# DOM layer.  Do not couple this contract to whether the image is loaded through
+# CSS; the browser render test owns visibility/decoding.
 assert 'assets/looper-ui/120927/' in HTML
-assert 'deck-static.webp' in CSS
+assert re.search(r'<img\b[^>]*class="looper66StaticSkin"[^>]*src="assets/looper-ui/120927/deck-static\.webp"',HTML)
+assert '.looper66StaticSkin' in CSS
 assert (ROOT/'assets/looper-ui/120927/deck-static.webp').exists()
 for retired in (
     'deck-shell.svg','rear-cables.svg','desk-wood.svg','deck-scene-120927.svg',
