@@ -8,7 +8,8 @@ ASSETS=ROOT/'assets'
 EXPECTED_VISUALS={
     'deck-black-ui-texture.png',
     'looper-ui/chopper-looper-button-off-alpha-6920266c.webp',
-    'looper-ui/120927/deck-static.webp',
+    'looper-ui/120927/mockup-reference.png',
+    'looper-ui/120927/desk-surface.webp',
     'looper-ui/120927/cassette-body.svg',
     'looper-ui/120927/cassette-reel.svg',
     'looper-ui/120927/cassette-frame.svg',

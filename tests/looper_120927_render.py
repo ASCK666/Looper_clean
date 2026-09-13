@@ -32,16 +32,16 @@ with contextlib.ExitStack() as stack:
             page.wait_for_function('window.__SP?.ui120927CssReady === true')
             page.wait_for_function("[...document.querySelectorAll('.cassetteMechanism img')].every(i=>i.complete && i.naturalWidth>0)")
 
-            skin=page.locator('.looper66StaticSkin')
-            assert skin.count()==1
-            skin_state=skin.evaluate("""el => {
+            desk=page.locator('.looper66DeskSurface')
+            assert desk.count()==1
+            desk_state=desk.evaluate("""el => {
               const r=el.getBoundingClientRect(),s=getComputedStyle(el);
               return {complete:el.complete,w:el.naturalWidth,h:el.naturalHeight,display:s.display,visibility:s.visibility,opacity:Number(s.opacity),rw:r.width,rh:r.height};
             }""")
-            assert skin_state['complete'] and skin_state['w']>=560 and skin_state['h']>=400,skin_state
+            assert desk_state['complete'] and desk_state['w']==1448 and desk_state['h']==1086,desk_state
             if width>680:
-                assert skin_state['display']!='none' and skin_state['visibility']!='hidden' and skin_state['opacity']>.95,skin_state
-                assert skin_state['rw']>1000 and skin_state['rh']>700,skin_state
+                assert desk_state['display']!='none' and desk_state['visibility']!='hidden' and desk_state['opacity']>.95,desk_state
+                assert abs(desk_state['rw']/desk_state['rh']-1448/1086)<.001,desk_state
 
             for selector in ('.cassetteTape','.cassetteBayForeground','.cassetteReelLeft','.cassetteReelRight'):
                 asset=page.locator(selector)

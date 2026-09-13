@@ -14,15 +14,18 @@ for control in ('playBeat','stopBeat','importFolderBtn','importBeatsBtn','autoLo
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
 assert 'deckAutoToggle' not in HTML+EVENTS
 
-# One clean visual source: the approved mockup-derived static scene is an explicit
-# DOM layer.  Do not couple this contract to whether the image is loaded through
-# CSS; the browser render test owns visibility/decoding.
+# The approved mockup is a non-runtime golden reference. The first migrated
+# production owner is a desk-only surface at the same native geometry.
 assert 'assets/looper-ui/120927/' in HTML
-assert re.search(r'<img\b[^>]*class="looper66StaticSkin"[^>]*src="assets/looper-ui/120927/deck-static\.webp"',HTML)
-assert '.looper66StaticSkin' in CSS
-assert (ROOT/'assets/looper-ui/120927/deck-static.webp').exists()
+assert re.search(r'<img\b[^>]*class="looper66DeskSurface"[^>]*src="assets/looper-ui/120927/desk-surface\.webp"[^>]*width="1448"[^>]*height="1086"',HTML)
+assert '.looper66DeskSurface' in CSS
+assert (ROOT/'assets/looper-ui/120927/desk-surface.webp').exists()
+mockup=ROOT/'assets/looper-ui/120927/mockup-reference.png'
+assert mockup.exists() and mockup.read_bytes()[:8]==b'\x89PNG\r\n\x1a\n'
+assert 'looper66StaticSkin' not in HTML+CSS
+assert 'object-fit:fill' not in HTML+CSS.replace(' ','')
 for retired in (
-    'deck-shell.svg','rear-cables.svg','desk-wood.svg','deck-scene-120927.svg',
+    'deck-static.webp','deck-shell.svg','rear-cables.svg','desk-wood.svg','deck-scene-120927.svg',
     'looper66-desktop-pitch-clean','looper66-mobile-pitch-clean',
     'looper66-desktop-transport','looper66-mobile-transport','looper66-crate-cassettes',
     'assets/looper-ui/cassette-tape.svg','assets/looper-ui/cassette-frame.svg',

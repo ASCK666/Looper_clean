@@ -76,11 +76,14 @@ try:
             )
             assert response.read().strip(), (path, "empty stylesheet")
 
-    deck = "/assets/looper-ui/120927/deck-static.webp"
-    with urlopen(Request(base_url + deck, method="HEAD"), timeout=5) as response:
-        assert response.status == 200
-        assert response.headers.get_content_type() == "image/webp"
-        assert int(response.headers["Content-Length"]) > 10_000
+    for asset,mime,min_size in (
+        ("/assets/looper-ui/120927/desk-surface.webp","image/webp",10_000),
+        ("/assets/looper-ui/120927/mockup-reference.png","image/png",100_000),
+    ):
+        with urlopen(Request(base_url + asset, method="HEAD"), timeout=5) as response:
+            assert response.status == 200
+            assert response.headers.get_content_type() == mime
+            assert int(response.headers["Content-Length"]) > min_size
 finally:
     server.shutdown()
     server.server_close()
