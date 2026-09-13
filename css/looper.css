@@ -108,7 +108,7 @@
 
 /* CASSETTE — reference-derived body, live reels behind it, subtle foreground glass. */
 #looper .cassetteMechanism{
-  z-index:18;top:18.60%;left:42.82%;width:30.52%;aspect-ratio:442/252;overflow:hidden;border:0;
+  z-index:18;top:19.06%;left:43.37%;width:29.42%;aspect-ratio:442/252;overflow:hidden;border:0;
   background:transparent;box-shadow:none;isolation:isolate;container-type:inline-size;pointer-events:none;
 }
 #looper .cassetteMechanism>*{position:absolute;pointer-events:none;user-select:none}
