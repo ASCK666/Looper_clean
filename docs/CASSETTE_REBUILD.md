@@ -28,7 +28,7 @@ unchanged workstation skin from leaking through, including EMPTY.
 | --- | --- | ---: |
 | Cavity | Opaque mechanism background | 0 |
 | Cassette body and wound tape | `cassette-tape.svg` | 1 |
-| Left/right reels | Two instances of `cassette-reel.svg` | 2 |
+| Left/right reels | Two instances of `cassette-spool.svg` | 2 |
 | Blank paper label | `cassette-label.svg` | 3 |
 | Beat name | Existing HTML and JS hook | 4 |
 | Edge light | CSS opacity | 5 |

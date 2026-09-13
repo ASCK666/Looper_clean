@@ -49,9 +49,9 @@ for rel in [
     "assets/looper-ui/120927/readout-panel.webp",
     "assets/looper-ui/120927/utility-panel.webp",
     "assets/looper-ui/120927/pitch-panel.webp",
-    "assets/looper-ui/120927/cassette-bay.webp",
-    "assets/looper-ui/120927/cassette-body.svg",
-    "assets/looper-ui/120927/cassette-reel.svg",
+    "assets/looper-ui/120927/cassette-support.webp",
+    "assets/looper-ui/120927/cassette-shell.svg",
+    "assets/looper-ui/120927/cassette-spool.svg",
 ]:
     require(f"file {rel}", (ROOT / rel).is_file())
 

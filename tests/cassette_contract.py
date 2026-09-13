@@ -9,9 +9,9 @@ css=(ROOT/'css/looper.css').read_text(encoding='utf-8')
 ns='{http://www.w3.org/2000/svg}'
 
 expected={
-    'cassetteReel cassetteReelLeft':('cassette-reel.svg','0 0 128 128','reference-raster'),
-    'cassetteReel cassetteReelRight':('cassette-reel.svg','0 0 128 128','reference-raster'),
-    'cassetteTape':('cassette-body.svg','0 0 442 252','reference-raster'),
+    'cassetteReel cassetteReelLeft':('cassette-spool.svg','0 0 96 96','reference-raster'),
+    'cassetteReel cassetteReelRight':('cassette-spool.svg','0 0 96 96','reference-raster'),
+    'cassetteTape':('cassette-shell.svg','0 0 442 252','reference-raster'),
 }
 for class_name,(asset,viewbox,kind) in expected.items():
     tag=re.search(rf'<img\b[^>]*class="{class_name}"[^>]*>',html)
@@ -34,7 +34,7 @@ for class_name,(asset,viewbox,kind) in expected.items():
     assert not list(root.iter(ns+'text')),asset
     assert not list(root.iter(ns+'filter')),asset
 
-body=ET.parse(ROOT/'assets/looper-ui/120927/cassette-body.svg').getroot()
+body=ET.parse(ROOT/'assets/looper-ui/120927/cassette-shell.svg').getroot()
 # The live reels stay physically behind two transparent apertures in the body.
 masks=list(body.iter(ns+'mask'))
 assert masks

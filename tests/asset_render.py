@@ -33,9 +33,9 @@ with contextlib.ExitStack() as stack:
 
         assets=page.evaluate('''() => [...document.querySelectorAll('.cassetteMechanism img')].map(i=>({cls:i.className,src:i.getAttribute('src'),w:i.naturalWidth,h:i.naturalHeight}))''')
         assert len(assets)==3,assets
-        assert assets[0]['src'].endswith('120927/cassette-reel.svg') and assets[0]['w']==128 and assets[0]['h']==128,assets
-        assert assets[1]['src'].endswith('120927/cassette-reel.svg') and assets[1]['w']==128 and assets[1]['h']==128,assets
-        assert assets[2]['src'].endswith('120927/cassette-body.svg') and assets[2]['w']==442 and assets[2]['h']==252,assets
+        assert assets[0]['src'].endswith('120927/cassette-spool.svg') and assets[0]['w']==96 and assets[0]['h']==96,assets
+        assert assets[1]['src'].endswith('120927/cassette-spool.svg') and assets[1]['w']==96 and assets[1]['h']==96,assets
+        assert assets[2]['src'].endswith('120927/cassette-shell.svg') and assets[2]['w']==442 and assets[2]['h']==252,assets
 
         controls=['playBeat','stopBeat','autoLooperToggle','deckPitch','deckVolume','importFolderBtn','importBeatsBtn']
         boxes=page.evaluate('(ids)=>ids.map(id=>({id,...document.getElementById(id).getBoundingClientRect().toJSON()}))',controls)
