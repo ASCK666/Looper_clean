@@ -41,7 +41,8 @@ with contextlib.ExitStack() as stack:
             assert page.evaluate('document.body.scrollWidth <= innerWidth+2')
             assert page.locator('.cassetteBayForeground').is_visible()
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight','.cassetteBeatName'):
-                assert not page.locator(selector).is_visible(),('empty',label,selector)
+                opacity=float(page.locator(selector).evaluate('el=>getComputedStyle(el).opacity'))
+                assert opacity==0,('empty',label,selector,opacity)
             if label in ('desktop','mobile'): capture(page,f'{label}-empty')
 
             page.evaluate("commitLoadedTrack({id:'cassette-state',name:'MIDNIGHT SESSION.wav'},new AudioBuffer({length:44100,sampleRate:44100,numberOfChannels:1}))")
@@ -90,7 +91,7 @@ with contextlib.ExitStack() as stack:
             page.emulate_media(reduced_motion='reduce')
             assert page.locator('.cassetteReel').evaluate_all("els=>els.every(el=>getComputedStyle(el).animationName==='none')")
             page.evaluate('deckBuffer=null; refreshCassetteUI()')
-            assert not page.locator('.cassetteTape').is_visible()
+            assert float(page.locator('.cassetteTape').evaluate('el=>getComputedStyle(el).opacity'))==0
             assert not errors,errors
             page.close()
 print('OK: 120927 cassette states, masked reel rotation and stable geometry')
