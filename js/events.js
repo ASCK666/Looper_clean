@@ -41,7 +41,6 @@ try{
   switchTab("looper");
 }
 
-
 $("headerCrateToggle").onclick=()=>{
   switchTab("looper");
   const crate=$("looper").querySelector(".beatCratePanel");
@@ -95,7 +94,7 @@ $("beatFiles").onchange=()=>handleBeatImport($("beatFiles").files,"IMPORT");
 $("beatFolder").onchange=()=>handleBeatImport($("beatFolder").files,"FOLDER IMPORT");
 $("librarySearch").oninput=()=>refreshLibrary(false);
 $("libraryOrder").onchange=()=>refreshLibrary(false);
-const deckTransportControlIds=["prevBeat","playBeat","stopBeat","nextBeat","autoLooperToggle","deckAutoToggle","deckPitch"];
+const deckTransportControlIds=["prevBeat","playBeat","stopBeat","nextBeat","autoLooperToggle","deckPitch"];
 deckTransportControlIds.forEach(id=>{
   $(id)?.addEventListener("click",ev=>ev.stopPropagation());
 });
@@ -113,7 +112,6 @@ function runLooperAction(label,action){
 }
 
 $("autoLooperToggle").onclick=toggleAutoLooper;
-$("deckAutoToggle").onclick=toggleDeckAuto;
 $("deckPitch").oninput=event=>setLooperPitch(event.currentTarget.value);
 $("playBeat").onclick=()=>runLooperAction("PLAY",playDeck);
 $("stopBeat").onclick=()=>stopDeck();
@@ -127,7 +125,6 @@ $("sliceCount").onchange=()=>{
   autoPlaceMarkers();
 };
 $("sampleVolume").oninput=()=>updateSampleVolume($("sampleVolume").value);
-
 $("sampleVolume").onchange=async()=>{
   // If the full loop is already playing, rebuild once when the user releases
   // the fader so sample/drum balance updates immediately.
