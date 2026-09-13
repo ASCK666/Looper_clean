@@ -45,7 +45,6 @@ for rel in [
     "assets/looper-ui/120927/desk-wood.svg",
     "assets/looper-ui/120927/rear-cables.svg",
     "assets/looper-ui/120927/deck-shell.svg",
-    "assets/looper-ui/120927/deck-scene-120927.svg",
     "assets/looper-ui/120927/cassette-frame.svg",
     "assets/looper-ui/120927/cassette-body.svg",
     "assets/looper-ui/120927/cassette-reel.svg",
