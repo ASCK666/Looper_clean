@@ -1,4 +1,4 @@
-"""Capture the 120927 migration at reviewable desktop/mobile sizes."""
+"""Capture the approved 120927 deck at reviewable desktop/mobile sizes."""
 from pathlib import Path
 import contextlib, http.server, os, socketserver, threading
 try:
@@ -31,32 +31,34 @@ with contextlib.ExitStack() as stack:
             page.wait_for_function('window.__SP?.ui120927Ready === true')
             page.wait_for_function('window.__SP?.ui120927CssReady === true')
             page.wait_for_function("[...document.querySelectorAll('.cassetteMechanism img')].every(i=>i.complete && i.naturalWidth>0)")
-            assert page.locator('.looper66Skin').evaluate("el=>getComputedStyle(el).display==='none'")
+            scene=page.locator('.looper66Workspace').evaluate('el=>getComputedStyle(el).backgroundImage')
+            if width>680:
+                assert 'deck-scene-120927.svg' in scene,scene
             assert page.locator('#deckVolume').count()==1
-            assert page.locator('#crate120927Filters').count()==1
-            assert page.locator('#beat120927List').count()==1
+            assert page.locator('#crateFilters').count()==1
+            assert page.locator('#beatList').count()==1
             assert page.locator('#autoLooperToggle .deckRateVisualSegments i').count()==5
             assert not errors,errors
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-empty.png'))
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-empty.png'))
 
-            # Review the approved mockup state with a real loaded deck and real
-            # PLAY transition, not synthetic .loaded/.playing classes.
             page.evaluate("""() => {
               const buffer=new AudioBuffer({length:44100*156,sampleRate:44100,numberOfChannels:1});
               commitLoadedTrack({id:'120927-review',name:'MIDNIGHT SESSION.WAV',created:Date.now(),source:'user-import'},buffer);
             }""")
             page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('loaded')")
+            assert page.locator('#cassetteBeatName').inner_text()=='MIDNIGHT SESSION.WAV'
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-loaded.png'))
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-loaded.png'))
+
             page.locator('#playBeat').click()
             page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('playing')")
             page.wait_for_timeout(250)
+            assert page.locator('.cassetteReel').evaluate_all("els=>els.every(el=>getComputedStyle(el).animationPlayState==='running')")
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-playing.png'))
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-playing.png'))
-            if label=='desktop':
-                page.locator('.deckTransport').screenshot(path=str(ARTIFACTS/'120927-transport-playing.png'))
+            if label=='desktop': page.locator('.deckTransport').screenshot(path=str(ARTIFACTS/'120927-transport-playing.png'))
             page.locator('#stopBeat').click()
             assert not errors,errors
             page.close()
-print('OK: 120927 deck and six cassette states captured at desktop/mobile')
+print('OK: 120927 deck captured with real empty/loaded/playing transitions')
