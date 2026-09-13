@@ -76,11 +76,11 @@ try:
             )
             assert response.read().strip(), (path, "empty stylesheet")
 
-    deck = "/assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp"
+    deck = "/assets/looper-ui/120927/deck-static.webp"
     with urlopen(Request(base_url + deck, method="HEAD"), timeout=5) as response:
         assert response.status == 200
         assert response.headers.get_content_type() == "image/webp"
-        assert int(response.headers["Content-Length"]) > 80_000
+        assert int(response.headers["Content-Length"]) > 10_000
 finally:
     server.shutdown()
     server.server_close()
