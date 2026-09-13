@@ -50,7 +50,10 @@
   <section id="looper" class="screen active">
     <div class="looper66Shell">
       <div class="looper66Workspace">
-        <img class="looper66StaticSkin" src="assets/looper-ui/120927/deck-static.webp" width="1448" height="1086" alt="" aria-hidden="true" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:0;pointer-events:none;user-select:none">
+        <img class="looper66DeskSkin" src="assets/looper-ui/120927/desk-walnut.webp" width="1448" height="1086" alt="" aria-hidden="true" draggable="false">
+        <img class="looper66StaticSkin looper66StaticDeck" src="assets/looper-ui/120927/deck-static.webp" width="1448" height="1086" alt="" aria-hidden="true" draggable="false">
+        <img class="looper66StaticSkin looper66StaticCable looper66StaticCablePower" src="assets/looper-ui/120927/deck-static.webp" width="1448" height="1086" alt="" aria-hidden="true" draggable="false">
+        <img class="looper66StaticSkin looper66StaticCable looper66StaticCableXlr" src="assets/looper-ui/120927/deck-static.webp" width="1448" height="1086" alt="" aria-hidden="true" draggable="false">
         <section class="panel looperMainPanel" aria-label="Deck cassette du Looper">
           <div id="looperDropzoneBtn" class="cassetteDeck" role="group" aria-label="Lecteur cassette et commandes du looper">
             <div class="deckReadout" role="status" aria-live="polite">
@@ -218,130 +221,40 @@
 
             <div class="wavewrap largeWave samplerScreen">
               <canvas id="waveCanvas" width="1500" height="210"></canvas>
-              <canvas id="playheadCanvas" width="1500" height="210" aria-hidden="true"></canvas>
-              <div class="waveScrollbar">
-                <input id="waveScroll" type="range" min="0" max="1000" step="1" value="0" aria-label="Scroll sample waveform">
-              </div>
-            </div>
-
-            <div class="friendlyControls sampleTempoControl">
-              <div><label for="sampleBpm">TEMPO</label><input id="sampleBpm" type="number" min="40" max="200" step="0.1" value="90"></div>
-            </div>
-
-            <div class="sampleKnob sampleVolumeKnob" data-range-knob="sampleVolume">
-              <label for="sampleVolume">SAMPLE VOL</label>
-              <div class="sampleKnobControl">
-                <span class="sampleKnobFace" aria-hidden="true"></span>
-                <input id="sampleVolume" class="sampleKnobInput" type="range" min="0" max="100" step="1" value="80" aria-label="Volume du sample">
-              </div>
-              <span id="sampleVolumeReadout" class="sampleKnobReadout">80%</span>
-            </div>
-
-            <div class="sampleKnob punchKnob punchFx" data-range-knob="punchMode">
-              <label for="punchMode">PUNCH</label>
-              <div class="sampleKnobControl">
-                <span class="sampleKnobFace" aria-hidden="true"></span>
-                <input id="punchMode" class="sampleKnobInput" type="range" min="0" max="3" step="1" value="1" aria-label="Punch master OFF, WARM, KNOCK ou HARD">
-              </div>
-              <span id="punchDesc" class="sampleKnobReadout">WARM</span>
+              <canvas id="playheadCanvas" width="1500" height="210"></canvas>
+              <div id="markers" class="markers"></div>
             </div>
           </div>
-
-          <div id="sampleInfo" class="status samplerSampleInfo">Charge un sample, place tes chops et joue.</div>
-          <div class="help sampleConditionHelp">AUTO CONDITION • coupe le rumble et crée du headroom uniquement si le sample arrive trop HOT/DENSE. Aucun boost automatique.</div>
         </div>
       </div>
 
-      <div class="samplerPerformanceDeck">
-        <div class="panel padsPanel samplerPadsModule">
-          <div class="title compactTitle samplerSectionTitle">CHOP PADS <span class="titleMeta">01–16</span></div>
-          <div id="pads" class="pads"></div>
-          <div class="samplerModuleHint">Tap a pad to audition from that chop to the end.</div>
-        </div>
-
-        <div class="panel gridPanel samplerSequenceModule">
-          <div class="samplerSequenceHead">
-            <div class="title compactTitle samplerSectionTitle">SEQUENCE <span class="titleMeta">4 BARS / 8TH</span></div>
-            <div class="sequenceActions" role="group" aria-label="Pages de mesures du séquenceur">
-              <button id="sequencePage12" class="btn sequencePageTab active" data-sequence-page="0" type="button" aria-pressed="true" aria-label="Afficher les mesures 1 et 2">1–2</button>
-              <button id="sequencePage34" class="btn sequencePageTab" data-sequence-page="1" type="button" aria-pressed="false" aria-label="Afficher les mesures 3 et 4">3–4</button>
-              <button id="clearGrid" class="btn">CLEAR GRID</button>
-            </div>
+      <div class="samplerLowerDeck">
+        <section class="panel drumPanel samplerDrumModule">
+          <div class="title stableTitle"><span>DRUMS <i class="blueLed"></i></span><span class="titleMeta">16 PADS</span></div>
+          <div class="drumToolbar">
+            <button id="loadDrumsFolderBtn" class="btn">LOAD DRUMS</button>
+            <select id="drumBank"><option value="A">BANK A</option><option value="B">BANK B</option><option value="C">BANK C</option><option value="D">BANK D</option></select>
           </div>
-          <div class="loopGridWrap">
-            <div class="sampleTimelineStack">
-              <canvas id="sampleTimelineCanvas" width="830" height="86" aria-label="Timeline du sample, mesures 1 à 2">Sample timeline</canvas>
-              <canvas id="sampleTimelinePlayheadCanvas" width="830" height="86" aria-hidden="true"></canvas>
-            </div>
-            <div id="loopGrid" class="matrixGrid"></div>
-            <div id="drumPatternPreview" class="drumPatternPreview" aria-label="Aperçu nominal de la batterie répétée sur les quatre mesures"></div>
-          </div>
-          <div class="samplerModuleHint">1–2 / 3–4 = page • click = place • right click = clear • one chop per step.</div>
-        </div>
-      </div>
+          <div id="drumPads" class="drumPads"></div>
+          <input id="drumFolder" class="hidden" type="file" accept="audio/*" webkitdirectory multiple>
+        </section>
 
-      <div class="panel controlPanel samplerDrumSection">
-        <div class="title stableTitle"><span>DRUM MACHINE <i class="blueLed"></i></span><span class="titleMeta">GROOVE / OUTPUT</span></div>
-
-        <div class="currentDrums">
-          <div class="currentDrumsTitle">BATTERIE COURANTE</div>
-          <div id="drumSelectionStatus">Pas encore sélectionnée — le premier PLAY en choisira une.</div>
-          <div class="drumParts">
-            <span id="currentKick">KICK —</span>
-            <span id="currentSnare">SNARE —</span>
-            <span id="currentHat">HAT —</span>
-            <span id="currentPattern">PATTERN —</span>
-          </div>
-        </div>
-
-        <div class="drumEditBox">
-          <div class="drumEditHead">
-            <div>
-              <div class="currentDrumsTitle">EDIT GROOVE</div>
-              <div class="help">1 mesure • clic = ajouter/enlever • molette sur une case = volume 10–100%</div>
-            </div>
-            <div class="drumEditActions">
-              <select id="drumEditView" aria-label="Drum editor resolution">
-                <option value="8">8TH</option>
-                <option value="16" selected>16TH</option>
-              </select>
-              <div class="drumSelector drumQuickActions" role="group" aria-label="Drum generation and snare reverb">
-                <div class="sampleKnob drumReverbKnob snareFx snareMixRow" data-range-knob="snareReverbMix">
-                  <div class="snareFxHead"><label class="fxToggle" for="snareReverbMix">REVERB</label></div>
-                  <div class="sampleKnobControl">
-                    <span class="sampleKnobFace" aria-hidden="true"></span>
-                    <input id="snareReverbMix" class="sampleKnobInput" type="range" min="0" max="70" step="1" value="25" aria-label="Snare reverb mix, zéro désactive la reverb">
-                  </div>
-                  <span id="snareReverbMixReadout" class="sampleKnobReadout">25%</span>
-                </div>
-                <button id="newDrums" class="btn blue">NEW DRUMS</button>
-              </div>
-              <button id="clearDrumEdits" class="btn">CLEAR DRUMS</button>
-            </div>
-          </div>
-          <div id="drumEditor" class="drumEditor"></div>
-          <div id="drumStatus" class="status drumEditStatus" aria-live="polite">READY</div>
-          <input id="kickFolderFallback" class="hidden" type="file" accept="audio/*" webkitdirectory multiple>
-          <input id="snareFolderFallback" class="hidden" type="file" accept="audio/*" webkitdirectory multiple>
-          <input id="hatFolderFallback" class="hidden" type="file" accept="audio/*" webkitdirectory multiple>
-        </div>
+        <section class="panel patternPanel samplerPatternModule">
+          <div class="title stableTitle"><span>PATTERN <i class="blueLed"></i></span><span class="titleMeta">STEP SEQUENCER</span></div>
+          <div id="patternGrid" class="patternGrid"></div>
+        </section>
       </div>
     </div>
   </section>
 </div>
 </div>
 
+<script src="./js/utils.js"></script>
+<script src="./js/audio-engine.js"></script>
+<script src="./js/library.js"></script>
+<script src="./js/looper.js"></script>
+<script src="./js/chopper.js"></script>
+<script src="./js/events.js"></script>
 <script src="./js/bootstrap.js"></script>
-<script src="./js/core.js" defer></script>
-<script src="./js/looper.js" defer></script>
-<script src="./js/looper-view.js" defer></script>
-<script src="./js/chopper.js" defer></script>
-<script src="./js/drums.js" defer></script>
-<script src="./js/events.js" defer></script>
-<script src="./js/chopper-drum-controls.js" defer></script>
-<script src="./js/chopper-wave-slices-core.js" defer></script>
-<script src="./js/chopper-banks.js" defer></script>
-<script src="./js/chopper-folder-reconnect.js" defer></script>
-<script src="./js/chopper-wave-slices.js" defer></script>
 </body>
 </html>
