@@ -7,6 +7,6 @@ The approved mockup is split by responsibility:
 - cassette-body.svg: cassette shell with transparent reel apertures
 - cassette-reel.svg: the single rotating reel asset, instantiated twice
 - cassette-frame.svg: one static door + full-size night-blue glass + opening gap
-- deck-scene-120927.svg: composition of wood + cables + shell
 
+Desktop CSS layers shell + cables + wood directly. There is no compiled duplicate scene asset.
 All stateful text, buttons, LEDs, pitch, volume, reels, crates and beat rows stay real HTML/CSS/JS.
