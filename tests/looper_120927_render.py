@@ -31,18 +31,24 @@ with contextlib.ExitStack() as stack:
             page.wait_for_function('window.__SP?.ui120927Ready === true')
             page.wait_for_function('window.__SP?.ui120927CssReady === true')
             page.wait_for_function("[...document.querySelectorAll('.cassetteMechanism img')].every(i=>i.complete && i.naturalWidth>0)")
-            scene=page.locator('.looper66Workspace').evaluate('el=>getComputedStyle(el).backgroundImage')
+
+            skin=page.locator('.looper66StaticSkin')
+            assert skin.count()==1
+            skin_state=skin.evaluate("""el => {
+              const r=el.getBoundingClientRect(),s=getComputedStyle(el);
+              return {complete:el.complete,w:el.naturalWidth,h:el.naturalHeight,display:s.display,visibility:s.visibility,opacity:Number(s.opacity),rw:r.width,rh:r.height};
+            }""")
+            assert skin_state['complete'] and skin_state['w']>=560 and skin_state['h']>=400,skin_state
             if width>680:
-                assert 'deck-static.webp' in scene,scene
-                for retired in ('deck-shell.svg','rear-cables.svg','desk-wood.svg'):
-                    assert retired not in scene,(retired,scene)
-                raster=page.evaluate("""async () => {
-                  const img=new Image();
-                  img.src='assets/looper-ui/120927/deck-static.webp';
-                  await img.decode();
-                  return {w:img.naturalWidth,h:img.naturalHeight};
-                }""")
-                assert raster['w']>=560 and raster['h']>=400,raster
+                assert skin_state['display']!='none' and skin_state['visibility']!='hidden' and skin_state['opacity']>.95,skin_state
+                assert skin_state['rw']>1000 and skin_state['rh']>700,skin_state
+
+            for selector in ('.cassetteTape','.cassetteBayForeground','.cassetteReelLeft','.cassetteReelRight'):
+                asset=page.locator(selector)
+                assert asset.count()==1,selector
+                dims=asset.evaluate('el=>({complete:el.complete,w:el.naturalWidth,h:el.naturalHeight})')
+                assert dims['complete'] and dims['w']>0 and dims['h']>0,(selector,dims)
+
             assert page.locator('#deckVolume').count()==1
             assert page.locator('#crateFilters').count()==1
             assert page.locator('#beatList').count()==1
@@ -70,4 +76,4 @@ with contextlib.ExitStack() as stack:
             page.locator('#stopBeat').click()
             assert not errors,errors
             page.close()
-print('OK: 120927 mockup-backed deck captured with real empty/loaded/playing transitions')
+print('OK: 120927 production assets are decoded, visible and functional in Chromium')
