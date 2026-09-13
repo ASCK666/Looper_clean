@@ -14,19 +14,19 @@ for control in ('playBeat','stopBeat','importFolderBtn','importBeatsBtn','autoLo
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
 assert 'deckAutoToggle' not in HTML+EVENTS
 
-# One clean visual source set, layered directly by the Looper stylesheet.
+# One clean visual source: the approved mockup-derived static scene.
 assert 'assets/looper-ui/120927/' in HTML
-for asset in ('deck-shell.svg','rear-cables.svg','desk-wood.svg'):
-    assert asset in CSS,asset
-assert 'deck-scene-120927.svg' not in CSS
-assert not (ROOT/'assets/looper-ui/120927/deck-scene-120927.svg').exists()
+assert 'deck-static.webp' in CSS
+assert (ROOT/'assets/looper-ui/120927/deck-static.webp').exists()
 for retired in (
+    'deck-shell.svg','rear-cables.svg','desk-wood.svg','deck-scene-120927.svg',
     'looper66-desktop-pitch-clean','looper66-mobile-pitch-clean',
     'looper66-desktop-transport','looper66-mobile-transport','looper66-crate-cassettes',
     'assets/looper-ui/cassette-tape.svg','assets/looper-ui/cassette-frame.svg',
     'assets/looper-ui/cassette-reel.svg','looper66-rear-cables.svg'
 ):
     assert retired not in HTML+CSS+LOOPER+VIEW+EVENTS,retired
+assert not (ROOT/'assets/looper-ui/120927/deck-scene-120927.svg').exists()
 assert not (ROOT/'js/looper-120927.js').exists()
 assert not (ROOT/'css/looper-120927.css').exists()
 assert not (ROOT/'css/looper-120927-tuning.css').exists()
@@ -72,4 +72,4 @@ assert '--supply-reel-cycle' in LOOPER and '--takeup-reel-cycle' in LOOPER
 
 assert '@media (max-width:680px)' in CSS
 assert '@media (prefers-reduced-motion:reduce)' in CSS
-print('OK: approved 120927 Looper contract, one asset set and existing behavior preserved')
+print('OK: approved 120927 Looper contract, mockup source and existing behavior preserved')
