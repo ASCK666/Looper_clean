@@ -7,10 +7,7 @@
 }
 
 /* Remove decorative / explanatory Chopper chrome. */
-#chopper .samplerTopRail,
-#chopper .sampleConditionHelp,
-#chopper .samplerModuleHint,
-#chopper .spaceHint {
+:is(#chopper .samplerTopRail,#chopper .sampleConditionHelp,#chopper .samplerModuleHint,#chopper .spaceHint) {
   display: none !important;
 }
 
@@ -36,8 +33,7 @@
   gap: 6px !important;
 }
 
-#chopper .samplerActionRow .btn,
-#chopper .samplerDisplayActions .btn {
+:is(#chopper .samplerActionRow .btn,#chopper .samplerDisplayActions .btn) {
   min-height: 34px !important;
   padding: 6px 8px !important;
   font-size: 9px !important;
@@ -191,8 +187,7 @@
   height: 86px;
 }
 
-#sampleTimelineCanvas,
-#sampleTimelinePlayheadCanvas {
+:is(#sampleTimelineCanvas,#sampleTimelinePlayheadCanvas) {
   display: block;
   width: auto;
   height: 86px;
@@ -269,8 +264,7 @@
     display: none !important;
   }
 
-  #chopper,
-  #chopper :is(.samplerDeck,.samplerUpperDeck,.samplerPerformanceDeck,.samplerSequenceModule,.samplerDrumSection) {
+  :is(#chopper,#chopper .samplerDeck,#chopper .samplerUpperDeck,#chopper .samplerPerformanceDeck,#chopper .samplerSequenceModule,#chopper .samplerDrumSection) {
     width: 100% !important;
     max-width: none !important;
   }
@@ -365,13 +359,11 @@
 }
 
 @media (max-width: 430px) {
-  #chopper .sampleKnob > label,
-  #chopper .sampleTempoControl label {
+  #chopper :is(.sampleKnob > label,.sampleTempoControl label) {
     font-size: 7px !important;
   }
 
-  #chopper .sampleKnobControl,
-  #chopper .punchKnob .sampleKnobReadout {
+  #chopper :is(.sampleKnobControl,.punchKnob .sampleKnobReadout) {
     width: 46px;
     min-width: 46px;
     height: 46px;
