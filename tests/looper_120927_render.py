@@ -36,6 +36,13 @@ with contextlib.ExitStack() as stack:
                 assert 'deck-static.webp' in scene,scene
                 for retired in ('deck-shell.svg','rear-cables.svg','desk-wood.svg'):
                     assert retired not in scene,(retired,scene)
+                raster=page.evaluate("""async () => {
+                  const img=new Image();
+                  img.src='assets/looper-ui/120927/deck-static.webp';
+                  await img.decode();
+                  return {w:img.naturalWidth,h:img.naturalHeight};
+                }""")
+                assert raster['w']>=560 and raster['h']>=400,raster
             assert page.locator('#deckVolume').count()==1
             assert page.locator('#crateFilters').count()==1
             assert page.locator('#beatList').count()==1
