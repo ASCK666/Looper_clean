@@ -66,7 +66,11 @@
       button.className="crateFilterButton";
       button.dataset.crateMode=mode;
       button.setAttribute("aria-pressed",crateState.value===mode?"true":"false");
-      button.innerHTML=`<span>${label}</span><span>${counts[mode]}</span>`;
+      const labelNode=document.createElement("span");
+      labelNode.textContent=label;
+      const countNode=document.createElement("span");
+      countNode.textContent=String(counts[mode]);
+      button.append(labelNode,countNode);
       button.onclick=()=>{
         crateState.value=mode;
         renderDeckLibrary(visibleLibraryRowsState);
