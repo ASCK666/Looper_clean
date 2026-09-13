@@ -14,6 +14,7 @@ RUNTIME_FILES = [
     ROOT / "js" / "bootstrap.js",
     ROOT / "js" / "core.js",
     ROOT / "js" / "looper.js",
+    ROOT / "js" / "looper-view.js",
     ROOT / "js" / "chopper.js",
     ROOT / "js" / "drums.js",
     ROOT / "js" / "events.js",
@@ -34,20 +35,22 @@ for rel in [
     "manifest.json",
     "sw.js",
     "css/base.css",
+    "css/looper.css",
     "js/bootstrap.js",
     "js/core.js",
     "js/looper.js",
+    "js/looper-view.js",
     "js/chopper.js",
     "js/drums.js",
     "js/events.js",
     "assets/deck-black-ui-texture.png",
-    "assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp",
-    "assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp",
-    "assets/looper-ui/looper66-crate-cassettes.webp",
-    "assets/looper-ui/cassette-frame.svg",
-    "assets/looper-ui/cassette-tape.svg",
-    "assets/looper-ui/cassette-reel.svg",
-    "assets/looper-ui/cassette-label.svg",
+    "assets/looper-ui/120927/desk-wood.svg",
+    "assets/looper-ui/120927/rear-cables.svg",
+    "assets/looper-ui/120927/deck-shell.svg",
+    "assets/looper-ui/120927/deck-scene-120927.svg",
+    "assets/looper-ui/120927/cassette-frame.svg",
+    "assets/looper-ui/120927/cassette-body.svg",
+    "assets/looper-ui/120927/cassette-reel.svg",
 ]:
     require(f"file {rel}", (ROOT / rel).is_file())
 
@@ -135,8 +138,6 @@ unsafe_inner_html = [
 ]
 require("innerHTML only clears trusted UI", not unsafe_inner_html, "; ".join(unsafe_inner_html))
 
-# Keep the few cross-cutting safety guards that are not implementation-location
-# contracts and are cheap to verify statically.
 for token in ["MAX_BEAT_FILE_BYTES", "MAX_SAMPLE_FILE_BYTES", "MAX_DRUM_FILE_BYTES"]:
     require(f"local file guard {token}", token in JS)
 require("local UUID fallback", "function localId()" in JS)
@@ -147,6 +148,4 @@ if failures:
         print(f"FAIL: {failure}")
     sys.exit(1)
 
-print(
-    "OK: runtime contract — deployable files, retired Practice absent, DOM refs, JS syntax and generic security guards"
-)
+print("OK: runtime contract — deployable files, DOM refs, JS syntax and generic security guards")
