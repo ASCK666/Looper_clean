@@ -130,8 +130,7 @@
 #looper .cassetteCssLight{z-index:4;left:49%;top:59%;width:2%;aspect-ratio:1;border-radius:50%;background:#8e4b08;opacity:0;box-shadow:none}
 #looper .cassetteDeck.playing .cassetteCssLight{opacity:.12;background:#ff9b16;box-shadow:0 0 5px rgba(255,155,22,.18)}
 #looper .cassetteBayForeground{z-index:5}
-#looper .cassetteDeck:not(.loaded) :is(.cassetteTape,.cassetteReel,.cassetteBeatName,.cassetteCssLight){opacity:0}
-#looper .cassetteDeck.loaded :is(.cassetteTape,.cassetteBeatName){opacity:1}
+#looper .cassetteDeck:not(.playing) .cassetteCssLight{opacity:0}
 
 /* Shared physical light: key illumination plus a small spill on the chassis. */
 #looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton){--light-strength:0;--light-r:255;--light-g:163;--light-b:26;position:absolute;isolation:isolate;overflow:visible}
