@@ -47,6 +47,7 @@ for rel in [
     "assets/looper-ui/120927/rear-cables.webp",
     "assets/looper-ui/120927/deck-shell.webp",
     "assets/looper-ui/120927/readout-panel.webp",
+    "assets/looper-ui/120927/utility-panel.webp",
     "assets/looper-ui/120927/cassette-frame.svg",
     "assets/looper-ui/120927/cassette-body.svg",
     "assets/looper-ui/120927/cassette-reel.svg",
