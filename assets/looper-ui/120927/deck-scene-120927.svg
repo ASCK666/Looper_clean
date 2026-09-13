@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1448" height="1086" viewBox="0 0 1448 1086">
-  <!-- Static scene composition only. Dynamic controls remain HTML/CSS. -->
-  <image href="desk.svg" x="0" y="0" width="1448" height="1086"/>
+  <!-- Approved 120927 scene: clean walnut, rear leads, then the graphite shell. -->
+  <image href="desk-wood.svg" x="0" y="0" width="1448" height="1086"/>
+  <image href="rear-cables.svg" x="0" y="0" width="1448" height="1086"/>
   <image href="deck-shell.svg" x="0" y="0" width="1448" height="1086"/>
 </svg>
