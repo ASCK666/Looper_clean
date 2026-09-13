@@ -1,17 +1,60 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1448" height="1086" viewBox="0 0 1448 1086">
   <defs>
     <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#7b4021"/>
-      <stop offset=".5" stop-color="#69351b"/>
-      <stop offset="1" stop-color="#522812"/>
+      <stop offset="0" stop-color="#7f4324"/>
+      <stop offset=".18" stop-color="#74391d"/>
+      <stop offset=".52" stop-color="#663017"/>
+      <stop offset=".82" stop-color="#5a2914"/>
+      <stop offset="1" stop-color="#4d220f"/>
     </linearGradient>
-    <pattern id="grain" width="180" height="42" patternUnits="userSpaceOnUse">
-      <path d="M-10 11C30 0 74 19 118 9c26-6 45-5 72 2" fill="none" stroke="#2a1108" stroke-opacity=".16" stroke-width="2"/>
-      <path d="M-14 28C31 18 78 37 126 26c26-6 42-5 68 1" fill="none" stroke="#c2703b" stroke-opacity=".09" stroke-width="1.5"/>
-      <path d="M24 37c24-8 50-8 74-1" fill="none" stroke="#2a1108" stroke-opacity=".10" stroke-width="1"/>
+    <linearGradient id="warm" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2d1007" stop-opacity=".22"/>
+      <stop offset=".17" stop-color="#d27a42" stop-opacity=".10"/>
+      <stop offset=".44" stop-color="#2c1007" stop-opacity=".18"/>
+      <stop offset=".7" stop-color="#bb6331" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#260e06" stop-opacity=".20"/>
+    </linearGradient>
+    <radialGradient id="vignette" cx="50%" cy="46%" r="72%">
+      <stop offset="0" stop-color="#d78348" stop-opacity=".08"/>
+      <stop offset=".7" stop-color="#3b170a" stop-opacity=".04"/>
+      <stop offset="1" stop-color="#1c0904" stop-opacity=".25"/>
+    </radialGradient>
+    <pattern id="fineGrain" width="238" height="54" patternUnits="userSpaceOnUse">
+      <path d="M-18 8C31 0 64 16 111 8c33-6 73-3 145 6" fill="none" stroke="#250d05" stroke-opacity=".19" stroke-width="1.8"/>
+      <path d="M-22 18C21 10 69 26 121 17c38-7 71-5 139 4" fill="none" stroke="#bd6736" stroke-opacity=".085" stroke-width="1.2"/>
+      <path d="M-35 31C17 19 61 39 118 29c42-8 84-4 155 8" fill="none" stroke="#240d05" stroke-opacity=".15" stroke-width="1.45"/>
+      <path d="M-12 43C36 34 74 50 126 42c43-7 78-3 133 7" fill="none" stroke="#ce7740" stroke-opacity=".055" stroke-width="1"/>
+      <path d="M38 51c33-8 66-7 105 0" fill="none" stroke="#210c05" stroke-opacity=".10" stroke-width=".9"/>
     </pattern>
   </defs>
+
   <rect width="1448" height="1086" fill="url(#base)"/>
-  <rect width="1448" height="1086" fill="url(#grain)"/>
-  <rect width="1448" height="1086" fill="none" stroke="#8b4b29" stroke-opacity=".16" stroke-width="2"/>
+  <rect width="1448" height="1086" fill="url(#warm)"/>
+
+  <!-- Broad walnut figure. The irregular spacing avoids the old wallpaper look. -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M-30 32C164 7 303 47 482 24c157-20 295 13 442 0 177-16 331-25 557 9" stroke="#2a0e05" stroke-opacity=".24" stroke-width="8"/>
+    <path d="M-44 48C122 33 261 59 419 45c184-16 301 13 489-3 183-16 331-10 565 21" stroke="#c66f3b" stroke-opacity=".10" stroke-width="3"/>
+    <path d="M-30 74C164 52 323 86 513 67c144-14 278 8 409-1 181-12 337-6 559 17" stroke="#250c05" stroke-opacity=".19" stroke-width="4"/>
+
+    <path d="M-28 1006C156 986 326 1018 505 1000c175-18 285 11 454-4 177-16 330-4 519 18" stroke="#260d05" stroke-opacity=".28" stroke-width="7"/>
+    <path d="M-35 1022C137 1012 302 1037 472 1022c187-17 300 10 472-4 195-16 336-2 542 23" stroke="#bd6533" stroke-opacity=".10" stroke-width="3"/>
+    <path d="M-25 1053C177 1035 306 1066 511 1048c185-17 304 11 468-3 169-15 321-3 503 13" stroke="#1e0904" stroke-opacity=".20" stroke-width="4"/>
+
+    <path d="M0 156C202 139 372 164 548 151c166-12 300 8 458-3 172-12 300-5 442 12" stroke="#2a0e06" stroke-opacity=".11" stroke-width="3"/>
+    <path d="M0 932C190 914 362 943 552 926c169-15 302 10 456-2 171-13 303-6 440 11" stroke="#d0783f" stroke-opacity=".055" stroke-width="2"/>
+  </g>
+
+  <!-- A few restrained cathedral/knotted figures visible around the chassis. -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M99 9c46 18 73 29 125 18 38-8 68-6 112 7" stroke="#2a0d05" stroke-opacity=".22" stroke-width="3"/>
+    <path d="M100 13c42 11 72 17 118 8 30-6 54-4 83 3" stroke="#d07a43" stroke-opacity=".07" stroke-width="1.4"/>
+    <path d="M1116 1030c43-18 92-22 137-8 30 9 55 8 91-1" stroke="#260c05" stroke-opacity=".20" stroke-width="3"/>
+    <ellipse cx="126" cy="1048" rx="35" ry="10" stroke="#210a04" stroke-opacity=".20" stroke-width="3"/>
+    <ellipse cx="126" cy="1048" rx="18" ry="5" stroke="#c76c36" stroke-opacity=".06" stroke-width="1.5"/>
+  </g>
+
+  <rect width="1448" height="1086" fill="url(#fineGrain)" opacity=".9"/>
+  <rect width="1448" height="1086" fill="url(#vignette)"/>
+  <path d="M0 3H1448" stroke="#c97a48" stroke-opacity=".12" stroke-width="3"/>
 </svg>
