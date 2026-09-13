@@ -57,6 +57,7 @@ with contextlib.ExitStack() as stack:
         assert page.locator('#playBeat').evaluate("el=>getComputedStyle(el).getPropertyValue('--light-strength').trim()") in ('.82','0.82')
 
         page.locator('#deckVolume').evaluate("el=>{el.value='25';el.dispatchEvent(new Event('input',{bubbles:true}))}")
+        page.wait_for_function("Math.abs((deckOutputGain?.gain?.value ?? -1) - .25) < .02")
         gain=page.evaluate('deckOutputGain?.gain?.value')
         assert gain is not None and abs(gain-.25)<.02,gain
 
