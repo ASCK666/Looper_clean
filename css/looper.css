@@ -725,9 +725,10 @@
 
   #looper .cassetteMechanism {
     top:365px;left:28px;width:calc(100% - 56px);height:auto;
-    border:3px solid #08090a;
+    border:0;
     border-radius:9px;
     background:#071018;
+    box-shadow:inset 0 0 0 3px #08090a;
   }
   #looper .cassetteBeatName { font-size:11px; }
 
