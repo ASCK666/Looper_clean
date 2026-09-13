@@ -39,9 +39,18 @@ with contextlib.ExitStack() as stack:
               return {complete:el.complete,w:el.naturalWidth,h:el.naturalHeight,display:s.display,visibility:s.visibility,opacity:Number(s.opacity),rw:r.width,rh:r.height};
             }""")
             assert desk_state['complete'] and desk_state['w']==1448 and desk_state['h']==1086,desk_state
+            cables=page.locator('.looper66RearCables')
+            assert cables.count()==1
+            cable_state=cables.evaluate("""el => {
+              const r=el.getBoundingClientRect(),s=getComputedStyle(el);
+              return {complete:el.complete,w:el.naturalWidth,h:el.naturalHeight,display:s.display,visibility:s.visibility,opacity:Number(s.opacity),rw:r.width,rh:r.height};
+            }""")
+            assert cable_state['complete'] and cable_state['w']==1448 and cable_state['h']==1086,cable_state
             if width>680:
                 assert desk_state['display']!='none' and desk_state['visibility']!='hidden' and desk_state['opacity']>.95,desk_state
                 assert abs(desk_state['rw']/desk_state['rh']-1448/1086)<.001,desk_state
+                assert cable_state['display']!='none' and cable_state['visibility']!='hidden' and cable_state['opacity']>.95,cable_state
+                assert abs(cable_state['rw']/cable_state['rh']-1448/1086)<.001,cable_state
 
             for selector in ('.cassetteTape','.cassetteBayForeground','.cassetteReelLeft','.cassetteReelRight'):
                 asset=page.locator(selector)

@@ -44,6 +44,7 @@ for rel in [
     "assets/deck-black-ui-texture.png",
     "assets/looper-ui/120927/mockup-reference.png",
     "assets/looper-ui/120927/desk-surface.webp",
+    "assets/looper-ui/120927/rear-cables.webp",
     "assets/looper-ui/120927/cassette-frame.svg",
     "assets/looper-ui/120927/cassette-body.svg",
     "assets/looper-ui/120927/cassette-reel.svg",

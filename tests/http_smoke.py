@@ -78,6 +78,7 @@ try:
 
     for asset,mime,min_size in (
         ("/assets/looper-ui/120927/desk-surface.webp","image/webp",10_000),
+        ("/assets/looper-ui/120927/rear-cables.webp","image/webp",10_000),
         ("/assets/looper-ui/120927/mockup-reference.png","image/png",100_000),
     ):
         with urlopen(Request(base_url + asset, method="HEAD"), timeout=5) as response:
