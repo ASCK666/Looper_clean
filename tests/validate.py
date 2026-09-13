@@ -42,9 +42,7 @@ for rel in [
     "js/drums.js",
     "js/events.js",
     "assets/deck-black-ui-texture.png",
-    "assets/looper-ui/120927/desk-wood.svg",
-    "assets/looper-ui/120927/rear-cables.svg",
-    "assets/looper-ui/120927/deck-shell.svg",
+    "assets/looper-ui/120927/deck-static.webp",
     "assets/looper-ui/120927/cassette-frame.svg",
     "assets/looper-ui/120927/cassette-body.svg",
     "assets/looper-ui/120927/cassette-reel.svg",
@@ -73,8 +71,6 @@ duplicates = sorted(name for name, count in Counter(ids).items() if count > 1)
 require("no duplicate ids", not duplicates, ", ".join(duplicates))
 
 literal_dom_refs = sorted(set(re.findall(r'\$\("([^"]+)"\)', JS)))
-# deckAutoToggle is a retained null-safe state hook in looper.js; the duplicate
-# physical control itself is intentionally absent from the 120927 DOM.
 optional_dom_refs={"deckAutoToggle"}
 missing_refs = [name for name in literal_dom_refs if name not in optional_dom_refs and f'id="{name}"' not in HTML]
 require("all required literal $() DOM refs exist", not missing_refs, ", ".join(missing_refs))
