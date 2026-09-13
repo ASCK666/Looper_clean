@@ -119,8 +119,8 @@
   z-index:1;width:11.72%;height:auto;aspect-ratio:1;transform-origin:50% 50%;
   animation:looperReelSpin var(--supply-reel-cycle) linear infinite;animation-play-state:paused;will-change:transform;
 }
-#looper .cassetteReelLeft{left:21.03%;top:33.02%}
-#looper .cassetteReelRight{left:63.10%;top:33.02%;animation-duration:var(--takeup-reel-cycle)}
+#looper .cassetteReelLeft{left:21.96%;top:34.55%}
+#looper .cassetteReelRight{left:64.03%;top:34.55%;animation-duration:var(--takeup-reel-cycle)}
 #looper .cassetteDeck.playing .cassetteReel { animation-play-state:running; }
 @keyframes looperReelSpin{to{transform:rotate(360deg)}}
 #looper .cassetteBeatName{

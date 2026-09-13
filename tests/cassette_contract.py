@@ -18,8 +18,8 @@ cassette=Image.open(assets/'cassette.webp').convert('RGBA')
 assert reader.size == (550,366)
 assert cassette.size == (435,262)
 assert reader.getpixel((275,190))[3] == 0
-assert cassette.getpixel((117,112))[3] == 0
-assert cassette.getpixel((300,112))[3] == 0
+assert cassette.getpixel((121,116))[3] == 0
+assert cassette.getpixel((304,116))[3] == 0
 
 reel=Image.open(assets/'reel-animation.webp').convert('RGBA')
 assert reel.size == (64,64)
