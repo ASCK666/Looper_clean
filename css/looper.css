@@ -1,4 +1,5 @@
-/* Looper deck — approved 120927 mockup. Static material lives in deck-scene-120927.svg;
+/* Looper deck — approved 120927 mockup.
+   Static material is split into clean walnut / rear-cable / graphite-shell assets;
    this file owns only live layout, interaction, light and responsive behavior. */
 
 #looper {
@@ -26,7 +27,10 @@
   width:100%;
   aspect-ratio:1448/1086;
   overflow:hidden;
-  background:url("../assets/looper-ui/120927/deck-scene-120927.svg") center/100% 100% no-repeat;
+  background:
+    url("../assets/looper-ui/120927/deck-shell.svg") center/100% 100% no-repeat,
+    url("../assets/looper-ui/120927/rear-cables.svg") center/100% 100% no-repeat,
+    url("../assets/looper-ui/120927/desk-wood.svg") center/100% 100% no-repeat;
 }
 
 #looper .looperMainPanel,
@@ -130,7 +134,10 @@
   color:inherit!important;
   font:inherit!important;
 }
-#looper .cassetteDeck.playing #deckTransportState { text-shadow:0 0 7px rgba(255,159,28,.4); }
+#looper .cassetteDeck.playing #deckTransportState {
+  text-shadow:0 0 7px rgba(255,159,28,.4);
+}
+#looper .cassetteDeck.playing #deckTransportState::before { content:"▶ "; }
 #looper .deckReadoutMeter {
   position:absolute;
   top:62%;
@@ -306,6 +313,7 @@
   z-index:1;
   top:39.5%;
   width:16%;
+  height:auto;
   aspect-ratio:1;
   transform-origin:50% 50%;
   animation:looperReelSpin var(--supply-reel-cycle) linear infinite;
@@ -713,7 +721,7 @@
   #looper #deckPitch::-webkit-slider-runnable-track { width:100%;height:8px;background:#080909;border-radius:5px; }
   #looper #deckPitch::-moz-range-track { width:100%;height:8px;background:#080909;border-radius:5px; }
   #looper #deckPitch::-webkit-slider-thumb { width:28px;height:34px;margin-top:-13px;margin-left:0; }
-  #looper #deckPitchHeader output { left:70%;bottom:7px;width:25%;height:20px;font-size:10px!important; }
+  #looper .deckPitchHeader output { left:70%;bottom:7px;width:25%;height:20px;font-size:10px!important; }
 
   #looper .cassetteMechanism {
     top:365px;left:28px;width:calc(100% - 56px);height:auto;
