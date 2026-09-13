@@ -17,7 +17,7 @@ reader=Image.open(assets/'reader-mechanism.webp').convert('RGBA')
 cassette=Image.open(assets/'cassette.webp').convert('RGBA')
 assert reader.size == (550,366)
 assert cassette.size == (435,262)
-assert reader.getpixel((275,190))[3] == 0
+assert reader.getpixel((275,190))[3] == 255
 assert cassette.getpixel((121,116))[3] == 0
 assert cassette.getpixel((304,116))[3] == 0
 
@@ -31,4 +31,4 @@ for selector,level in (('.cassetteReel',1),('.cassetteTape',2)):
 assert 'animation-play-state:paused' in css
 assert re.search(r'\.cassetteDeck\.playing\s+\.cassetteReel\s*\{[^}]*animation-play-state\s*:\s*running',css,re.S)
 assert 'cassetteGlass' not in html+css
-print('OK: reader, cassette and opaque animated reels have separate ownership')
+print('OK: opaque reader background, cassette and animated reels have separate ownership')
