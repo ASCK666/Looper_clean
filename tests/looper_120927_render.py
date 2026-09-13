@@ -33,8 +33,9 @@ with contextlib.ExitStack() as stack:
             page.wait_for_function("[...document.querySelectorAll('.cassetteMechanism img')].every(i=>i.complete && i.naturalWidth>0)")
             scene=page.locator('.looper66Workspace').evaluate('el=>getComputedStyle(el).backgroundImage')
             if width>680:
-                for asset in ('deck-shell.svg','rear-cables.svg','desk-wood.svg'):
-                    assert asset in scene,(asset,scene)
+                assert 'deck-static.webp' in scene,scene
+                for retired in ('deck-shell.svg','rear-cables.svg','desk-wood.svg'):
+                    assert retired not in scene,(retired,scene)
             assert page.locator('#deckVolume').count()==1
             assert page.locator('#crateFilters').count()==1
             assert page.locator('#beatList').count()==1
@@ -62,4 +63,4 @@ with contextlib.ExitStack() as stack:
             page.locator('#stopBeat').click()
             assert not errors,errors
             page.close()
-print('OK: 120927 deck captured with real empty/loaded/playing transitions')
+print('OK: 120927 mockup-backed deck captured with real empty/loaded/playing transitions')
