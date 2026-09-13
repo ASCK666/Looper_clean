@@ -5,12 +5,6 @@
 #looper {
   position:relative!important;
   --deck-amber:#ffa31a;
-  --deck-amber-hi:#ffc05a;
-  --deck-text:#dadbd7;
-  --deck-muted:#979b99;
-  --deck-dark:#101314;
-  --deck-button:#1b1e1f;
-  --deck-button-hi:#343839;
   --supply-reel-cycle:2.91s;
   --takeup-reel-cycle:1.46s;
 }
