@@ -54,15 +54,15 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert page.locator('.cassetteReel').count()==2
         assert page.locator('#library .track').count()==0
 
-        for rid in ['playBeat','stopBeat','prevBeat','nextBeat','importBeatsBtn','importFolderBtn','loadSampleBtn','kickFolderBtn','snareFolderBtn','hatFolderBtn','autoLooperToggle','deckAutoToggle','deckPitch','deckTransportState','deckSpeedReadout']:
+        for rid in ['playBeat','stopBeat','prevBeat','nextBeat','importBeatsBtn','importFolderBtn','loadSampleBtn','kickFolderBtn','snareFolderBtn','hatFolderBtn','autoLooperToggle','deckPitch','deckTransportState','deckSpeedReadout']:
             assert page.locator('#'+rid).count()==1,rid
-        handlers=page.evaluate('''() => ['playBeat','stopBeat','loadSampleBtn','kickFolderBtn','autoLooperToggle','deckAutoToggle','importBeatsBtn','importFolderBtn'].map(id=>typeof document.getElementById(id).onclick)''')
+        handlers=page.evaluate('''() => ['playBeat','stopBeat','loadSampleBtn','kickFolderBtn','autoLooperToggle','importBeatsBtn','importFolderBtn'].map(id=>typeof document.getElementById(id).onclick)''')
         assert all(v=='function' for v in handlers),handlers
         assert page.evaluate("typeof document.getElementById('deckPitch').oninput")=='function'
         assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='looper66EmptyPlayPulse'
         assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationDuration")=='6s'
 
-        visible=page.evaluate('''() => ['playBeat','stopBeat','prevBeat','nextBeat','autoLooperToggle','deckAutoToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect(),c=getComputedStyle(e);return [id,r.width,r.height,c.display,c.visibility,parseFloat(c.opacity)]})''')
+        visible=page.evaluate('''() => ['playBeat','stopBeat','prevBeat','nextBeat','autoLooperToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect(),c=getComputedStyle(e);return [id,r.width,r.height,c.display,c.visibility,parseFloat(c.opacity)]})''')
         assert all(v[1]>=44 and v[2]>=44 and v[3]!='none' and v[4]=='visible' and v[5]>.5 for v in visible),visible
 
         page.set_input_files('#beatFiles',str(beat))
@@ -91,7 +91,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert page.locator('#deckPitch').get_attribute('aria-valuetext')=='+4.5%'
         pitch_position=page.locator('.deckPitchModule').evaluate("el=>[el.style.getPropertyValue('--pitch-x'),el.style.getPropertyValue('--pitch-y')]")
         assert pitch_position==['63.31%','30.94%'],pitch_position
-        assert page.locator('#deckAutoToggle').get_attribute('aria-pressed')=='false'
+        assert page.locator('#autoLooperToggle').get_attribute('aria-pressed')=='false'
         page.locator('#deckPitch').evaluate("el=>{el.value='0';el.dispatchEvent(new Event('input',{bubbles:true}))}")
         page.click('#autoLooperToggle')
         page.click('#playBeat')
