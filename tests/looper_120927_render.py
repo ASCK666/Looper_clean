@@ -48,7 +48,7 @@ with contextlib.ExitStack() as stack:
               commitLoadedTrack({id:'120927-review',name:'MIDNIGHT SESSION.WAV',created:Date.now(),source:'user-import'},buffer);
             }""")
             page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('loaded')")
-            assert page.locator('#cassetteBeatName').inner_text()=='MIDNIGHT SESSION.WAV'
+            assert page.locator('#cassetteBeatName').inner_text()=='MIDNIGHT SESSION'
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-loaded.png'))
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-loaded.png'))
 
