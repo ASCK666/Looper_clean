@@ -63,10 +63,10 @@ with contextlib.ExitStack() as stack:
             for m in metrics:
                 assert m['x']>=-.001 and m['y']>=-.001 and m['x']+m['w']<=1.001 and m['y']+m['h']<=1.001,m
 
-            # Centres exactly match cassette-body.svg reel apertures: (301,309) and (599,309) in 900×600.
-            for m,cx in zip(metrics[0:2],(301/900,599/900)):
+            # Centres match the reference-derived cassette body apertures.
+            for m,(cx,cy) in zip(metrics[0:2],((306/900,279/600),(673/900,275/600))):
                 assert abs(m['x']+m['w']/2-cx)<.002,(label,m,cx)
-                assert abs(m['y']+m['h']/2-309/600)<.002,(label,m)
+                assert abs(m['y']+m['h']/2-cy)<.002,(label,m,cy)
                 assert abs(m['w']*box['width']-m['h']*box['height'])<.2,m
             assert metrics[3]['y']+metrics[3]['h']<metrics[0]['y']
             if label in ('desktop','mobile'): capture(page,f'{label}-loaded')
