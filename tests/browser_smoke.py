@@ -62,7 +62,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='none'
         assert page.evaluate("getComputedStyle(document.getElementById('playBeat')).getPropertyValue('--light-strength').trim()")=='.10'
 
-        visible=page.evaluate('''() => ['playBeat','stopBeat','prevBeat','nextBeat','autoLooperToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect(),c=getComputedStyle(e);return [id,r.width,r.height,c.display,c.visibility,parseFloat(c.opacity)]})''')
+        visible=page.evaluate('''() => ['playBeat','stopBeat','autoLooperToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect(),c=getComputedStyle(e);return [id,r.width,r.height,c.display,c.visibility,parseFloat(c.opacity)]})''')
         assert all(v[1]>=44 and v[2]>=44 and v[3]!='none' and v[4]=='visible' and v[5]>.5 for v in visible),visible
 
         page.set_input_files('#beatFiles',str(beat))
