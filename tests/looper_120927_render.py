@@ -52,7 +52,7 @@ with contextlib.ExitStack() as stack:
                 assert cable_state['display']!='none' and cable_state['visibility']!='hidden' and cable_state['opacity']>.95,cable_state
                 assert abs(cable_state['rw']/cable_state['rh']-1448/1086)<.001,cable_state
 
-            for selector in ('.cassetteTape','.cassetteBayForeground','.cassetteReelLeft','.cassetteReelRight'):
+            for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight'):
                 asset=page.locator(selector)
                 assert asset.count()==1,selector
                 dims=asset.evaluate('el=>({complete:el.complete,w:el.naturalWidth,h:el.naturalHeight})')

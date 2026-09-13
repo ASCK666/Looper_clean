@@ -9,8 +9,7 @@
   --takeup-reel-cycle:1.46s;
 }
 #looper .looper66Shell{width:min(100%,1448px);margin-inline:auto;background:transparent}
-#looper :is(.looper66DeskSurface,.looper66RearCables,.looper66DeckShell,.looper66CassetteBay,.looper66CassetteLip){position:absolute;z-index:0;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none}
-#looper .looper66CassetteLip{z-index:4}
+#looper :is(.looper66DeskSurface,.looper66RearCables,.looper66DeckShell,.looper66CassetteBay){position:absolute;z-index:0;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none}
 #looper .looper66ReadoutPanel{position:absolute;z-index:1;top:12.62%;left:4.14%;width:26.24%;height:auto;pointer-events:none;user-select:none}
 #looper .looper66Workspace{
   position:relative;display:block!important;width:100%;aspect-ratio:1448/1086;overflow:hidden;
@@ -113,7 +112,7 @@
   background:transparent;box-shadow:none;isolation:isolate;container-type:inline-size;pointer-events:none;
 }
 #looper .cassetteMechanism>*{position:absolute;pointer-events:none;user-select:none}
-#looper .cassetteTape,#looper .cassetteBayForeground{inset:0;width:100%;height:100%;display:block}
+#looper .cassetteTape{inset:0;width:100%;height:100%;display:block}
 #looper .cassetteTape{z-index:2}
 #looper .cassetteReel{
   z-index:1;width:16%;height:auto;aspect-ratio:1;transform-origin:50% 50%;
@@ -130,7 +129,6 @@
 }
 #looper .cassetteCssLight{z-index:4;left:49%;top:59%;width:2%;aspect-ratio:1;border-radius:50%;background:#8e4b08;opacity:0;box-shadow:none}
 #looper .cassetteDeck.playing .cassetteCssLight{opacity:.12;background:#ff9b16;box-shadow:0 0 5px rgba(255,155,22,.18)}
-#looper .cassetteBayForeground{display:none;z-index:5}
 #looper .cassetteDeck:not(.playing) .cassetteCssLight{opacity:0}
 
 /* Shared physical light: key illumination plus a small spill on the chassis. */
@@ -223,7 +221,7 @@
 
 /* Mobile is a functional reflow; desktop remains the exact approved scene. */
 @media (max-width:680px){
-  #looper :is(.looper66DeskSurface,.looper66RearCables,.looper66DeckShell,.looper66CassetteBay,.looper66CassetteLip,.looper66ReadoutPanel){display:none}
+  #looper :is(.looper66DeskSurface,.looper66RearCables,.looper66DeckShell,.looper66CassetteBay,.looper66ReadoutPanel){display:none}
   #looper .looper66Shell{width:100%}
   #looper .looper66Workspace{aspect-ratio:auto;min-height:1260px;background:#633219}
   #looper .looper66Workspace::before{content:"";position:absolute;z-index:0;top:22px;left:10px;right:10px;bottom:20px;border:3px solid #111314;border-radius:12px;background:#303233;box-shadow:inset 0 0 0 2px #55595a,inset 0 0 0 5px #1a1c1d,0 8px 14px rgba(0,0,0,.35);pointer-events:none}

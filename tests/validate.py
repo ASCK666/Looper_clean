@@ -50,7 +50,6 @@ for rel in [
     "assets/looper-ui/120927/utility-panel.webp",
     "assets/looper-ui/120927/pitch-panel.webp",
     "assets/looper-ui/120927/cassette-bay.webp",
-    "assets/looper-ui/120927/cassette-frame.svg",
     "assets/looper-ui/120927/cassette-body.svg",
     "assets/looper-ui/120927/cassette-reel.svg",
 ]:
