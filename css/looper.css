@@ -74,8 +74,8 @@
 
 /* PITCH — keep the real ±8 range and mask the baked mockup numbers. */
 #looper .deckPitchModule{
-  z-index:22;top:12.62%;left:30.18%;width:7.94%;height:42.27%;overflow:visible;border:0!important;
-  background:transparent!important;box-shadow:none!important;pointer-events:none;
+  z-index:22;top:12.62%;left:30.94%;width:8.15%;height:43.74%;overflow:visible;border:0!important;
+  background:url("../assets/looper-ui/120927/pitch-panel.webp") center/contain no-repeat!important;box-shadow:none!important;pointer-events:none;
 }
 #looper .deckPitchHeader{position:absolute;inset:0;pointer-events:none}
 #looper .deckPitchHeader label{display:none!important}

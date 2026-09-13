@@ -22,12 +22,14 @@ assert re.search(r'<img\b[^>]*class="looper66RearCables"[^>]*src="assets/looper-
 assert re.search(r'<img\b[^>]*class="looper66DeckShell"[^>]*src="assets/looper-ui/120927/deck-shell\.webp"[^>]*width="1448"[^>]*height="1086"',HTML)
 assert re.search(r'<img\b[^>]*class="looper66ReadoutPanel"[^>]*src="assets/looper-ui/120927/readout-panel\.webp"[^>]*width="380"[^>]*height="355"',HTML)
 assert 'assets/looper-ui/120927/utility-panel.webp' in CSS
+assert 'assets/looper-ui/120927/pitch-panel.webp' in CSS
 assert '.looper66DeskSurface' in CSS and '.looper66RearCables' in CSS
 assert (ROOT/'assets/looper-ui/120927/desk-surface.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/rear-cables.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/deck-shell.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/readout-panel.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/utility-panel.webp').exists()
+assert (ROOT/'assets/looper-ui/120927/pitch-panel.webp').exists()
 mockup=ROOT/'assets/looper-ui/120927/mockup-reference.png'
 assert mockup.exists() and mockup.read_bytes()[:8]==b'\x89PNG\r\n\x1a\n'
 assert 'looper66StaticSkin' not in HTML+CSS
