@@ -10,6 +10,7 @@
 }
 #looper .looper66Shell{width:min(100%,1448px);margin-inline:auto;background:transparent}
 #looper :is(.looper66DeskSurface,.looper66RearCables,.looper66DeckShell){position:absolute;z-index:0;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none}
+#looper .looper66ReadoutPanel{position:absolute;z-index:1;top:12.62%;left:4.14%;width:26.24%;height:auto;pointer-events:none;user-select:none}
 #looper .looper66Workspace{
   position:relative;display:block!important;width:100%;aspect-ratio:1448/1086;overflow:hidden;
   background:transparent;
@@ -27,10 +28,9 @@
 
 /* READOUT — fully masks the baked mockup state. */
 #looper .deckReadout{
-  z-index:20;top:16.21%;left:5.73%;width:22.10%;height:24.86%;min-height:0;overflow:hidden;
-  border:0!important;border-radius:.45cqw;
-  background:repeating-linear-gradient(0deg,rgba(255,171,37,.02) 0 1px,transparent 1px 3px),#030302!important;
-  box-shadow:inset 0 0 18px #000!important;color:var(--deck-amber);font-family:var(--font-mono,monospace);
+  z-index:20;top:16.30%;left:6.15%;width:22.65%;height:26.15%;min-height:0;overflow:hidden;
+  border:0!important;border-radius:.45cqw;background:transparent!important;
+  box-shadow:none!important;color:var(--deck-amber);font-family:var(--font-mono,monospace);
   pointer-events:none;
 }
 #looper .deckReadoutTrack{
@@ -223,12 +223,12 @@
 
 /* Mobile is a functional reflow; desktop remains the exact approved scene. */
 @media (max-width:680px){
-  #looper :is(.looper66DeskSurface,.looper66RearCables,.looper66DeckShell){display:none}
+  #looper :is(.looper66DeskSurface,.looper66RearCables,.looper66DeckShell,.looper66ReadoutPanel){display:none}
   #looper .looper66Shell{width:100%}
   #looper .looper66Workspace{aspect-ratio:auto;min-height:1260px;background:#633219}
   #looper .looper66Workspace::before{content:"";position:absolute;z-index:0;top:22px;left:10px;right:10px;bottom:20px;border:3px solid #111314;border-radius:12px;background:#303233;box-shadow:inset 0 0 0 2px #55595a,inset 0 0 0 5px #1a1c1d,0 8px 14px rgba(0,0,0,.35);pointer-events:none}
   #looper :is(.deckReadout,.deckUtilityPanel,.deckPitchModule,.cassetteMechanism,.deckTransport,.looperImportDock,.cratePanel,.beatListPanel){z-index:4}
-  #looper .deckReadout{top:52px;left:28px;width:calc(100% - 56px);height:190px;border:2px solid #575b5c!important;border-radius:7px}
+  #looper .deckReadout{top:52px;left:28px;width:calc(100% - 56px);height:190px;border:2px solid #575b5c!important;border-radius:7px;background:#030302!important;box-shadow:inset 0 0 18px #000!important}
   #looper .deckReadoutTrack{font-size:14px!important}
   #looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow),#looper .deckReadout::after{font-size:11px}
   #looper .deckUtilityPanel{top:254px;left:28px;width:132px;height:88px;border:1px solid #101213!important;border-radius:6px;background:#1c2021!important;box-shadow:inset 0 1px #55595a!important}

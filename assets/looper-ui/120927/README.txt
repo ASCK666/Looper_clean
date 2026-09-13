@@ -8,6 +8,7 @@ Asset contract:
 - Desktop desk texture is assets/looper-ui/120927/desk-surface.webp at native 1448×1086.
 - Rear cables are assets/looper-ui/120927/rear-cables.webp at native 1448×1086 with transparent alpha; it contains no desk or chassis pixels.
 - Deck chassis is assets/looper-ui/120927/deck-shell.webp at native 1448×1086 with transparent apertures for every separately-owned module.
+- Readout frame is assets/looper-ui/120927/readout-panel.webp at native 380×355; its clean glass contains no baked state or track data.
 - Fixed deck/cables stay separate from the desk so the desk texture is not baked into a full-scene fallback.
 - Dynamic readout, pitch, transport, import controls, library rows and cassette mechanics remain live HTML/CSS/JS.
 - Superseded assets must be removed rather than retained as hidden fallbacks.
