@@ -1,10 +1,11 @@
-120927 production asset set
+120927 Looper production assets
 
-The approved mockup is the desktop visual source of truth:
-- deck-static.webp: mockup-derived walnut, rear cables, graphite chassis, fixed frames and fixed legends
-- cassette-body.svg: cassette shell with transparent reel apertures
-- cassette-reel.svg: one rotating reel asset, instantiated twice
-- cassette-frame.svg: one static door + full-size night-blue glass + opening gap
+Golden reference: the approved 1448×1086 mockup.
 
-There is no procedural desktop shell/wood/cable duplicate.
-All stateful text, buttons, LEDs, pitch, volume, reels, crates and beat rows stay real HTML/CSS/JS above the static reference.
+Asset contract:
+- Every touched visual asset must use the approved mockup as the visual source of truth.
+- Export at the target geometry/aspect ratio; no non-uniform scaling, warping or object-fit: fill.
+- Desktop desk texture is assets/looper-ui/120927/desk-walnut.webp at native 1448×1086.
+- Fixed deck/cables stay separate from the desk so the desk texture is not baked into a full-scene fallback.
+- Dynamic readout, pitch, transport, import controls, library rows and cassette mechanics remain live HTML/CSS/JS.
+- Superseded assets must be removed rather than retained as hidden fallbacks.
