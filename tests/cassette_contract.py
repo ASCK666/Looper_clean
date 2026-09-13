@@ -35,9 +35,13 @@ assert 'glass' in frame.lower()
 assert '<circle' not in frame  # no screws placed on the glass/door asset
 
 assert 'aspect-ratio:3/2' in css
-assert re.search(r'#looper\s+\.cassetteReel\s*\{[^}]*\bz-index\s*:\s*1\s*;',css,re.S)
-assert re.search(r'#looper\s+\.cassetteTape\s*\{[^}]*\bz-index\s*:\s*2\s*;',css,re.S)
-assert re.search(r'#looper\s+\.cassetteBayForeground\s*\{[^}]*\bz-index\s*:\s*5\s*;',css,re.S)
+# Z-order is a visual contract; do not couple it to whitespace or selector prefixes.
+for selector,level in (
+    ('.cassetteReel',1),
+    ('.cassetteTape',2),
+    ('.cassetteBayForeground',5),
+):
+    assert re.search(rf'{re.escape(selector)}\s*\{{[^}}]*z-index\s*:\s*{level}(?:\s*;|\s*\}})',css,re.S),(selector,level)
 assert 'animation-play-state:paused' in css
 assert re.search(r'\.cassetteDeck\.playing\s+\.cassetteReel\s*\{[^}]*animation-play-state\s*:\s*running',css,re.S)
 assert 'animation-duration:var(--takeup-reel-cycle)' in css
