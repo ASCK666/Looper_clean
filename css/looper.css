@@ -36,18 +36,19 @@
 #looper .deckReadoutTrack{
   position:absolute;top:7%;left:8%;width:84%;min-height:0;max-height:none;margin:0;padding:0;overflow:hidden;
   border:0!important;background:transparent!important;color:var(--deck-amber)!important;
-  font:500 clamp(10px,1.3vw,20px)/1.16 var(--font-mono,monospace)!important;letter-spacing:.015em;
+  font:500 clamp(11px,1.55vw,22px)/1.16 var(--font-mono,monospace)!important;letter-spacing:.015em;
   text-align:left!important;text-decoration:none!important;text-overflow:ellipsis;white-space:nowrap;
   cursor:pointer;pointer-events:auto;
 }
-#looper .deckReadoutTrack::before{content:"TRACK:";display:block;margin-bottom:.32em;color:#ffb333;font-size:.74em}
+#looper .deckReadoutTrack::before{content:"TRACK:";display:block;margin-bottom:.32em;color:#ffb333;font-size:.72em}
 #looper .deckReadoutState,#looper .deckReadoutTime,#looper .deckReadoutRateRow{
   position:absolute;left:8%;width:84%;display:flex;align-items:center;color:var(--deck-amber);
-  font:500 clamp(8px,.94vw,14px)/1 var(--font-mono,monospace);
+  font:500 clamp(9px,1.08vw,16px)/1 var(--font-mono,monospace);
 }
 #looper .deckReadoutState{top:35%;gap:8%}
 #looper .deckReadoutTime{top:49%;gap:.48em}
 #looper .deckReadoutRateRow{top:78%;gap:11%}
+#looper .deckReadout::after{content:"LOOP:    ON";position:absolute;top:88%;left:8%;width:84%;color:var(--deck-amber);font:500 clamp(9px,1.08vw,16px)/1 var(--font-mono,monospace);white-space:pre}
 #looper .deckReadoutState :is(small,strong),#looper .deckReadoutTime small,#looper .deckReadoutRateRow small,#looper .deckReadoutRate{color:inherit!important;font:inherit!important}
 #looper .cassetteDeck.playing #deckTransportState{text-shadow:0 0 7px rgba(255,159,28,.4)}
 #looper .cassetteDeck.playing #deckTransportState::before{content:"▶ "}
@@ -114,11 +115,11 @@
 #looper .cassetteTape,#looper .cassetteBayForeground{inset:0;width:100%;height:100%;display:block}
 #looper .cassetteTape{z-index:2}
 #looper .cassetteReel{
-  z-index:1;top:39.5%;width:16%;height:auto;aspect-ratio:1;transform-origin:50% 50%;
+  z-index:1;width:16%;height:auto;aspect-ratio:1;transform-origin:50% 50%;
   animation:looperReelSpin var(--supply-reel-cycle) linear infinite;animation-play-state:paused;will-change:transform;
 }
-#looper .cassetteReelLeft{left:25.95%}
-#looper .cassetteReelRight{left:66.80%;animation-duration:var(--takeup-reel-cycle)}
+#looper .cassetteReelLeft{left:26%;top:34.5%}
+#looper .cassetteReelRight{left:66.78%;top:33.83%;animation-duration:var(--takeup-reel-cycle)}
 #looper .cassetteDeck.playing .cassetteReel { animation-play-state:running; }
 @keyframes looperReelSpin{to{transform:rotate(360deg)}}
 #looper .cassetteBeatName{
@@ -167,7 +168,7 @@
 #looper #autoLooperToggle[data-speed-level="1"] .deckRateVisualSegments i:nth-child(-n+1),#looper #autoLooperToggle[data-speed-level="2"] .deckRateVisualSegments i:nth-child(-n+2),#looper #autoLooperToggle[data-speed-level="3"] .deckRateVisualSegments i:nth-child(-n+3),#looper #autoLooperToggle[data-speed-level="4"] .deckRateVisualSegments i:nth-child(-n+4),#looper #autoLooperToggle[data-speed-level="5"] .deckRateVisualSegments i:nth-child(-n+5){background:#ff9d16;border-color:#c46b08;box-shadow:0 0 5px rgba(255,157,22,.72),0 5px 11px rgba(255,142,10,.14),inset 0 1px #ffd47c}
 #looper #autoLooperToggle[aria-pressed="true"]{--light-strength:.23}
 
-/* IMPORT — real buttons cover the static reference buttons. */
+/* IMPORT — hit areas stay live; desktop lets the exact mockup button material show through. */
 #looper .looperImportDock{position:absolute;z-index:28;inset:0;display:block;border:0!important;background:transparent!important;box-shadow:none!important;pointer-events:none}
 #looper .deckImportTitle,#looper .deckDropHint,#looper .deckImportMeta{display:none!important}
 #looper .deckLoadKey{
@@ -215,6 +216,16 @@
 #looper #deckTrackDetails::backdrop{background:rgba(0,0,0,.55)}
 #looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton,.beatListRow,#deckPitch,#deckVolume):focus-visible{outline:2px solid #ffad31;outline-offset:3px}
 
+/* Desktop uses the reference material directly where the control face is static.
+   Interaction remains on the real HTML controls above it. */
+@media (min-width:681px){
+  #looper .deckVolumeKnob{display:none}
+  #looper .deckLoadKey{background:transparent;border-color:transparent;box-shadow:none;color:transparent}
+  #looper .deckLoadKey strong{visibility:hidden}
+  #looper .cassetteDeck.playing #playBeat{background:transparent!important;border-color:transparent!important;box-shadow:none!important;color:transparent!important}
+  #looper .cassetteDeck.playing #playBeat :is(.deckKeySymbol,.deckKeyLabel){visibility:hidden}
+}
+
 @media (prefers-reduced-motion:reduce){
   #looper .cassetteReel{animation:none!important}
   #looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton){transition:none!important}
@@ -228,8 +239,8 @@
   #looper .looper66Workspace::before{content:"";position:absolute;z-index:0;top:22px;left:10px;right:10px;bottom:20px;border:3px solid #111314;border-radius:12px;background:#303233;box-shadow:inset 0 0 0 2px #55595a,inset 0 0 0 5px #1a1c1d,0 8px 14px rgba(0,0,0,.35);pointer-events:none}
   #looper :is(.deckReadout,.deckUtilityPanel,.deckPitchModule,.cassetteMechanism,.deckTransport,.looperImportDock,.cratePanel,.beatListPanel){z-index:4}
   #looper .deckReadout{top:52px;left:28px;width:calc(100% - 56px);height:190px;border:2px solid #575b5c!important;border-radius:7px}
-  #looper .deckReadoutTrack{font-size:14px}
-  #looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow){font-size:11px}
+  #looper .deckReadoutTrack{font-size:14px!important}
+  #looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow),#looper .deckReadout::after{font-size:11px}
   #looper .deckUtilityPanel{top:254px;left:28px;width:132px;height:88px;border:1px solid #101213!important;border-radius:6px;background:#1c2021!important;box-shadow:inset 0 1px #55595a!important}
   #looper .deckVolumeControl{width:100%}
   #looper .deckVolumeKnob{left:29%;top:23%;width:44%}
