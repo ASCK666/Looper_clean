@@ -47,7 +47,7 @@ with contextlib.ExitStack() as stack:
 
             page.evaluate("commitLoadedTrack({id:'cassette-state',name:'MIDNIGHT SESSION.wav'},new AudioBuffer({length:44100,sampleRate:44100,numberOfChannels:1}))")
             page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('loaded')")
-            assert page.locator('#cassetteBeatName').inner_text()=='MIDNIGHT SESSION.WAV'
+            assert page.locator('#cassetteBeatName').inner_text()=='MIDNIGHT SESSION'
             assert page.locator('.cassetteReelLeft').evaluate('el=>getComputedStyle(el).animationPlayState')=='paused'
 
             metrics=mechanism.evaluate('''el=>{
