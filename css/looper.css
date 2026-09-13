@@ -125,7 +125,7 @@
 #looper .cassetteBeatName{
   z-index:3;top:6.75%;left:9.95%;width:84.84%;height:20.63%;display:flex;align-items:center;justify-content:center;overflow:hidden;
   color:#1b1d1e;background:transparent;border:0;
-  font:900 clamp(12px,1.7vw,24px)/1 "Arial Narrow",Arial,sans-serif;letter-spacing:.025em;text-align:center;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px rgba(255,255,255,.35);
+  font:900 clamp(13px,1.95vw,28px)/1 var(--font-condensed,"Arial Narrow",Arial,sans-serif);letter-spacing:.015em;text-align:center;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px rgba(255,255,255,.35);
 }
 #looper .cassetteCssLight{z-index:4;left:49%;top:59%;width:2%;aspect-ratio:1;border-radius:50%;background:#8e4b08;opacity:0;box-shadow:none}
 #looper .cassetteDeck.playing .cassetteCssLight{opacity:.12;background:#ff9b16;box-shadow:0 0 5px rgba(255,155,22,.18)}
