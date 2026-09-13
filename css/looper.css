@@ -86,7 +86,7 @@
 }
 #looper .deckPitchScale{
   position:absolute;z-index:4;top:10.5%;right:3%;width:32%;height:62.5%;display:block!important;color:#deded9;
-  background:linear-gradient(90deg,rgba(61,63,62,.18),#3d3f3e 42%,#3d3f3e 100%);
+  background:transparent;
   font:500 clamp(8px,.9vw,13px)/1 var(--font-mono,monospace);pointer-events:none;
 }
 #looper .deckPitchScale span{position:absolute;right:0}
