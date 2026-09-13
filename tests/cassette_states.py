@@ -37,7 +37,7 @@ with contextlib.ExitStack() as stack:
 
             mechanism=page.locator('.cassetteMechanism')
             box=mechanism.bounding_box()
-            assert abs(box['width']/box['height']-1.5)<.001,(label,box)
+            assert abs(box['width']/box['height']-442/252)<.001,(label,box)
             assert page.evaluate('document.body.scrollWidth <= innerWidth+2')
             assert page.locator('.cassetteBayForeground').is_visible()
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight','.cassetteBeatName'):
