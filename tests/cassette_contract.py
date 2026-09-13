@@ -11,8 +11,8 @@ ns='{http://www.w3.org/2000/svg}'
 expected={
     'cassetteReel cassetteReelLeft':('cassette-reel.svg','0 0 128 128','reference-raster'),
     'cassetteReel cassetteReelRight':('cassette-reel.svg','0 0 128 128','reference-raster'),
-    'cassetteTape':('cassette-body.svg','0 0 900 600','reference-raster'),
-    'cassetteBayForeground':('cassette-frame.svg','0 0 900 600','vector-glass'),
+    'cassetteTape':('cassette-body.svg','0 0 442 252','reference-raster'),
+    'cassetteBayForeground':('cassette-frame.svg','0 0 442 252','vector-glass'),
 }
 for class_name,(asset,viewbox,kind) in expected.items():
     tag=re.search(rf'<img\b[^>]*class="{class_name}"[^>]*>',html)
@@ -41,12 +41,12 @@ masks=list(body.iter(ns+'mask'))
 assert masks
 apertures=list(masks[0].iter(ns+'circle'))
 assert len(apertures)==2
-assert all(float(c.attrib['r'])>=40 for c in apertures)
+assert all(float(c.attrib['r'])>=20 for c in apertures)
 frame=(ROOT/'assets/looper-ui/120927/cassette-frame.svg').read_text(encoding='utf-8')
 assert 'glass' in frame.lower()
 assert '<circle' not in frame  # no screws placed on the glass/door asset
 
-assert 'aspect-ratio:3/2' in css
+assert 'aspect-ratio:442/252' in css
 # Z-order is a visual contract; do not couple it to whitespace or selector prefixes.
 for selector,level in (
     ('.cassetteReel',1),

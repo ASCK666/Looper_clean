@@ -35,8 +35,8 @@ with contextlib.ExitStack() as stack:
         assert len(assets)==4,assets
         assert assets[0]['src'].endswith('120927/cassette-reel.svg') and assets[0]['w']==128 and assets[0]['h']==128,assets
         assert assets[1]['src'].endswith('120927/cassette-reel.svg') and assets[1]['w']==128 and assets[1]['h']==128,assets
-        assert assets[2]['src'].endswith('120927/cassette-body.svg') and assets[2]['w']==900 and assets[2]['h']==600,assets
-        assert assets[3]['src'].endswith('120927/cassette-frame.svg') and assets[3]['w']==900 and assets[3]['h']==600,assets
+        assert assets[2]['src'].endswith('120927/cassette-body.svg') and assets[2]['w']==442 and assets[2]['h']==252,assets
+        assert assets[3]['src'].endswith('120927/cassette-frame.svg') and assets[3]['w']==442 and assets[3]['h']==252,assets
 
         controls=['playBeat','stopBeat','autoLooperToggle','deckPitch','deckVolume','importFolderBtn','importBeatsBtn']
         boxes=page.evaluate('(ids)=>ids.map(id=>({id,...document.getElementById(id).getBoundingClientRect().toJSON()}))',controls)

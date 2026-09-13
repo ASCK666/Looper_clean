@@ -1,12 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
-  <defs>
-    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#173149" stop-opacity=".07"/>
-      <stop offset=".55" stop-color="#07131c" stop-opacity=".04"/>
-      <stop offset="1" stop-color="#02080d" stop-opacity=".10"/>
-    </linearGradient>
-  </defs>
-  <!-- The mockup-derived underlay owns the bay hardware. Foreground only adds the subtle night-glass tint. -->
-  <rect x="8" y="8" width="884" height="584" rx="12" fill="url(#glass)"/>
-  <path d="M20 22h118L34 152H10V64Z" fill="#a9d2e8" opacity=".025"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="442" height="252" viewBox="0 0 442 252"><defs><linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#173149" stop-opacity=".07"/><stop offset=".55" stop-color="#07131c" stop-opacity=".04"/><stop offset="1" stop-color="#02080d" stop-opacity=".10"/></linearGradient></defs><rect x="4" y="4" width="434" height="244" rx="6" fill="url(#glass)"/><path d="M10 10h58L17 64H5V28Z" fill="#a9d2e8" opacity=".025"/></svg>
