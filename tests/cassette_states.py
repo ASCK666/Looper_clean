@@ -64,7 +64,8 @@ with contextlib.ExitStack() as stack:
                 assert m['x']>=-.001 and m['y']>=-.001 and m['x']+m['w']<=1.001 and m['y']+m['h']<=1.001,m
 
             # Centres match the reference-derived cassette body apertures.
-            for m,(cx,cy) in zip(metrics[0:2],((306/900,279/600),(673/900,275/600))):
+            reel_center_y=.3206+(.1471*(435/262)/2)
+            for m,(cx,cy) in zip(metrics[0:2],((.2046+.1471/2,reel_center_y),(.6253+.1471/2,reel_center_y))):
                 assert abs(m['x']+m['w']/2-cx)<.002,(label,m,cx)
                 assert abs(m['y']+m['h']/2-cy)<.002,(label,m,cy)
                 assert abs(m['w']*box['width']-m['h']*box['height'])<.2,m
