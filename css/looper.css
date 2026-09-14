@@ -109,7 +109,7 @@
 /* CASSETTE — reference-derived body, live reels behind it, subtle foreground glass. */
 #looper .cassetteMechanism{
   z-index:18;top:18.05%;left:44.06%;width:30.04%;aspect-ratio:435/262;overflow:hidden;border:0;
-  background:transparent;box-shadow:none;isolation:isolate;container-type:inline-size;pointer-events:none;
+  background:linear-gradient(90deg,#0b0d0d,#151614 50%,#0b0d0d) 35.17% 32.06%/27.36% 24.42% no-repeat;box-shadow:none;isolation:isolate;container-type:inline-size;pointer-events:none;
 }
 #looper .cassetteMechanism>*{position:absolute;pointer-events:none;user-select:none}
 /* Opaque reel-sized backings close only the accidental alpha cuts inside
