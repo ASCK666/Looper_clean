@@ -112,15 +112,13 @@
   background:transparent;box-shadow:none;isolation:isolate;container-type:inline-size;pointer-events:none;
 }
 #looper .cassetteMechanism>*{position:absolute;pointer-events:none;user-select:none}
-/* Opaque reel-sized backings close only the accidental alpha cuts inside
-   each animated reel. The reader background remains visible in the gap. */
-#looper .cassetteMechanism::before,#looper .cassetteMechanism::after{
-  content:"";position:absolute;z-index:0;top:32.06%;width:14.71%;aspect-ratio:1;border-radius:50%;
-  background:radial-gradient(circle,#111313 0 44%,#26231e 45% 73%,#0b0d0d 74% 100%);
-  box-shadow:inset 0 0 0 1px #050606;pointer-events:none;
+/* Opaque cavity backing: above the desk, behind reels and cassette artwork.
+   It prevents the table from showing through any transparent cassette opening. */
+#looper .cassetteMechanism::before{
+  content:"";position:absolute;z-index:0;inset:0;
+  background:url("../assets/looper-ui/120927/cassette-cavity.svg") center/100% 100% no-repeat;
+  pointer-events:none;
 }
-#looper .cassetteMechanism::before{left:20.46%}
-#looper .cassetteMechanism::after{left:62.53%}
 #looper .cassetteTape{inset:0;width:100%;height:100%;display:block}
 #looper .cassetteTape{z-index:2}
 #looper .cassetteReel{
