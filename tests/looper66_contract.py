@@ -54,7 +54,8 @@ assert not (ROOT/'css/looper-120927-tuning.css').exists()
 # Readout is truthful: no BPM and no cosmetic LOOP ON.
 for token in ('deckReadoutTrack','deckTransportState','deckTimeCurrent','deckTimeDuration','deckProgressFill','deckSpeedReadout'):
     assert f'id="{token}"' in HTML,token
-assert 'LOOP: ON' not in HTML+VIEW
+assert 'LOOP: ON' not in HTML+VIEW+CSS
+assert 'content:"LOOP:' not in CSS
 assert re.search(r'\bBPM\b',HTML+VIEW,re.I) is None
 assert 'deckBuffer.duration' in VIEW
 assert 'clockPosition+=Math.max(0,now-clockLastCtxTime)*deckRate()' in VIEW
@@ -88,6 +89,9 @@ assert 'animation:looperReelSpin var(--supply-reel-cycle)' in CSS
 assert '.cassetteDeck.playing .cassetteReel { animation-play-state:running; }' in CSS
 assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
 assert 'height:auto' in CSS
+assert '.cassetteMechanism::before,#looper .cassetteMechanism::after' in CSS
+assert '.cassetteMechanism::before{left:20.46%}' in CSS
+assert '.cassetteMechanism::after{left:62.53%}' in CSS
 assert '--supply-reel-cycle' in LOOPER and '--takeup-reel-cycle' in LOOPER
 
 assert '@media (max-width:680px)' in CSS
