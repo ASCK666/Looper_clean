@@ -47,7 +47,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert page.locator('#masterVolume,#masterDb,#vu,#looperVu').count()==0
         assert not page_errors,page_errors
         assert page.locator('.cassetteMechanism').count()==1
-        assert page.locator('.cassetteCssLight').count()==1
+        assert page.locator('.cassetteMechanism').evaluate("el=>['::before','::after'].every(p=>getComputedStyle(el,p).backgroundImage!='none')")
         assert page.locator('.cassetteTape').count()==1
         assert page.locator('#cassetteBeatName').count()==1
         assert page.locator('.cassetteReel').count()==2
