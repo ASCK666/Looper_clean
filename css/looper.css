@@ -136,9 +136,6 @@
   color:#1b1d1e;background:transparent;border:0;
   font:900 clamp(13px,1.82vw,26px)/1 var(--font-condensed,"Arial Narrow",Arial,sans-serif);letter-spacing:.015em;text-align:center;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px rgba(255,255,255,.35);
 }
-#looper .cassetteCssLight{z-index:4;left:49%;top:59%;width:2%;aspect-ratio:1;border-radius:50%;background:#8e4b08;opacity:0;box-shadow:none}
-#looper .cassetteDeck.playing .cassetteCssLight{opacity:.12;background:#ff9b16;box-shadow:0 0 5px rgba(255,155,22,.18)}
-#looper .cassetteDeck:not(.playing) .cassetteCssLight{opacity:0}
 
 /* Shared physical light: key illumination plus a small spill on the chassis. */
 #looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton){--light-strength:0;--light-r:255;--light-g:163;--light-b:26;position:absolute;isolation:isolate;overflow:visible}
