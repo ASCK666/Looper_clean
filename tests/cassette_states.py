@@ -37,7 +37,7 @@ with contextlib.ExitStack() as stack:
 
             mechanism=page.locator('.cassetteMechanism')
             box=mechanism.bounding_box()
-            assert abs(box['width']/box['height']-442/252)<.001,(label,box)
+            assert abs(box['width']/box['height']-435/262)<.001,(label,box)
             assert page.evaluate('document.body.scrollWidth <= innerWidth+2')
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight','.cassetteBeatName'):
                 opacity=float(page.locator(selector).evaluate('el=>getComputedStyle(el).opacity'))
