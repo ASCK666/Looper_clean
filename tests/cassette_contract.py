@@ -30,6 +30,7 @@ assert '.cassetteMechanism::before,#looper .cassetteMechanism::after' in css
 assert '.cassetteMechanism::before{left:20.46%}' in css
 assert '.cassetteMechanism::after{left:62.53%}' in css
 assert 'The reader background remains visible in the gap' in css
+assert '35.17% 32.06%/27.36% 24.42% no-repeat' in css
 for selector,level in (('.cassetteReel',1),('.cassetteTape',2)):
     assert re.search(rf'{re.escape(selector)}\s*\{{[^}}]*z-index\s*:\s*{level}(?:\s*;|\s*\}})',css,re.S)
 assert 'animation-play-state:paused' in css
