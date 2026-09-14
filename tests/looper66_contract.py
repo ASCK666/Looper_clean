@@ -1,136 +1,99 @@
 #!/usr/bin/env python3
-"""Lock the approved Looper66 v2 visual and interaction contract."""
-
+"""Lock the functional contract of the approved 120927 Looper deck."""
 from pathlib import Path
-import hashlib
 import re
-
-from PIL import Image
 
 ROOT=Path(__file__).resolve().parents[1]
 HTML=(ROOT/'index.html').read_text(encoding='utf-8')
-CSS='\n'.join(
-    (ROOT/href.split('?',1)[0].split('#',1)[0].removeprefix('./')).read_text(encoding='utf-8')
-    for href in re.findall(r'<link\b[^>]*\brel="stylesheet"[^>]*\bhref="([^"]+)"',HTML)
-)
+CSS=(ROOT/'css/looper.css').read_text(encoding='utf-8')
 LOOPER=(ROOT/'js/looper.js').read_text(encoding='utf-8')
+VIEW=(ROOT/'js/looper-view.js').read_text(encoding='utf-8')
 EVENTS=(ROOT/'js/events.js').read_text(encoding='utf-8')
 
-controls=['playBeat','stopBeat','prevBeat','nextBeat','importFolderBtn','importBeatsBtn','autoLooperToggle','deckPitch','deckAutoToggle']
-for control in controls:
+for control in ('playBeat','stopBeat','importFolderBtn','importBeatsBtn','autoLooperToggle','deckPitch','deckVolume'):
     assert re.search(rf'<(?:button|input)\b[^>]*\bid="{control}"',HTML),control
+assert 'deckAutoToggle' not in HTML+EVENTS
 
-assert 'class="looper66Skin"' in HTML
-assert './css/base.css?v=looper66-tabs-210826-5' in HTML
-assert './css/looper.css' in HTML
-assert './css/clean-ui.css' in HTML
-assert 'assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp' in HTML
-assert 'assets/looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp' in HTML
-assert '>LOAD LIBRARY<' in HTML and '>LOAD BEAT<' in HTML
-assert re.search(r'id="autoLooperToggle"[^>]*aria-label="Speed Up, plus un pour cent toutes les huit boucles"',HTML)
-assert '>SPEED RATE<' not in HTML and '>+1%<' not in HTML
-assert re.search(r'\.mainModeTabs\s*\{[^}]*width:\s*min\(100%,1086px\)\s*!important;[^}]*max-width:\s*1086px\s*!important;[^}]*margin:\s*0 auto\s*!important;',CSS)
-for retired in ('masterVolume','masterDb','masterVolumeReadout','looperVu','headerMaster','headerVu'):
-    assert retired not in HTML+CSS+LOOPER+EVENTS,retired
-transport=HTML[HTML.index('<div class="deckTransport"'):HTML.index('<div id="beatImportStatus"')]
-assert transport.index('id="stopBeat"') < transport.index('id="playBeat"') < transport.index('id="autoLooperToggle"')
-assert 'deckTransportFaceplate' not in HTML+CSS
-assert 'class="deckTransportVisual"' in HTML
+# The approved mockup is a non-runtime golden reference. The first migrated
+# production owner is a desk-only surface at the same native geometry.
+assert 'assets/looper-ui/120927/' in HTML
+assert re.search(r'<img\b[^>]*class="looper66DeskSurface"[^>]*src="assets/looper-ui/120927/desk-surface\.webp"[^>]*width="1448"[^>]*height="1086"',HTML)
+assert re.search(r'<img\b[^>]*class="looper66RearCables"[^>]*src="assets/looper-ui/120927/rear-cables\.webp"[^>]*width="1448"[^>]*height="1086"',HTML)
+assert re.search(r'<img\b[^>]*class="looper66DeckShell"[^>]*src="assets/looper-ui/120927/deck-shell\.webp"[^>]*width="1448"[^>]*height="1086"',HTML)
+assert re.search(r'<img\b[^>]*class="looper66CassetteSupport"[^>]*src="assets/looper-ui/120927/reader-mechanism\.webp"[^>]*width="550"[^>]*height="366"',HTML)
+assert re.search(r'<img\b[^>]*class="looper66ReadoutPanel"[^>]*src="assets/looper-ui/120927/readout-panel\.webp"[^>]*width="380"[^>]*height="355"',HTML)
+assert 'assets/looper-ui/120927/utility-panel.webp' in CSS
+assert 'assets/looper-ui/120927/pitch-panel.webp' in CSS
+assert '.looper66DeskSurface' in CSS and '.looper66RearCables' in CSS
+assert (ROOT/'assets/looper-ui/120927/desk-surface.webp').exists()
+assert (ROOT/'assets/looper-ui/120927/rear-cables.webp').exists()
+assert (ROOT/'assets/looper-ui/120927/deck-shell.webp').exists()
+assert (ROOT/'assets/looper-ui/120927/readout-panel.webp').exists()
+assert (ROOT/'assets/looper-ui/120927/utility-panel.webp').exists()
+assert (ROOT/'assets/looper-ui/120927/pitch-panel.webp').exists()
+assert (ROOT/'assets/looper-ui/120927/reader-mechanism.webp').exists()
+assert (ROOT/'assets/looper-ui/120927/cassette.webp').exists()
+assert (ROOT/'assets/looper-ui/120927/reel-animation.webp').exists()
+mockup=ROOT/'assets/looper-ui/120927/mockup-reference.png'
+assert mockup.exists() and mockup.read_bytes()[:8]==b'\x89PNG\r\n\x1a\n'
+assert 'looper66StaticSkin' not in HTML+CSS
+assert 'object-fit:fill' not in HTML+CSS.replace(' ','')
+for retired in (
+    'deck-static.webp','deck-shell.svg','rear-cables.svg','desk-wood.svg','deck-scene-120927.svg',
+    'looper66-desktop-pitch-clean','looper66-mobile-pitch-clean',
+    'looper66-desktop-transport','looper66-mobile-transport','looper66-crate-cassettes',
+    'assets/looper-ui/cassette-tape.svg','assets/looper-ui/cassette-frame.svg',
+    'assets/looper-ui/cassette-reel.svg','looper66-rear-cables.svg'
+):
+    assert retired not in HTML+CSS+LOOPER+VIEW+EVENTS,retired
+assert not (ROOT/'assets/looper-ui/120927/deck-scene-120927.svg').exists()
+assert not (ROOT/'js/looper-120927.js').exists()
+assert not (ROOT/'css/looper-120927.css').exists()
+assert not (ROOT/'css/looper-120927-tuning.css').exists()
 
-crate=HTML[HTML.index('<section class="panel beatCratePanel"'):]
-assert crate.index('id="prevBeat"') < crate.index('id="nextBeat"')
+# Readout is truthful: no BPM and no cosmetic LOOP ON.
+for token in ('deckReadoutTrack','deckTransportState','deckTimeCurrent','deckTimeDuration','deckProgressFill','deckSpeedReadout'):
+    assert f'id="{token}"' in HTML,token
+assert 'LOOP: ON' not in HTML+VIEW+CSS
+assert 'content:"LOOP:' not in CSS
+assert re.search(r'\bBPM\b',HTML+VIEW,re.I) is None
+assert 'deckBuffer.duration' in VIEW
+assert 'clockPosition+=Math.max(0,now-clockLastCtxTime)*deckRate()' in VIEW
 
-ordered=['cassetteTape','cassetteReelLeft','cassetteReelRight','cassetteLabel','cassetteBeatName','cassetteCssLight','cassetteBayForeground']
-positions=[HTML.index(token) for token in ordered]
-assert positions==sorted(positions),positions
-assert HTML.count('class="cassetteReel ')==2
-for forbidden in ('BEAT TAPE','LOOP RAMP','FUNK BREAK'):
-    assert forbidden not in HTML.upper()
-
-for level in range(1,6):
-    assert f'[data-speed-level="{level}"]' in CSS
+# Existing audio/import/speed state stays authoritative.
+assert 'deckOutputGain=ctx.createGain()' in LOOPER
+assert 'deckOutputGain.gain.setValueAtTime' in VIEW
 assert 'looperSpeedRateLevel=(looperSpeedRateLevel+1)%6' in LOOPER
-assert 'autoLooperSpeedPercent+looperSpeedRateLevel' in LOOPER
 assert 'const AUTO_LOOP_BATCH=8' in LOOPER
 assert 'Math.max(-8,Math.min(8' in LOOPER
-assert 'looperSpeedRateLevel=0' in LOOPER and 'looperPitchPercent=0' in LOOPER
-assert 'const RACK_SLOTS_PER_COLUMN=3' in LOOPER
-assert 'animation-play-state:paused' in CSS
+assert '$("importBeatsBtn")' in EVENTS and '$("importFolderBtn")' in EVENTS
+
+# Five real speed lamps and physical HTML controls own their light state.
+assert HTML.count('<i></i>')>=5
+for level in range(1,6):
+    assert f'data-speed-level="{level}"' in CSS
+assert '--light-strength:.10' in CSS
+assert '.cassetteDeck.playing #playBeat' in CSS
+assert 'rgba(var(--light-r),var(--light-g),var(--light-b)' in CSS
+assert 'mix-blend-mode:screen' in CSS
+
+# Crates are real data filters, not invented genres.
+for label in ('ALL BEATS','LIBRARY','IMPORTS','RECENT'):
+    assert label in VIEW
+for fake in ('BOOM BAP','SOUL','CHILL'):
+    assert fake not in VIEW.upper()
+assert 'rowSource=row=>isFolderBeat(row)?"library":"imports"' in VIEW
+
+# Reel mechanics remain coupled to true playback rate.
+assert 'animation:looperReelSpin var(--supply-reel-cycle)' in CSS
 assert '.cassetteDeck.playing .cassetteReel { animation-play-state:running; }' in CSS
-assert '@keyframes looper66ReelSpin' in CSS
-assert '@keyframes looper66EmptyPlayPulse' in CSS
-assert '.cassetteDeck:not(.loaded) #playBeat::before { animation:looper66EmptyPlayPulse 6s ease-in-out infinite; }' in CSS
-assert '@keyframes looper66EmptyPlayAuraPulse' in CSS
-assert '.cassetteDeck:not(.loaded) #playBeat::after { animation:looper66EmptyPlayAuraPulse 6s ease-in-out infinite; }' in CSS
-assert '@media (prefers-reduced-motion:reduce)' in CSS
-assert 'grid-template-columns:28fr 44fr 28fr' in CSS
-assert '.deckReadoutRate { position:absolute;bottom:14%;left:8%;font-size:clamp(13px,1.8vw,27px);' in CSS
-assert '@media (max-width:680px)' in CSS
-assert '--light-strength' in CSS and 'var(--deck-amber)' in CSS
-assert '--backlight-opacity:1' in CSS
-assert '--backlight-yellow:255,205,64' in CSS
-assert '0 0 19px rgba(255,152,15' not in CSS
-assert '.deckHotspot::before' in CSS and '.deckLoadKey::before' in CSS
-assert re.search(r'\.deckHotspot::before\s*\{[^}]*border:0;',CSS)
-assert re.search(r'\.deckLoadKey::before[^\{]*\{[^}]*border:0;',CSS)
-assert re.search(r'\.deckAutoKey::before\s*\{[^}]*border:0;',CSS)
-# Native controls remain the interaction layer, while Looper-specific artwork
-# owns the powered-off key material and is reused as the amber light mask.
-assert transport.count('class="deckKeySymbol"') == 2
-assert transport.count('class="deckKeyLabel"') == 3
-assert '>STOP<' in transport and '>PLAY<' in transport and '>SPEED UP<' in transport
-assert 'looper66-desktop-transport-square-3d62809d.webp' in CSS
-assert re.search(r'\.deckTransportVisual\s*\{[^}]*looper66-desktop-transport-square-3d62809d\.webp[^}]*pointer-events:none;',CSS)
-assert re.search(r'\.deckHotspot\s*\{[^}]*--transport-light-image:url\("\.\./assets/looper-ui/looper66-desktop-transport-square-3d62809d\.webp"\);[^}]*background:transparent;[^}]*box-shadow:none;',CSS)
-assert re.search(r'\.deckHotspot::before\s*\{[^}]*background-image:var\(--transport-light-image\);[^}]*background-size:var\(--transport-light-size\);[^}]*box-shadow:none;[^}]*mix-blend-mode:screen;',CSS)
-assert '#playBeat { --transport-light-position:center;--transport-light-size:227.273% 100%;height:100%; }' in CSS
-assert '#autoLooperToggle { --light-gain:.62;--transport-light-position:right center; }' in CSS
-assert '.deckKeySymbol,.looper66Shell .deckKeyLabel,.looper66Shell .deckKeyCaption { opacity:0;' in CSS
-assert '#looper .deckHotspot:focus-visible' not in CSS  # keep shared keyboard focus visible
-assert 'looper66-mobile-transport-fbd6a0d3.webp' in CSS
-assert re.search(r'@media \(max-width:680px\)[\s\S]*\.deckTransport\s*\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\);[^}]*grid-template-rows:48fr 46fr;',CSS)
-assert re.search(r'@media \(max-width:680px\)[\s\S]*#autoLooperToggle\s*\{[^}]*grid-column:1/-1;',CSS)
-assert re.search(r'@media \(max-width:680px\)[\s\S]*#playBeat\s*\{[^}]*--transport-light-position:right top;[^}]*--transport-light-size:208\.35% 208\.35%;',CSS)
-assert re.search(r'\.deckLoadKey::before[^\{]*\{[^}]*box-shadow:none;[^}]*filter:blur\(2px\);',CSS)
-assert 'opacity:.001' not in CSS
-assert 'id="deckPitchModule"' in HTML
-assert 'pitchModule.style.setProperty("--pitch-x"' in LOOPER
-assert 'pitchModule.style.setProperty("--pitch-y"' in LOOPER
-assert 'pitchControl.setAttribute("aria-valuetext"' in LOOPER
-# Cassette assets and responsive/state geometry have their own focused gates.
-for retired in ('cassetteGlass', '--looper-skin-image', '--hub-left', '--tape-dark',
-                'cassetteMechanism::before', 'cassetteMechanism::after'):
-    assert retired not in HTML+CSS, retired
-assert 'transform-origin:50% 50%' in CSS
-assert 'animation:looper66ReelSpin var(--supply-reel-cycle)' in CSS
 assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
-assert 'animation-direction:reverse' not in CSS
-assert re.search(r'\.deckHotspot\s*\{[^}]*background:transparent;[^}]*box-shadow:none;',CSS)
-assert re.search(r'--deck-key-surface: linear-gradient\([^;]+var\(--deck-texture\)[^;]+;',CSS)
-assert 'background:var(--deck-key-surface);' in (ROOT/'css/chopper-deck-texture.css').read_text()
-assert '#chopper.screen .btn.primary::before' not in CSS
-assert re.search(r'\.deckReadout\s*\{[^}]*border:0;[^}]*box-shadow:none;',CSS)
-assert re.search(r'\.deckPitchModule\s*\{[^}]*border:0;[^}]*box-shadow:none;',CSS)
-assert '.deckPitchModule::before' not in CSS
-assert '#looper #deckPitch:focus { outline:0!important;' in CSS
-assert 'filter:none!important;-webkit-tap-highlight-color:transparent' in CSS
-assert 'grid-template-columns:repeat(var(--rack-columns,3),calc((100% - .9%)/3))' in CSS
+assert 'height:auto' in CSS
+assert '.cassetteMechanism::before,#looper .cassetteMechanism::after' in CSS
+assert '.cassetteMechanism::before{left:20.46%}' in CSS
+assert '.cassetteMechanism::after{left:62.53%}' in CSS
+assert '--supply-reel-cycle' in LOOPER and '--takeup-reel-cycle' in LOOPER
 
-retired=('deckFaceplate','crateFaceplate','tapeCounter','cassetteDoorEject','cassetteCavity','cassetteTapePath')
-for name in retired:
-    assert name not in HTML+CSS+LOOPER+EVENTS,name
-
-references={
-    'looper66-desktop-pitch-clean-1e6d4f36.webp':((1086,1009),'1e6d4f360d7b6382a6bfeab0559aaaf505080ff6ef6e6bff7467175dd696e548'),
-    'looper66-mobile-pitch-clean-c034fcbb.webp':((441,849),'c034fcbb8d60de005240f9a339af9a51d5dd25f66c6fdb81209c2d93052ef02b'),
-    'looper66-mobile-transport-fbd6a0d3.webp':((379,215),'fbd6a0d378eb43526ffbb1c9b6109c6894522d516310d003abe3f47edfd51bc5'),
-    'looper66-desktop-transport-square-3d62809d.webp':((750,224),'3d62809d2fd4dd16021e166ec8b648cb0b6304987354da52f58673c718fdafd7'),
-    'looper66-crate-cassettes.webp':((560,62),'12256e2ec27d0a2976ce0a15184f578a04034c5318bbff8819deab05d0d6e3c9'),
-}
-for name,(expected_size,expected_sha) in references.items():
-    path=ROOT/'assets/looper-ui'/name
-    assert path.is_file(),name
-    assert Image.open(path).size==expected_size,(name,Image.open(path).size)
-    assert hashlib.sha256(path.read_bytes()).hexdigest()==expected_sha,name
-
-print('OK: Looper66 controls, unchanged workstation assets and independent cassette hooks')
+assert '@media (max-width:680px)' in CSS
+assert '@media (prefers-reduced-motion:reduce)' in CSS
+print('OK: approved 120927 Looper contract, mockup source and existing behavior preserved')

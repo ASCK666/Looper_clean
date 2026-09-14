@@ -47,32 +47,31 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert page.locator('#masterVolume,#masterDb,#vu,#looperVu').count()==0
         assert not page_errors,page_errors
         assert page.locator('.cassetteMechanism').count()==1
-        assert page.locator('.cassetteBayForeground').count()==1
-        assert page.locator('.cassetteCssLight').count()==1
+        assert page.locator('.cassetteMechanism').evaluate("el=>['::before','::after'].every(p=>getComputedStyle(el,p).backgroundImage!='none')")
         assert page.locator('.cassetteTape').count()==1
-        assert page.locator('.cassetteLabel').count()==1
+        assert page.locator('#cassetteBeatName').count()==1
         assert page.locator('.cassetteReel').count()==2
         assert page.locator('#library .track').count()==0
 
-        for rid in ['playBeat','stopBeat','prevBeat','nextBeat','importBeatsBtn','importFolderBtn','loadSampleBtn','kickFolderBtn','snareFolderBtn','hatFolderBtn','autoLooperToggle','deckAutoToggle','deckPitch','deckTransportState','deckSpeedReadout']:
+        for rid in ['playBeat','stopBeat','prevBeat','nextBeat','importBeatsBtn','importFolderBtn','loadSampleBtn','kickFolderBtn','snareFolderBtn','hatFolderBtn','autoLooperToggle','deckPitch','deckTransportState','deckSpeedReadout']:
             assert page.locator('#'+rid).count()==1,rid
-        handlers=page.evaluate('''() => ['playBeat','stopBeat','loadSampleBtn','kickFolderBtn','autoLooperToggle','deckAutoToggle','importBeatsBtn','importFolderBtn'].map(id=>typeof document.getElementById(id).onclick)''')
+        handlers=page.evaluate('''() => ['playBeat','stopBeat','loadSampleBtn','kickFolderBtn','autoLooperToggle','importBeatsBtn','importFolderBtn'].map(id=>typeof document.getElementById(id).onclick)''')
         assert all(v=='function' for v in handlers),handlers
         assert page.evaluate("typeof document.getElementById('deckPitch').oninput")=='function'
-        assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='looper66EmptyPlayPulse'
-        assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationDuration")=='6s'
+        assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='none'
+        assert page.evaluate("getComputedStyle(document.getElementById('playBeat')).getPropertyValue('--light-strength').trim()")=='.10'
 
-        visible=page.evaluate('''() => ['playBeat','stopBeat','prevBeat','nextBeat','autoLooperToggle','deckAutoToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect(),c=getComputedStyle(e);return [id,r.width,r.height,c.display,c.visibility,parseFloat(c.opacity)]})''')
+        visible=page.evaluate('''() => ['playBeat','stopBeat','autoLooperToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect(),c=getComputedStyle(e);return [id,r.width,r.height,c.display,c.visibility,parseFloat(c.opacity)]})''')
         assert all(v[1]>=44 and v[2]>=44 and v[3]!='none' and v[4]=='visible' and v[5]>.5 for v in visible),visible
 
         page.set_input_files('#beatFiles',str(beat))
-        # The cassette display intentionally uppercases its physical label while
-        # deckTrack/currentTrack retain the original filename casing.
-        page.wait_for_function("document.getElementById('cassetteBeatName').textContent === 'TEST-BEAT.WAV'",timeout=10000)
+        # The cassette display uppercases its physical label and omits the file
+        # extension while deckTrack/currentTrack retain the original filename.
+        page.wait_for_function("document.getElementById('cassetteBeatName').textContent === 'TEST-BEAT'",timeout=10000)
         assert page.evaluate("getComputedStyle(document.getElementById('playBeat'),'::before').animationName")=='none'
         assert page.evaluate("document.getElementById('deckTrack').textContent === 'test-beat.wav'") is True
-        # The deck label updates before the asynchronous IndexedDB crate refresh.
-        page.wait_for_function("document.querySelectorAll('#library .track').length===1",timeout=10000)
+        # The deck label updates before the asynchronous live beat-list refresh.
+        page.wait_for_function("document.querySelectorAll('#beatList .beatListRow').length===1",timeout=10000)
         page.click('#playBeat'); page.wait_for_function('deckSource !== null')
         page.wait_for_function("document.getElementById('deckTransportState').textContent === 'PLAYING'",timeout=5000)
         assert page.evaluate("getComputedStyle(document.querySelector('.cassetteReel')).animationPlayState")=='running'
@@ -91,7 +90,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         assert page.locator('#deckPitch').get_attribute('aria-valuetext')=='+4.5%'
         pitch_position=page.locator('.deckPitchModule').evaluate("el=>[el.style.getPropertyValue('--pitch-x'),el.style.getPropertyValue('--pitch-y')]")
         assert pitch_position==['63.31%','30.94%'],pitch_position
-        assert page.locator('#deckAutoToggle').get_attribute('aria-pressed')=='false'
+        assert page.locator('#autoLooperToggle').get_attribute('aria-pressed')=='false'
         page.locator('#deckPitch').evaluate("el=>{el.value='0';el.dispatchEvent(new Event('input',{bubbles:true}))}")
         page.click('#autoLooperToggle')
         page.click('#playBeat')
@@ -141,7 +140,7 @@ with tempfile.TemporaryDirectory() as td, contextlib.ExitStack() as stack:
         page.click('[data-tab="looper"]')
         page.set_input_files('#beatFiles',str(xss)); page.wait_for_timeout(500)
         assert page.locator('#autoLooperToggle').get_attribute('data-speed-level')=='0'
-        assert page.locator('#deckPitchReadout').inner_text()=='0.0%'
+        assert page.locator('#deckPitchReadout').inner_text()=='+0.0%'
         assert page.evaluate('window.__sp_xss') is None
         assert page.locator('#library img').count()==0
         assert page.evaluate("safeBeatFilename('CON.wav')")=='_CON'

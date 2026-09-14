@@ -30,8 +30,8 @@ with tempfile.TemporaryDirectory() as td, sync_playwright() as p:
     page.set_content(inline_runtime_page(),wait_until='load',timeout=20000)
     page.wait_for_function('window.__SP && window.__SP.ready === true',timeout=10000)
     page.click('[data-tab="chopper"]')
-    page.set_input_files('#sampleFile',str(sample));page.wait_for_timeout(150)
-    assert page.evaluate('sampleBuffer !== null && sampleName === "chopper-ui.wav"')
+    page.set_input_files('#sampleFile',str(sample))
+    page.wait_for_function('sampleBuffer !== null && sampleName === "chopper-ui.wav"',timeout=5000)
     assert page.locator('#autoMarkers').count()==0
     # SAMPLE VOL is one Chopper operation: state, readout and active audition gain stay aligned.
     page.fill('#sampleVolume','37');page.dispatch_event('#sampleVolume','input')

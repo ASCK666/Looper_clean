@@ -13,7 +13,7 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self,*_args): pass
 
 with contextlib.ExitStack() as stack:
-    handler=lambda *a,**kw: QuietHandler(*a,directory=str(ROOT),**kw)
+    handler=lambda *a,**kw:QuietHandler(*a,directory=str(ROOT),**kw)
     server=socketserver.TCPServer(('127.0.0.1',0),handler)
     stack.callback(server.server_close)
     threading.Thread(target=server.serve_forever,daemon=True).start()
@@ -27,54 +27,53 @@ with contextlib.ExitStack() as stack:
             page.on('pageerror',lambda e:errors.append(str(e)))
             page.goto(f'http://127.0.0.1:{server.server_address[1]}/index.html',wait_until='networkidle',timeout=30000)
             page.wait_for_function('window.__SP?.ready === true',timeout=10000)
+            page.wait_for_function('window.__SP?.ui120927Ready === true',timeout=10000)
+
             metrics=page.evaluate('''() => {
-              const rect=id=>document.getElementById(id).getBoundingClientRect();
-              const mechanism=document.querySelector('.cassetteMechanism').getBoundingClientRect();
-              const controls=['prevBeat','playBeat','stopBeat','nextBeat','autoLooperToggle','deckAutoToggle','deckPitch','importBeatsBtn','importFolderBtn'].map(id=>({id,...rect(id).toJSON()}));
-              return {bodyW:document.body.scrollWidth,viewportW:innerWidth,mechanism:mechanism.toJSON(),controls,transportPanel:document.querySelector('.deckTransportVisual').getBoundingClientRect().toJSON(),pitch:document.querySelector('.deckPitchModule').getBoundingClientRect().toJSON(),workspace:getComputedStyle(document.querySelector('.looper66Workspace')).gridTemplateColumns,playLightSize:getComputedStyle(document.getElementById('playBeat'),'::before').backgroundSize,tabs:document.querySelector('.mainModeTabs').getBoundingClientRect().toJSON(),shell:document.querySelector('.looper66Shell').getBoundingClientRect().toJSON()};
+              const r=s=>document.querySelector(s).getBoundingClientRect().toJSON();
+              const ids=['playBeat','stopBeat','autoLooperToggle','deckPitch','deckVolume','importBeatsBtn','importFolderBtn'];
+              return {
+                bodyW:document.body.scrollWidth,viewportW:innerWidth,
+                workspace:r('.looper66Workspace'),shell:r('.looper66Shell'),mechanism:r('.cassetteMechanism'),
+                readout:r('.deckReadout'),pitch:r('.deckPitchModule'),imports:r('.looperImportDock'),
+                controls:ids.map(id=>({id,...document.getElementById(id).getBoundingClientRect().toJSON(),display:getComputedStyle(document.getElementById(id)).display})),
+                crates:r('.cratePanel'),beats:r('.beatListPanel')
+              };
             }''')
             assert metrics['bodyW']<=metrics['viewportW']+2,metrics
-            assert abs(metrics['tabs']['width']-metrics['shell']['width'])<1,metrics
-            assert abs(metrics['tabs']['x']-metrics['shell']['x'])<1,metrics
-            expected_mechanism_ratio=1.5
-            assert abs(metrics['mechanism']['width']/metrics['mechanism']['height']-expected_mechanism_ratio)<.02,metrics
-            assert all(c['width']>=44 and c['height']>=44 for c in metrics['controls']),metrics
-            if width>=1080:
-                by_id={control['id']:control for control in metrics['controls']}
-                stop,play,speed=(by_id[name] for name in ('stopBeat','playBeat','autoLooperToggle'))
-                assert abs(stop['width']-speed['width'])<1 and abs(stop['height']-speed['height'])<1,metrics
-                assert play['width']>stop['width']*1.5 and play['width']<stop['width']*1.7,metrics
-                assert play['height']>stop['height'] and stop['width']/stop['height']<1.3,metrics
-                assert abs(stop['x']-metrics['mechanism']['x'])<1,metrics
-                assert abs(speed['x']+speed['width']-metrics['mechanism']['x']-metrics['mechanism']['width'])<1,metrics
-                assert metrics['transportPanel']['y']+metrics['transportPanel']['height']>metrics['mechanism']['y']+metrics['mechanism']['height']+metrics['transportPanel']['height']*.9,metrics
-            if width<=680:
-                by_id={control['id']:control for control in metrics['controls']}
-                stop,play,speed=(by_id[name] for name in ('stopBeat','playBeat','autoLooperToggle'))
-                assert abs(stop['y']-play['y'])<1 and abs(stop['width']-play['width'])<1 and abs(stop['height']-play['height'])<1,metrics
-                assert speed['y']>=stop['y']+stop['height'] and speed['width']>=stop['width']+play['width'],metrics
-                assert abs(speed['x']-metrics['transportPanel']['x'])<1 and abs(speed['width']-metrics['transportPanel']['width'])<1,metrics
-                assert metrics['transportPanel']['y']>=metrics['mechanism']['y']+metrics['mechanism']['height']-1,metrics
-                assert metrics['transportPanel']['y']+metrics['transportPanel']['height']<=metrics['pitch']['y']+1,metrics
-            # Visible native labels and the five level indicators fit inside
-            # their own controls, including tablet and narrow phone widths.
+            assert metrics['shell']['width']<=metrics['viewportW']+1,metrics
+            assert abs(metrics['mechanism']['width']/metrics['mechanism']['height']-1.5)<.02,metrics
+            assert all(c['display']!='none' and c['width']>=44 and c['height']>=44 for c in metrics['controls']),metrics
+
+            workspace=metrics['workspace']
+            for name in ('readout','pitch','imports','mechanism','crates','beats'):
+                box=metrics[name]
+                assert box['x']>=workspace['x']-2,(width,name,box,workspace)
+                assert box['x']+box['width']<=workspace['x']+workspace['width']+2,(width,name,box,workspace)
+                assert box['y']>=workspace['y']-2,(width,name,box,workspace)
+                assert box['y']+box['height']<=workspace['y']+workspace['height']+2,(width,name,box,workspace)
+
+            by_id={c['id']:c for c in metrics['controls']}
+            stop,play,speed=(by_id[name] for name in ('stopBeat','playBeat','autoLooperToggle'))
+            if width>680:
+                assert stop['x']<play['x']<speed['x'],metrics
+                assert max(abs(stop['y']-play['y']),abs(play['y']-speed['y']))<2,metrics
+            else:
+                assert stop['y']<=play['y']+2,metrics
+                assert speed['y']>=min(stop['y'],play['y']),metrics
+
+            assert page.locator('#autoLooperToggle .deckRateVisualSegments i').count()==5
+            assert page.locator('#crateFilters .crateFilterButton').count()==4
             assert page.locator('.deckTransport button').evaluate_all('''buttons=>buttons.every(button=>{
               const b=button.getBoundingClientRect();
-              if(!button.getAttribute('aria-label'))return false;
-              return [...button.children].filter(child=>{
-                const s=getComputedStyle(child);
-                return s.display!=='none' && s.visibility!=='hidden' && Number(s.opacity)>0;
-              }).every(child=>{
-                const c=child.getBoundingClientRect();
-                return c.left>=b.left+3 && c.right<=b.right-3 && c.top>=b.top+3 && c.bottom<=b.bottom-3;
-              });
-            })'''),metrics
-            assert len(metrics['workspace'].split())==1,metrics
-            page.click('[data-tab="chopper"]'); page.wait_for_timeout(60)
-            page.click('[data-tab="looper"]'); page.wait_for_timeout(60)
+              return b.width>=44 && b.height>=44 && !!button.getAttribute('aria-label');
+            })''')
+
+            page.click('[data-tab="chopper"]');page.wait_for_timeout(40)
+            page.click('[data-tab="looper"]');page.wait_for_timeout(40)
             assert page.locator('#looper.active .cassetteMechanism').count()==1
             assert not errors,errors
             page.close()
         browser.close()
 
-print('OK: Looper66 v2 deck, cassette aspect ratio and 44px controls adapt across desktop/mobile')
+print('OK: 120927 deck stays contained, touchable and responsive across desktop/mobile')

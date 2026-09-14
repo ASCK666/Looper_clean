@@ -1,38 +1,43 @@
 #!/usr/bin/env python3
-"""Reject retired visual assets that silently inflate deployable archives."""
-
+"""Keep one production visual set and reject retired Looper artwork."""
 from pathlib import Path
 import sys
+from PIL import Image
 
-ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "assets"
-EXPECTED_VISUALS = {
-    "deck-black-ui-texture.png",
-    "looper-ui/chopper-looper-button-off-alpha-6920266c.webp",
-    "looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp",
-    "looper-ui/looper66-mobile-pitch-clean-c034fcbb.webp",
-    "looper-ui/looper66-desktop-transport-square-3d62809d.webp",
-    "looper-ui/looper66-mobile-transport-fbd6a0d3.webp",
-    "looper-ui/looper66-crate-cassettes.webp",
-    "looper-ui/cassette-frame.svg",
-    "looper-ui/cassette-tape.svg",
-    "looper-ui/cassette-reel.svg",
-    "looper-ui/cassette-label.svg",
+ROOT=Path(__file__).resolve().parents[1]
+ASSETS=ROOT/'assets'
+EXPECTED_VISUALS={
+    'deck-black-ui-texture.png',
+    'looper-ui/chopper-looper-button-off-alpha-6920266c.webp',
+    'looper-ui/120927/mockup-reference.png',
+    'looper-ui/120927/desk-surface.webp',
+    'looper-ui/120927/rear-cables.webp',
+    'looper-ui/120927/deck-shell.webp',
+    'looper-ui/120927/readout-panel.webp',
+    'looper-ui/120927/utility-panel.webp',
+    'looper-ui/120927/pitch-panel.webp',
+    'looper-ui/120927/reader-mechanism.webp',
+    'looper-ui/120927/cassette.webp',
+    'looper-ui/120927/reel-animation.webp',
 }
-
-actual_visuals = {
+actual={
     path.relative_to(ASSETS).as_posix()
-    for path in ASSETS.rglob("*")
-    if path.is_file() and path.suffix.lower() in {".png", ".webp", ".jpg", ".jpeg", ".gif", ".svg"}
+    for path in ASSETS.rglob('*')
+    if path.is_file() and path.suffix.lower() in {'.png','.webp','.jpg','.jpeg','.gif','.svg'}
 }
-unexpected = sorted(actual_visuals - EXPECTED_VISUALS)
-missing = sorted(EXPECTED_VISUALS - actual_visuals)
-
+missing=sorted(EXPECTED_VISUALS-actual)
+unexpected=sorted(actual-EXPECTED_VISUALS)
 if missing or unexpected:
-    if missing:
-        print(f"FAIL: missing production assets: {', '.join(missing)}")
-    if unexpected:
-        print(f"FAIL: untracked top-level assets: {', '.join(unexpected)}")
+    if missing: print('FAIL: missing production assets: '+', '.join(missing))
+    if unexpected: print('FAIL: retired/untracked visual assets: '+', '.join(unexpected))
     sys.exit(1)
 
-print(f"OK: asset health — {len(EXPECTED_VISUALS)} production visuals, no retired deck artwork")
+cables=Image.open(ASSETS/'looper-ui/120927/rear-cables.webp').convert('RGBA')
+alpha=cables.getchannel('A')
+if cables.size != (1448,1086) or alpha.getbbox() != (298,0,1222,103):
+    print(f'FAIL: rear cables must remain native and tightly isolated: {cables.size=} {alpha.getbbox()=}')
+    sys.exit(1)
+if alpha.crop((0,103,1448,1086)).getbbox() is not None:
+    print('FAIL: rear cables contain pixels from the deck or desk')
+    sys.exit(1)
+print(f'OK: asset health — {len(EXPECTED_VISUALS)} production visuals, one Looper asset set')

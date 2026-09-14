@@ -1,35 +1,38 @@
-"""Independent cassette assets, one style owner and the retained state boundary."""
+"""Cassette contract for the approved 120927 three-asset deck."""
 from pathlib import Path
 import re
-import xml.etree.ElementTree as ET
+from PIL import Image
 
-ROOT = Path(__file__).resolve().parents[1]
-html = (ROOT/'index.html').read_text()
-css = (ROOT/'css/looper.css').read_text()
-svg_ns = '{http://www.w3.org/2000/svg}'
-expected = {'cassetteTape': 'tape', 'cassetteReel cassetteReelLeft': 'reel',
-            'cassetteReel cassetteReelRight': 'reel', 'cassetteLabel': 'label',
-            'cassetteBayForeground': 'frame'}
-for class_name, asset in expected.items():
-    tag = re.search(rf'<img\b[^>]*class="{class_name}"[^>]*>', html).group()
-    assert f'src="assets/looper-ui/cassette-{asset}.svg"' in tag
-    assert 'alt=""' in tag and 'aria-hidden="true"' in tag
-    path = ROOT/f'assets/looper-ui/cassette-{asset}.svg'
-    root = ET.parse(path).getroot()
-    assert root.attrib['viewBox'] == ('0 0 128 128' if asset == 'reel' else '0 0 900 600')
-    # Reels, paper and door must be original vectors, never an embedded skin crop.
-    assert not list(root.iter(svg_ns+'image'))
-    assert not list(root.iter(svg_ns+'text'))
-    assert not list(root.iter(svg_ns+'filter'))
-    for node in root.iter():
-        for key, value in node.attrib.items():
-            if key.endswith('href'):
-                assert value.startswith('#'), (path, value)
-for href in re.findall(r'<link\b[^>]*rel="stylesheet"[^>]*href="([^"]+)"', html):
-    path = ROOT/href.split('?')[0]
-    if path.name != 'looper.css':
-        assert not re.search(r'\.cassette(?:Mechanism|Tape|Reel|Label|BeatName|CssLight|BayForeground)\b', path.read_text()), path
-assert 'aspect-ratio:3/2' in css
-assert 'cassetteMechanism::' not in css
+ROOT=Path(__file__).resolve().parents[1]
+html=(ROOT/'index.html').read_text(encoding='utf-8')
+css=(ROOT/'css/looper.css').read_text(encoding='utf-8')
+assets=ROOT/'assets/looper-ui/120927'
+
+assert 'reader-mechanism.webp' in html
+assert html.count('reel-animation.webp') == 2
+assert 'cassette.webp' in html
+assert 'id="cassetteBeatName"' in html
+
+reader=Image.open(assets/'reader-mechanism.webp').convert('RGBA')
+cassette=Image.open(assets/'cassette.webp').convert('RGBA')
+assert reader.size == (550,366)
+assert cassette.size == (435,262)
+assert reader.getpixel((275,190))[3] == 255
+assert cassette.getpixel((121,116))[3] == 0
+assert cassette.getpixel((304,116))[3] == 0
+
+reel=Image.open(assets/'reel-animation.webp').convert('RGBA')
+assert reel.size == (64,64)
+assert reel.getpixel((0,0))[3] == 0
+assert reel.getpixel((32,32))[3] == 255
+assert 'aspect-ratio:435/262' in css
+assert '.cassetteMechanism::before,#looper .cassetteMechanism::after' in css
+assert '.cassetteMechanism::before{left:20.46%}' in css
+assert '.cassetteMechanism::after{left:62.53%}' in css
+assert 'The reader background remains visible in the gap' in css
+for selector,level in (('.cassetteReel',1),('.cassetteTape',2)):
+    assert re.search(rf'{re.escape(selector)}\s*\{{[^}}]*z-index\s*:\s*{level}(?:\s*;|\s*\}})',css,re.S)
+assert 'animation-play-state:paused' in css
+assert re.search(r'\.cassetteDeck\.playing\s+\.cassetteReel\s*\{[^}]*animation-play-state\s*:\s*running',css,re.S)
 assert 'cassetteGlass' not in html+css
-print('OK: standalone cassette vectors, decorative accessibility and one CSS owner')
+print('OK: reel backings close internal alpha cuts while the reader remains visible between reels')

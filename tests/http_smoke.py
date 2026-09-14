@@ -76,11 +76,22 @@ try:
             )
             assert response.read().strip(), (path, "empty stylesheet")
 
-    deck = "/assets/looper-ui/looper66-desktop-pitch-clean-1e6d4f36.webp"
-    with urlopen(Request(base_url + deck, method="HEAD"), timeout=5) as response:
-        assert response.status == 200
-        assert response.headers.get_content_type() == "image/webp"
-        assert int(response.headers["Content-Length"]) > 80_000
+    for asset,mime,min_size in (
+        ("/assets/looper-ui/120927/desk-surface.webp","image/webp",10_000),
+        ("/assets/looper-ui/120927/rear-cables.webp","image/webp",10_000),
+        ("/assets/looper-ui/120927/deck-shell.webp","image/webp",100_000),
+        ("/assets/looper-ui/120927/readout-panel.webp","image/webp",20_000),
+        ("/assets/looper-ui/120927/utility-panel.webp","image/webp",20_000),
+        ("/assets/looper-ui/120927/pitch-panel.webp","image/webp",20_000),
+        ("/assets/looper-ui/120927/reader-mechanism.webp","image/webp",5_000),
+        ("/assets/looper-ui/120927/cassette.webp","image/webp",5_000),
+        ("/assets/looper-ui/120927/reel-animation.webp","image/webp",1_000),
+        ("/assets/looper-ui/120927/mockup-reference.png","image/png",100_000),
+    ):
+        with urlopen(Request(base_url + asset, method="HEAD"), timeout=5) as response:
+            assert response.status == 200
+            assert response.headers.get_content_type() == mime
+            assert int(response.headers["Content-Length"]) > min_size
 finally:
     server.shutdown()
     server.server_close()

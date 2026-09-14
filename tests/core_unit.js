@@ -81,8 +81,6 @@ assert.equal(evaluate("looperSpeedRateLevel=3;autoLooperSpeedPercent=100;applyAu
 assert.equal(evaluate("looperPitchPercent=4;Number(deckRate().toFixed(4))"),1.0712);
 assert.equal(evaluate("autoLooperEnabledState=true;setLooperPitch(-8);autoLooperEnabledState"),false);
 assert.equal(evaluate("Number(deckRate().toFixed(4))"),.9476);
-assert.equal(evaluate("looperSpeedRateLevel=0;toggleDeckAuto();looperSpeedRateLevel"),1);
-assert.equal(evaluate("autoLooperEnabledState"),true);
 
 sandbox.mockBuffer={
   numberOfChannels:1,

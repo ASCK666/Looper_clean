@@ -1,0 +1,88 @@
+"""Capture the approved 120927 deck at reviewable desktop/mobile sizes."""
+from pathlib import Path
+import contextlib, http.server, os, socketserver, threading
+try:
+    from playwright.sync_api import sync_playwright
+except ImportError:
+    print('SKIP: playwright is not installed')
+    raise SystemExit(0)
+
+ROOT=Path(__file__).resolve().parents[1]
+ARTIFACTS=ROOT/'test-artifacts'
+ARTIFACTS.mkdir(exist_ok=True)
+
+class QuietHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self,*_args): pass
+
+with contextlib.ExitStack() as stack:
+    server=socketserver.TCPServer(('127.0.0.1',0),lambda *a,**kw:QuietHandler(*a,directory=str(ROOT),**kw))
+    stack.callback(server.server_close)
+    threading.Thread(target=server.serve_forever,daemon=True).start()
+    stack.callback(server.shutdown)
+    with sync_playwright() as p, contextlib.ExitStack() as browser_stack:
+        browser=p.chromium.launch(headless=True,executable_path=os.environ.get('CHROMIUM','/usr/bin/chromium'),args=['--no-sandbox','--disable-dev-shm-usage'])
+        browser_stack.callback(browser.close)
+        for width,height,label in [(1440,1100,'desktop'),(390,900,'mobile')]:
+            page=browser.new_page(viewport={'width':width,'height':height},device_scale_factor=1)
+            errors=[]
+            page.on('pageerror',lambda err:errors.append(str(err)))
+            page.goto(f'http://127.0.0.1:{server.server_address[1]}/index.html',wait_until='networkidle')
+            page.wait_for_function('window.__SP?.ready === true')
+            page.wait_for_function('window.__SP?.ui120927Ready === true')
+            page.wait_for_function('window.__SP?.ui120927CssReady === true')
+            page.wait_for_function("[...document.querySelectorAll('.cassetteMechanism img')].every(i=>i.complete && i.naturalWidth>0)")
+
+            desk=page.locator('.looper66DeskSurface')
+            assert desk.count()==1
+            desk_state=desk.evaluate("""el => {
+              const r=el.getBoundingClientRect(),s=getComputedStyle(el);
+              return {complete:el.complete,w:el.naturalWidth,h:el.naturalHeight,display:s.display,visibility:s.visibility,opacity:Number(s.opacity),rw:r.width,rh:r.height};
+            }""")
+            assert desk_state['complete'] and desk_state['w']==1448 and desk_state['h']==1086,desk_state
+            cables=page.locator('.looper66RearCables')
+            assert cables.count()==1
+            cable_state=cables.evaluate("""el => {
+              const r=el.getBoundingClientRect(),s=getComputedStyle(el);
+              return {complete:el.complete,w:el.naturalWidth,h:el.naturalHeight,display:s.display,visibility:s.visibility,opacity:Number(s.opacity),rw:r.width,rh:r.height};
+            }""")
+            assert cable_state['complete'] and cable_state['w']==1448 and cable_state['h']==1086,cable_state
+            if width>680:
+                assert desk_state['display']!='none' and desk_state['visibility']!='hidden' and desk_state['opacity']>.95,desk_state
+                assert abs(desk_state['rw']/desk_state['rh']-1448/1086)<.001,desk_state
+                assert cable_state['display']!='none' and cable_state['visibility']!='hidden' and cable_state['opacity']>.95,cable_state
+                assert abs(cable_state['rw']/cable_state['rh']-1448/1086)<.001,cable_state
+
+            for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight'):
+                asset=page.locator(selector)
+                assert asset.count()==1,selector
+                dims=asset.evaluate('el=>({complete:el.complete,w:el.naturalWidth,h:el.naturalHeight})')
+                assert dims['complete'] and dims['w']>0 and dims['h']>0,(selector,dims)
+
+            assert page.locator('#deckVolume').count()==1
+            assert page.locator('#crateFilters').count()==1
+            assert page.locator('#beatList').count()==1
+            assert page.locator('#autoLooperToggle .deckRateVisualSegments i').count()==5
+            assert not errors,errors
+            page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-empty.png'))
+            page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-empty.png'))
+
+            page.evaluate("""() => {
+              const buffer=new AudioBuffer({length:44100*156,sampleRate:44100,numberOfChannels:1});
+              commitLoadedTrack({id:'120927-review',name:'MIDNIGHT SESSION.WAV',created:Date.now(),source:'user-import'},buffer);
+            }""")
+            page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('loaded')")
+            assert page.locator('#cassetteBeatName').inner_text()=='MIDNIGHT SESSION'
+            page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-loaded.png'))
+            page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-loaded.png'))
+
+            page.locator('#playBeat').click()
+            page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('playing')")
+            page.wait_for_timeout(250)
+            assert page.locator('.cassetteReel').evaluate_all("els=>els.every(el=>getComputedStyle(el).animationPlayState==='running')")
+            page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-playing.png'))
+            page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-playing.png'))
+            if label=='desktop': page.locator('.deckTransport').screenshot(path=str(ARTIFACTS/'120927-transport-playing.png'))
+            page.locator('#stopBeat').click()
+            assert not errors,errors
+            page.close()
+print('OK: 120927 production assets are decoded, visible and functional in Chromium')
