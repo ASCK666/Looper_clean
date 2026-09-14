@@ -102,7 +102,7 @@ with contextlib.ExitStack() as stack:
             assert page.locator('#cassetteBeatName').evaluate('el=>el.scrollWidth>=el.clientWidth')
             page.emulate_media(reduced_motion='reduce')
             assert page.locator('.cassetteReel').evaluate_all("els=>els.every(el=>getComputedStyle(el).animationName==='none')")
-            page.evaluate('deckBuffer=null; refreshCassetteUI()')
+            page.evaluate("deckBuffer=null; currentTrack=null; document.querySelector('#deckTrack').textContent='Aucun beat chargé'; refreshCassetteUI()")
             assert float(page.locator('.cassetteTape').evaluate('el=>getComputedStyle(el).opacity'))==1
             assert page.locator('#cassetteBeatName').inner_text()=='NO BEAT LOADED'
             assert not errors,errors
