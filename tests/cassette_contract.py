@@ -12,6 +12,7 @@ assert 'reader-mechanism.webp' in html
 assert html.count('reel-animation.webp') == 2
 assert 'cassette.webp' in html
 assert 'id="cassetteBeatName"' in html
+assert 'class="cassetteReaderGap"' in html
 
 reader=Image.open(assets/'reader-mechanism.webp').convert('RGBA')
 cassette=Image.open(assets/'cassette.webp').convert('RGBA')
@@ -30,7 +31,7 @@ assert '.cassetteMechanism::before,#looper .cassetteMechanism::after' in css
 assert '.cassetteMechanism::before{left:20.46%}' in css
 assert '.cassetteMechanism::after{left:62.53%}' in css
 assert 'The reader background remains visible in the gap' in css
-assert '35.17% 32.06%/27.36% 24.42% no-repeat' in css
+assert '.cassetteReaderGap{z-index:3;left:42.76%;top:32.06%;width:14.48%;height:24.42%' in css
 for selector,level in (('.cassetteReel',1),('.cassetteTape',2)):
     assert re.search(rf'{re.escape(selector)}\s*\{{[^}}]*z-index\s*:\s*{level}(?:\s*;|\s*\}})',css,re.S)
 assert 'animation-play-state:paused' in css
