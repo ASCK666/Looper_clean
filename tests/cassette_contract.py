@@ -26,9 +26,13 @@ assert reel.size == (64,64)
 assert reel.getpixel((0,0))[3] == 0
 assert reel.getpixel((32,32))[3] == 255
 assert 'aspect-ratio:435/262' in css
+assert '.cassetteMechanism::before,#looper .cassetteMechanism::after' in css
+assert '.cassetteMechanism::before{left:20.46%}' in css
+assert '.cassetteMechanism::after{left:62.53%}' in css
+assert 'The reader background remains visible in the gap' in css
 for selector,level in (('.cassetteReel',1),('.cassetteTape',2)):
     assert re.search(rf'{re.escape(selector)}\s*\{{[^}}]*z-index\s*:\s*{level}(?:\s*;|\s*\}})',css,re.S)
 assert 'animation-play-state:paused' in css
 assert re.search(r'\.cassetteDeck\.playing\s+\.cassetteReel\s*\{[^}]*animation-play-state\s*:\s*running',css,re.S)
 assert 'cassetteGlass' not in html+css
-print('OK: opaque reader background, cassette and animated reels have separate ownership')
+print('OK: reel backings close internal alpha cuts while the reader remains visible between reels')
