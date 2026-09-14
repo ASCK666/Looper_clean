@@ -25,14 +25,26 @@ reel=Image.open(assets/'reel-animation.webp').convert('RGBA')
 assert reel.size == (64,64)
 assert reel.getpixel((0,0))[3] == 0
 assert reel.getpixel((32,32))[3] == 255
+
 assert 'aspect-ratio:435/262' in css
-assert '.cassetteMechanism::before,#looper .cassetteMechanism::after' in css
-assert '.cassetteMechanism::before{left:20.46%}' in css
-assert '.cassetteMechanism::after{left:62.53%}' in css
-assert 'The reader background remains visible in the gap' in css
-for selector,level in (('.cassetteReel',1),('.cassetteTape',2)):
-    assert re.search(rf'{re.escape(selector)}\s*\{{[^}}]*z-index\s*:\s*{level}(?:\s*;|\s*\}})',css,re.S)
+assert 'cassette-cavity.svg' in css
+assert re.search(r'\.cassetteMechanism::before\s*\{[^}]*z-index\s*:\s*0[^}]*inset\s*:\s*0',css,re.S)
+assert '.cassetteMechanism::after{' not in css
+assert 'Clean foreground replacement for the baked brown window' not in css
+
+tape=re.search(r'\.cassetteTape\s*\{([^}]*)\}',css,re.S)
+assert tape,tape
+tape_css=tape.group(1)
+assert 'z-index:2' in tape_css
+assert '-webkit-mask:' in tape_css
+assert 'mask:' in tape_css
+for edge in ('32.35%','43.22%','35.40%','24.43%','37.47%'):
+    assert edge in tape_css,edge
+
+assert '.cassetteReelLeft{left:20.46%;top:32.06%}' in css
+assert '.cassetteReelRight{left:62.53%;top:32.06%;animation-duration:var(--takeup-reel-cycle)}' in css
+assert 'animation:looperReelSpin var(--supply-reel-cycle) linear infinite' in css
 assert 'animation-play-state:paused' in css
 assert re.search(r'\.cassetteDeck\.playing\s+\.cassetteReel\s*\{[^}]*animation-play-state\s*:\s*running',css,re.S)
 assert 'cassetteGlass' not in html+css
-print('OK: reel backings close internal alpha cuts while the reader remains visible between reels')
+print('OK: central baked glass is masked, no foreground pseudo-glass remains, reels and cavity ownership stay explicit')
