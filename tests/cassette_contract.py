@@ -28,7 +28,7 @@ assert reel.getpixel((32,32))[3] == 255
 
 assert 'aspect-ratio:435/262' in css
 assert 'cassette-cavity.svg' in css
-before=re.search(r'\\.cassetteMechanism::before\\s*\\{([^}]*)\\}',css,re.S)
+before=re.search(r'\.cassetteMechanism::before\s*\{([^}]*)\}',css,re.S)
 assert before,before
 assert 'z-index:0' in before.group(1) and 'inset:0' in before.group(1)
 assert '-webkit-mask:' in before.group(1) and 'mask:' in before.group(1)
