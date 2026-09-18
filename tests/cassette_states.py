@@ -77,8 +77,10 @@ with contextlib.ExitStack() as stack:
                   w:c.width/b.width,h:c.height/b.height,z:+s.zIndex,visible:s.visibility,filter:s.filter};
               });
             }''')
-            assert [m['z'] for m in metrics]==[1,1,2,3],metrics
-            assert all(m['visible']=='visible' and m['filter']=='none' for m in metrics),metrics
+            assert [m['z'] for m in metrics]==[3,3,2,4],metrics
+            assert all(m['visible']=='visible' for m in metrics),metrics
+            assert all(m['filter']!='none' for m in metrics[:2]),metrics
+            assert all(m['filter']=='none' for m in metrics[2:]),metrics
             for m in metrics:
                 assert m['x']>=-.001 and m['y']>=-.001 and m['x']+m['w']<=1.001 and m['y']+m['h']<=1.001,m
 
@@ -116,4 +118,4 @@ with contextlib.ExitStack() as stack:
             assert page.locator('#cassetteBeatName').inner_text()=='NO BEAT LOADED'
             assert not errors,errors
             page.close()
-print('OK: 120927 cassette states, cavity backing, masked central glass, stable geometry and reel animation')
+print('OK: cassette states, opaque backing, dark reels above the tape window, stable geometry and reel animation')
