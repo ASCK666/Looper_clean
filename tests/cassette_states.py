@@ -60,7 +60,7 @@ with contextlib.ExitStack() as stack:
             assert 'cassette-cavity.svg' in surface['before']['background'],surface
             assert surface['before']['z']==0,surface
             assert surface['before']['mask']!='none' or surface['before']['webkitMask']!='none',surface
-            assert surface['after']['content']!='none' and surface['after']['backgroundColor']=='rgb(11, 13, 13)',surface
+            assert surface['after']['content']=='none' and surface['after']['background']=='none',surface
             assert surface['mask']=='none' and surface['webkitMask']=='none',surface
 
             if label in ('desktop','mobile'): capture(page,f'{label}-empty')
@@ -78,10 +78,9 @@ with contextlib.ExitStack() as stack:
                   w:c.width/b.width,h:c.height/b.height,z:+s.zIndex,visible:s.visibility,filter:s.filter};
               });
             }''')
-            assert [m['z'] for m in metrics]==[1,1,2,4],metrics
+            assert [m['z'] for m in metrics]==[1,1,2,3],metrics
             assert all(m['visible']=='visible' for m in metrics),metrics
-            assert all(m['filter']!='none' for m in metrics[:2]),metrics
-            assert all(m['filter']=='none' for m in metrics[2:]),metrics
+            assert all(m['filter']=='none' for m in metrics),metrics
             for m in metrics:
                 assert m['x']>=-.001 and m['y']>=-.001 and m['x']+m['w']<=1.001 and m['y']+m['h']<=1.001,m
 
@@ -119,4 +118,4 @@ with contextlib.ExitStack() as stack:
             assert page.locator('#cassetteBeatName').inner_text()=='NO BEAT LOADED'
             assert not errors,errors
             page.close()
-print('OK: cassette states, dark reels, local central window cover, stable geometry and reel animation')
+print('OK: cassette states, native white hub teeth, baked magnetic tape, stable geometry and reel animation')

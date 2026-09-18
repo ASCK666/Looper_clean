@@ -93,7 +93,8 @@ assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
 assert 'height:auto' in CSS
 assert 'cassette-cavity.svg' in CSS
 assert '.cassetteMechanism::before{' in CSS
-assert '.cassetteMechanism::after{' in CSS and 'background:#0b0d0d' in CSS
+assert '.cassetteMechanism::after{' not in CSS
+assert 'filter:brightness(.36)' not in CSS
 assert '.cassetteReelLeft{left:20.46%;top:32.06%}' in CSS
 assert '.cassetteReelRight{left:62.53%;top:32.06%;animation-duration:var(--takeup-reel-cycle)}' in CSS
 assert '--supply-reel-cycle' in LOOPER and '--takeup-reel-cycle' in LOOPER

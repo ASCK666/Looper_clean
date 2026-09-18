@@ -20,11 +20,18 @@ assert cassette.size == (435,262)
 assert reader.getpixel((275,190))[3] == 255
 assert cassette.getpixel((121,116))[3] == 0
 assert cassette.getpixel((304,116))[3] == 0
+# The central window now owns a dark, textured magnetic-tape rendering.
+assert max(cassette.getpixel((217,116))[:3]) < 80
+assert sum(cassette.getpixel((180,116))[:3])/3 < 80
+assert cassette.getpixel((180,108))[:3] != cassette.getpixel((180,128))[:3]
 
 reel=Image.open(assets/'reel-animation.webp').convert('RGBA')
 assert reel.size == (64,64)
 assert reel.getpixel((0,0))[3] == 0
 assert reel.getpixel((32,32))[3] == 255
+# White/ivory toothed hub, dark spool face; CSS must not crush the hub back to brown.
+assert sum(reel.getpixel((32,8))[:3])/3 > 200
+assert max(reel.getpixel((32,32))[:3]) < 50
 
 assert 'aspect-ratio:435/262' in css
 assert 'cassette-cavity.svg' in css
@@ -32,9 +39,10 @@ before=re.search(r'\.cassetteMechanism::before\s*\{([^}]*)\}',css,re.S)
 assert before,before
 assert 'z-index:0' in before.group(1) and 'inset:0' in before.group(1)
 assert '-webkit-mask:' in before.group(1) and 'mask:' in before.group(1)
-for token in ('27.82%','69.89%','44.27%','37.01%','34.73%','25.98%','20.23%'):
+for token in ('27.82%','69.89%','44.27%'):
     assert token in before.group(1),token
-assert re.search(r'\.cassetteMechanism::after\s*\{[^}]*left:37\.01%;[^}]*top:34\.73%;[^}]*width:25\.98%;[^}]*height:20\.23%;[^}]*background:#0b0d0d',css,re.S)
+assert '.cassetteMechanism::after{' not in css
+assert 'filter:brightness(.36)' not in css
 assert 'Clean foreground replacement for the baked brown window' not in css
 
 tape=re.search(r'\.cassetteTape\s*\{([^}]*)\}',css,re.S)
@@ -51,4 +59,4 @@ assert 'animation:looperReelSpin var(--supply-reel-cycle) linear infinite' in cs
 assert 'animation-play-state:paused' in css
 assert re.search(r'\.cassetteDeck\.playing\s+\.cassetteReel\s*\{[^}]*animation-play-state\s*:\s*running',css,re.S)
 assert 'cassetteGlass' not in html+css
-print('OK: central baked glass is masked, no foreground pseudo-glass remains, reels and cavity ownership stay explicit')
+print('OK: textured magnetic tape is baked into the cassette, white hub teeth stay native, reels animate without a darkening filter')
