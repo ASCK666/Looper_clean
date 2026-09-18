@@ -27,8 +27,9 @@
 <rect x="4" y="5" width="542" height="356" rx="10" fill="url(#f)" mask="url(#ring)"/>
 <rect x="4" y="5" width="542" height="356" rx="10" fill="none" stroke="#080a0b" stroke-width="3"/>
 <rect x="9" y="10" width="532" height="346" rx="8" fill="none" stroke="#6a6e6d" stroke-opacity=".35" stroke-width="1.5"/>
-<rect x="28" y="45" width="494" height="289" rx="11" fill="none" stroke="#07090a" stroke-width="7"/>
-<rect x="34" y="51" width="482" height="277" rx="8" fill="none" stroke="#4d5355" stroke-opacity=".48" stroke-width="2"/>
+<rect x="27" y="44" width="496" height="291" rx="11" fill="none" stroke="#07090a" stroke-width="9"/>
+<rect x="33" y="50" width="484" height="279" rx="9" fill="none" stroke="#4d5355" stroke-opacity=".58" stroke-width="3"/>
+<rect x="36" y="53" width="478" height="273" rx="7" fill="none" stroke="#050708" stroke-opacity=".72" stroke-width="2"/>
 <g clip-path="url(#pane)">
   <rect x="31" y="48" width="488" height="283" fill="url(#g)"/>
   <path d="M105 48h54L70 331H32Z" fill="url(#r)"/>
