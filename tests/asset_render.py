@@ -11,6 +11,11 @@ ROOT=Path(__file__).resolve().parents[1]
 ARTIFACTS=ROOT/'test-artifacts'
 ARTIFACTS.mkdir(exist_ok=True)
 
+# Keep exact production visual sources in CI artifacts while tuning the final cassette.
+from PIL import Image
+for _name in ('cassette.webp','reel-animation.webp','deck-shell.webp','reader-mechanism.webp'):
+    Image.open(ROOT/'assets/looper-ui/120927'/_name).convert('RGBA').save(ARTIFACTS/f'source-{_name.rsplit(".",1)[0]}.png')
+
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self,*_args): pass
 
