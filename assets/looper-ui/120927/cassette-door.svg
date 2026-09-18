@@ -1,55 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="540" height="360" viewBox="0 0 540 360">
+<svg xmlns="http://www.w3.org/2000/svg" width="550" height="366" viewBox="0 0 550 366">
 <defs>
-  <linearGradient id="frame" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#24282a"/>
-    <stop offset=".48" stop-color="#1a1e20"/>
-    <stop offset="1" stop-color="#101315"/>
+  <linearGradient id="f" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#33383a"/>
+    <stop offset=".18" stop-color="#202426"/>
+    <stop offset=".72" stop-color="#141718"/>
+    <stop offset="1" stop-color="#0b0d0e"/>
   </linearGradient>
-  <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#111820" stop-opacity=".18"/>
-    <stop offset=".62" stop-color="#071016" stop-opacity=".24"/>
-    <stop offset="1" stop-color="#020609" stop-opacity=".30"/>
+  <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#17232a" stop-opacity=".15"/>
+    <stop offset=".55" stop-color="#081116" stop-opacity=".22"/>
+    <stop offset="1" stop-color="#020608" stop-opacity=".30"/>
   </linearGradient>
-  <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#fff" stop-opacity=".17"/>
-    <stop offset=".36" stop-color="#fff" stop-opacity=".065"/>
-    <stop offset=".62" stop-color="#fff" stop-opacity="0"/>
+  <linearGradient id="r" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#fff" stop-opacity=".15"/>
+    <stop offset=".42" stop-color="#fff" stop-opacity=".035"/>
+    <stop offset=".7" stop-color="#fff" stop-opacity="0"/>
   </linearGradient>
-  <filter id="grain" x="-10%" y="-10%" width="120%" height="120%">
-    <feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="2" seed="66" result="n"/>
-    <feColorMatrix in="n" type="matrix" values=".12 0 0 0 0  0 .12 0 0 0  0 0 .12 0 0  0 0 0 .13 0"/>
-  </filter>
-  <mask id="frameMask">
-    <rect width="540" height="360" fill="#000"/>
-    <rect x="6" y="6" width="528" height="344" rx="12" fill="#fff"/>
-    <rect x="36" y="53" width="467" height="270" rx="11" fill="#000"/>
+  <mask id="ring">
+    <rect width="550" height="366" fill="#000"/>
+    <rect x="4" y="5" width="542" height="356" rx="10" fill="#fff"/>
+    <rect x="31" y="48" width="488" height="283" rx="9" fill="#000"/>
   </mask>
-  <clipPath id="window">
-    <rect x="36" y="53" width="467" height="270" rx="11"/>
-  </clipPath>
+  <clipPath id="pane"><rect x="31" y="48" width="488" height="283" rx="9"/></clipPath>
 </defs>
-
-<!-- one-piece frame; the window itself is genuinely transparent -->
-<rect x="6" y="6" width="528" height="344" rx="12" fill="url(#frame)" mask="url(#frameMask)"/>
-<rect x="6" y="6" width="528" height="344" rx="12" fill="#fff" opacity=".12" filter="url(#grain)" mask="url(#frameMask)"/>
-
-<!-- frame edges / plastic-metal retention lip -->
-<rect x="6" y="6" width="528" height="344" rx="12" fill="none" stroke="#07090a" stroke-width="3"/>
-<rect x="10" y="10" width="520" height="336" rx="10" fill="none" stroke="#666a69" stroke-opacity=".42" stroke-width="2"/>
-<rect x="17" y="17" width="506" height="322" rx="9" fill="none" stroke="#0a0c0d" stroke-width="3"/>
-<rect x="34" y="51" width="471" height="274" rx="12" fill="none" stroke="#050708" stroke-width="7"/>
-<rect x="41" y="58" width="457" height="260" rx="10" fill="none" stroke="#3a4042" stroke-opacity=".62" stroke-width="3"/>
-<rect x="47" y="64" width="445" height="248" rx="8" fill="none" stroke="#70777a" stroke-opacity=".28" stroke-width="1.5"/>
-
-<!-- smoked glass: translucent by design, so the live cassette and reel animation remain visible -->
-<g clip-path="url(#window)" pointer-events="none">
-  <rect x="36" y="53" width="467" height="270" rx="11" fill="url(#glass)"/>
-  <path d="M124 53H178L86 323H47Z" fill="url(#shine)"/>
-  <path d="M470 53H495L466 323H448Z" fill="#fff" opacity=".025"/>
-  <rect x="36" y="53" width="467" height="270" rx="11" fill="#071017" opacity=".075"/>
+<!-- Thin moving door only. It shares reader-mechanism's exact 550x366 box. -->
+<rect x="4" y="5" width="542" height="356" rx="10" fill="url(#f)" mask="url(#ring)"/>
+<rect x="4" y="5" width="542" height="356" rx="10" fill="none" stroke="#080a0b" stroke-width="3"/>
+<rect x="9" y="10" width="532" height="346" rx="8" fill="none" stroke="#6a6e6d" stroke-opacity=".35" stroke-width="1.5"/>
+<rect x="28" y="45" width="494" height="289" rx="11" fill="none" stroke="#07090a" stroke-width="7"/>
+<rect x="34" y="51" width="482" height="277" rx="8" fill="none" stroke="#4d5355" stroke-opacity=".48" stroke-width="2"/>
+<g clip-path="url(#pane)">
+  <rect x="31" y="48" width="488" height="283" fill="url(#g)"/>
+  <path d="M105 48h54L70 331H32Z" fill="url(#r)"/>
+  <path d="M480 48h20l-22 283h-15Z" fill="#fff" opacity=".02"/>
 </g>
-
-<!-- centered latch; no screws, no exposed hinge blocks -->
-<path d="M224 8H316L311 34Q310 42 302 42H238Q230 42 229 34Z" fill="#171b1d" stroke="#07090a" stroke-width="3"/>
-<path d="M232 12H308L305 29H235Z" fill="#35393a" opacity=".62"/>
+<!-- Small top latch, no screws and no visible hinge blocks. -->
+<path d="M232 5h86l-4 25c-1 6-5 9-11 9h-56c-6 0-10-3-11-9Z" fill="#171b1d" stroke="#07090a" stroke-width="3"/>
+<path d="M240 10h70l-3 15h-64Z" fill="#555a5a" opacity=".42"/>
 </svg>

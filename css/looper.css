@@ -109,7 +109,7 @@
 
 /* CASSETTE — reference-derived body, live reels behind it, baked magnetic-tape window. */
 #looper .cassetteMechanism{
-  z-index:18;top:18.05%;left:44.06%;width:30.04%;aspect-ratio:435/262;overflow:visible;border:0;
+  z-index:18;top:18.05%;left:44.06%;width:30.04%;aspect-ratio:435/262;overflow:hidden;border:0;
   background:transparent;box-shadow:none;isolation:isolate;container-type:inline-size;pointer-events:none;
 }
 #looper .cassetteMechanism>*{position:absolute;pointer-events:none;user-select:none}
@@ -145,7 +145,7 @@
   text-shadow:0 1px rgba(0,0,0,.72),0 -1px rgba(255,255,255,.12);
 }
 #looper .cassetteDoor{
-  z-index:5;top:-9.73%;left:-10.52%;width:124.14%;height:auto;display:block;
+  z-index:19;top:11.79%;left:39.99%;width:37.98%;height:auto;display:block;
   pointer-events:none;user-select:none;
 }
 
@@ -244,7 +244,7 @@
   #looper .looper66Workspace{aspect-ratio:auto;min-height:1260px;background:#633219}
   #looper .looper66Workspace::before{content:"";position:absolute;z-index:0;top:22px;left:10px;right:10px;bottom:20px;border:3px solid #111314;border-radius:12px;background:#303233;box-shadow:inset 0 0 0 2px #55595a,inset 0 0 0 5px #1a1c1d,0 8px 14px rgba(0,0,0,.35);pointer-events:none}
   #looper :is(.deckReadout,.deckUtilityPanel,.deckPitchModule,.cassetteMechanism,.deckTransport,.looperImportDock,.cratePanel,.beatListPanel){z-index:4}
-  #looper .cassetteDoor{z-index:5;top:-9.73%;left:-10.52%;width:124.14%;height:auto}
+  #looper .cassetteDoor{display:none}
   #looper .deckReadout{top:52px;left:28px;width:calc(100% - 56px);height:190px;border:2px solid #575b5c!important;border-radius:7px;background:#030302!important;box-shadow:inset 0 0 18px #000!important}
   #looper .deckReadoutTrack{font-size:14px!important}
   #looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow){font-size:11px}
