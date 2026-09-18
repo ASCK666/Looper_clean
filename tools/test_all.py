@@ -9,6 +9,7 @@ steps=[
   ['tests/validate.py'],
   ['tests/looper66_contract.py'],
   ['tests/cassette_contract.py'],
+  ['tests/looper_180926_contract.py'],
   ['tests/looper_120927_render.py'],
   ['tests/cassette_states.py'],
   ['tests/js_health.py'],
