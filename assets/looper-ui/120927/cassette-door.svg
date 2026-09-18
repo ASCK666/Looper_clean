@@ -21,19 +21,20 @@
     <rect x="4" y="5" width="542" height="356" rx="10" fill="#fff"/>
     <rect x="31" y="48" width="488" height="283" rx="9" fill="#000"/>
   </mask>
-  <clipPath id="pane"><rect x="31" y="48" width="488" height="283" rx="9"/></clipPath>
+  <clipPath id="pane"><rect x="27" y="44" width="496" height="291" rx="11"/></clipPath>
 </defs>
 <!-- Thin moving door only. It shares reader-mechanism's exact 550x366 box. -->
 <rect x="4" y="5" width="542" height="356" rx="10" fill="url(#f)" mask="url(#ring)"/>
 <rect x="4" y="5" width="542" height="356" rx="10" fill="none" stroke="#080a0b" stroke-width="3"/>
 <rect x="9" y="10" width="532" height="346" rx="8" fill="none" stroke="#6a6e6d" stroke-opacity=".35" stroke-width="1.5"/>
-<rect x="27" y="44" width="496" height="291" rx="11" fill="none" stroke="#07090a" stroke-width="9"/>
-<rect x="33" y="50" width="484" height="279" rx="9" fill="none" stroke="#4d5355" stroke-opacity=".58" stroke-width="3"/>
-<rect x="36" y="53" width="478" height="273" rx="7" fill="none" stroke="#050708" stroke-opacity=".72" stroke-width="2"/>
+<!-- Deep retaining bezel: overlaps the pane so no open seam can read between glass and plastic. -->
+<rect x="25" y="42" width="500" height="295" rx="12" fill="none" stroke="#090b0c" stroke-width="14"/>
+<rect x="31" y="48" width="488" height="283" rx="9" fill="none" stroke="#303537" stroke-width="7"/>
+<rect x="35" y="52" width="480" height="275" rx="7" fill="none" stroke="#656b6c" stroke-opacity=".42" stroke-width="2"/>
 <g clip-path="url(#pane)">
-  <rect x="31" y="48" width="488" height="283" fill="url(#g)"/>
-  <path d="M105 48h54L70 331H32Z" fill="url(#r)"/>
-  <path d="M480 48h20l-22 283h-15Z" fill="#fff" opacity=".02"/>
+  <rect x="27" y="44" width="496" height="291" fill="url(#g)"/>
+  <path d="M101 44h58L68 335H28Z" fill="url(#r)"/>
+  <path d="M484 44h20l-23 291h-15Z" fill="#fff" opacity=".02"/>
 </g>
 <!-- Small top latch, no screws and no visible hinge blocks. -->
 <path d="M232 5h86l-4 25c-1 6-5 9-11 9h-56c-6 0-10-3-11-9Z" fill="#171b1d" stroke="#07090a" stroke-width="3"/>
