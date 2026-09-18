@@ -49,7 +49,7 @@ with contextlib.ExitStack() as stack:
               const after=getComputedStyle(el,'::after');
               const tape=getComputedStyle(el.querySelector('.cassetteTape'));
               return {
-                before:{content:before.content,inset:[before.top,before.right,before.bottom,before.left],background:before.backgroundImage,z:+before.zIndex},
+                before:{content:before.content,inset:[before.top,before.right,before.bottom,before.left],background:before.backgroundImage,z:+before.zIndex,mask:before.maskImage,webkitMask:before.webkitMaskImage},
                 after:{content:after.content,background:after.backgroundImage},
                 mask:tape.maskImage,
                 webkitMask:tape.webkitMaskImage
@@ -59,6 +59,7 @@ with contextlib.ExitStack() as stack:
             assert all(value=='0px' for value in surface['before']['inset']),surface
             assert 'cassette-cavity.svg' in surface['before']['background'],surface
             assert surface['before']['z']==0,surface
+            assert surface['before']['mask']!='none' or surface['before']['webkitMask']!='none',surface
             assert surface['after']['content']=='none' and surface['after']['background']=='none',surface
             assert surface['mask']!='none' or surface['webkitMask']!='none',surface
 
@@ -77,7 +78,7 @@ with contextlib.ExitStack() as stack:
                   w:c.width/b.width,h:c.height/b.height,z:+s.zIndex,visible:s.visibility,filter:s.filter};
               });
             }''')
-            assert [m['z'] for m in metrics]==[3,3,2,4],metrics
+            assert [m['z'] for m in metrics]==[1,1,2,3],metrics
             assert all(m['visible']=='visible' for m in metrics),metrics
             assert all(m['filter']!='none' for m in metrics[:2]),metrics
             assert all(m['filter']=='none' for m in metrics[2:]),metrics
@@ -118,4 +119,4 @@ with contextlib.ExitStack() as stack:
             assert page.locator('#cassetteBeatName').inner_text()=='NO BEAT LOADED'
             assert not errors,errors
             page.close()
-print('OK: cassette states, opaque backing, dark reels above the tape window, stable geometry and reel animation')
+print('OK: cassette states, local cavity backing, dark reels behind the shell, stable geometry and reel animation')

@@ -28,7 +28,12 @@ assert reel.getpixel((32,32))[3] == 255
 
 assert 'aspect-ratio:435/262' in css
 assert 'cassette-cavity.svg' in css
-assert re.search(r'\.cassetteMechanism::before\s*\{[^}]*z-index\s*:\s*0[^}]*inset\s*:\s*0',css,re.S)
+before=re.search(r'\\.cassetteMechanism::before\\s*\\{([^}]*)\\}',css,re.S)
+assert before,before
+assert 'z-index:0' in before.group(1) and 'inset:0' in before.group(1)
+assert '-webkit-mask:' in before.group(1) and 'mask:' in before.group(1)
+for token in ('27.82%','69.89%','44.27%','37.01%','34.73%','25.98%','20.23%'):
+    assert token in before.group(1),token
 assert '.cassetteMechanism::after{' not in css
 assert 'Clean foreground replacement for the baked brown window' not in css
 
