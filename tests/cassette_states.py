@@ -43,6 +43,26 @@ with contextlib.ExitStack() as stack:
                 opacity=float(page.locator(selector).evaluate('el=>getComputedStyle(el).opacity'))
                 assert opacity==1,('empty',label,selector,opacity)
             assert page.locator('#cassetteBeatName').inner_text()=='NO BEAT LOADED'
+
+            surface=mechanism.evaluate("""el=>{
+              const before=getComputedStyle(el,'::before');
+              const after=getComputedStyle(el,'::after');
+              const tape=getComputedStyle(el.querySelector('.cassetteTape'));
+              return {
+                before:{content:before.content,inset:[before.top,before.right,before.bottom,before.left],background:before.backgroundImage,z:+before.zIndex,mask:before.maskImage,webkitMask:before.webkitMaskImage},
+                after:{content:after.content,background:after.backgroundImage,backgroundColor:after.backgroundColor},
+                mask:tape.maskImage,
+                webkitMask:tape.webkitMaskImage
+              };
+            }""")
+            assert surface['before']['content']!='none',surface
+            assert all(value=='0px' for value in surface['before']['inset']),surface
+            assert 'cassette-cavity.svg' in surface['before']['background'],surface
+            assert surface['before']['z']==0,surface
+            assert surface['before']['mask']!='none' or surface['before']['webkitMask']!='none',surface
+            assert surface['after']['content']!='none' and surface['after']['backgroundColor']=='rgb(11, 13, 13)',surface
+            assert surface['mask']=='none' and surface['webkitMask']=='none',surface
+
             if label in ('desktop','mobile'): capture(page,f'{label}-empty')
 
             page.evaluate("commitLoadedTrack({id:'cassette-state',name:'MIDNIGHT SESSION.wav'},new AudioBuffer({length:44100,sampleRate:44100,numberOfChannels:1}))")
@@ -58,8 +78,10 @@ with contextlib.ExitStack() as stack:
                   w:c.width/b.width,h:c.height/b.height,z:+s.zIndex,visible:s.visibility,filter:s.filter};
               });
             }''')
-            assert [m['z'] for m in metrics]==[1,1,2,3],metrics
-            assert all(m['visible']=='visible' and m['filter']=='none' for m in metrics),metrics
+            assert [m['z'] for m in metrics]==[1,1,2,4],metrics
+            assert all(m['visible']=='visible' for m in metrics),metrics
+            assert all(m['filter']!='none' for m in metrics[:2]),metrics
+            assert all(m['filter']=='none' for m in metrics[2:]),metrics
             for m in metrics:
                 assert m['x']>=-.001 and m['y']>=-.001 and m['x']+m['w']<=1.001 and m['y']+m['h']<=1.001,m
 
@@ -71,16 +93,6 @@ with contextlib.ExitStack() as stack:
                 assert abs(m['w']*box['width']-m['h']*box['height'])<.2,m
             assert metrics[3]['y']+metrics[3]['h']<metrics[0]['y']
 
-            # Each reel has its own opaque backing, but the reader remains
-            # uncovered in the space between the two circles.
-            backings=mechanism.evaluate("""el=>['::before','::after'].map(pseudo=>{
-              const s=getComputedStyle(el,pseudo);
-              return {content:s.content,left:parseFloat(s.left),top:parseFloat(s.top),
-                width:parseFloat(s.width),height:parseFloat(s.height),
-                background:s.backgroundImage,z:+s.zIndex};
-            })""")
-            assert all(b['content']!='none' and b['background']!='none' and b['z']==0 for b in backings),backings
-            assert backings[0]['left']+backings[0]['width']<backings[1]['left'],backings
             if label in ('desktop','mobile'): capture(page,f'{label}-loaded')
 
             layout=mechanism.evaluate('el=>[...el.children].map(c=>[c.offsetLeft,c.offsetTop,c.offsetWidth,c.offsetHeight])')
@@ -107,4 +119,4 @@ with contextlib.ExitStack() as stack:
             assert page.locator('#cassetteBeatName').inner_text()=='NO BEAT LOADED'
             assert not errors,errors
             page.close()
-print('OK: 120927 cassette states, opaque reel backings, open reader gap and stable geometry')
+print('OK: cassette states, dark reels, local central window cover, stable geometry and reel animation')

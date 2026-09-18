@@ -32,6 +32,7 @@ assert (ROOT/'assets/looper-ui/120927/readout-panel.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/utility-panel.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/pitch-panel.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/reader-mechanism.webp').exists()
+assert (ROOT/'assets/looper-ui/120927/cassette-cavity.svg').exists()
 assert (ROOT/'assets/looper-ui/120927/cassette.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/reel-animation.webp').exists()
 mockup=ROOT/'assets/looper-ui/120927/mockup-reference.png'
@@ -84,14 +85,17 @@ for fake in ('BOOM BAP','SOUL','CHILL'):
     assert fake not in VIEW.upper()
 assert 'rowSource=row=>isFolderBeat(row)?"library":"imports"' in VIEW
 
-# Reel mechanics remain coupled to true playback rate.
+# Reel mechanics remain coupled to true playback rate. The cavity has one
+# background owner and no foreground pseudo-glass is allowed above the reels.
 assert 'animation:looperReelSpin var(--supply-reel-cycle)' in CSS
 assert '.cassetteDeck.playing .cassetteReel { animation-play-state:running; }' in CSS
 assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
 assert 'height:auto' in CSS
-assert '.cassetteMechanism::before,#looper .cassetteMechanism::after' in CSS
-assert '.cassetteMechanism::before{left:20.46%}' in CSS
-assert '.cassetteMechanism::after{left:62.53%}' in CSS
+assert 'cassette-cavity.svg' in CSS
+assert '.cassetteMechanism::before{' in CSS
+assert '.cassetteMechanism::after{' in CSS and 'background:#0b0d0d' in CSS
+assert '.cassetteReelLeft{left:20.46%;top:32.06%}' in CSS
+assert '.cassetteReelRight{left:62.53%;top:32.06%;animation-duration:var(--takeup-reel-cycle)}' in CSS
 assert '--supply-reel-cycle' in LOOPER and '--takeup-reel-cycle' in LOOPER
 
 assert '@media (max-width:680px)' in CSS

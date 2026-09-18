@@ -25,14 +25,30 @@ reel=Image.open(assets/'reel-animation.webp').convert('RGBA')
 assert reel.size == (64,64)
 assert reel.getpixel((0,0))[3] == 0
 assert reel.getpixel((32,32))[3] == 255
+
 assert 'aspect-ratio:435/262' in css
-assert '.cassetteMechanism::before,#looper .cassetteMechanism::after' in css
-assert '.cassetteMechanism::before{left:20.46%}' in css
-assert '.cassetteMechanism::after{left:62.53%}' in css
-assert 'The reader background remains visible in the gap' in css
-for selector,level in (('.cassetteReel',1),('.cassetteTape',2)):
-    assert re.search(rf'{re.escape(selector)}\s*\{{[^}}]*z-index\s*:\s*{level}(?:\s*;|\s*\}})',css,re.S)
+assert 'cassette-cavity.svg' in css
+before=re.search(r'\.cassetteMechanism::before\s*\{([^}]*)\}',css,re.S)
+assert before,before
+assert 'z-index:0' in before.group(1) and 'inset:0' in before.group(1)
+assert '-webkit-mask:' in before.group(1) and 'mask:' in before.group(1)
+for token in ('27.82%','69.89%','44.27%','37.01%','34.73%','25.98%','20.23%'):
+    assert token in before.group(1),token
+assert re.search(r'\.cassetteMechanism::after\s*\{[^}]*left:37\.01%;[^}]*top:34\.73%;[^}]*width:25\.98%;[^}]*height:20\.23%;[^}]*background:#0b0d0d',css,re.S)
+assert 'Clean foreground replacement for the baked brown window' not in css
+
+tape=re.search(r'\.cassetteTape\s*\{([^}]*)\}',css,re.S)
+assert tape,tape
+tape_css=tape.group(1)
+assert 'z-index:2' in tape_css
+assert '-webkit-mask:' not in tape_css
+assert 'mask:' not in tape_css
+
+
+assert '.cassetteReelLeft{left:20.46%;top:32.06%}' in css
+assert '.cassetteReelRight{left:62.53%;top:32.06%;animation-duration:var(--takeup-reel-cycle)}' in css
+assert 'animation:looperReelSpin var(--supply-reel-cycle) linear infinite' in css
 assert 'animation-play-state:paused' in css
 assert re.search(r'\.cassetteDeck\.playing\s+\.cassetteReel\s*\{[^}]*animation-play-state\s*:\s*running',css,re.S)
 assert 'cassetteGlass' not in html+css
-print('OK: reel backings close internal alpha cuts while the reader remains visible between reels')
+print('OK: central baked glass is masked, no foreground pseudo-glass remains, reels and cavity ownership stay explicit')
