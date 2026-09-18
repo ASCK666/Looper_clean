@@ -42,7 +42,7 @@ with contextlib.ExitStack() as stack:
             }''')
             assert metrics['bodyW']<=metrics['viewportW']+2,metrics
             assert metrics['shell']['width']<=metrics['viewportW']+1,metrics
-            assert abs(metrics['mechanism']['width']/metrics['mechanism']['height']-1.5)<.02,metrics
+            assert abs(metrics['mechanism']['width']/metrics['mechanism']['height']-(435/262))<.02,metrics
             assert all(c['display']!='none' and c['width']>=44 and c['height']>=44 for c in metrics['controls']),metrics
 
             workspace=metrics['workspace']

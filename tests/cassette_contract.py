@@ -34,17 +34,16 @@ assert 'z-index:0' in before.group(1) and 'inset:0' in before.group(1)
 assert '-webkit-mask:' in before.group(1) and 'mask:' in before.group(1)
 for token in ('27.82%','69.89%','44.27%','37.01%','34.73%','25.98%','20.23%'):
     assert token in before.group(1),token
-assert '.cassetteMechanism::after{' not in css
+assert re.search(r'\.cassetteMechanism::after\s*\{[^}]*left:37\.01%;[^}]*top:34\.73%;[^}]*width:25\.98%;[^}]*height:20\.23%;[^}]*background:#0b0d0d',css,re.S)
 assert 'Clean foreground replacement for the baked brown window' not in css
 
 tape=re.search(r'\.cassetteTape\s*\{([^}]*)\}',css,re.S)
 assert tape,tape
 tape_css=tape.group(1)
 assert 'z-index:2' in tape_css
-assert '-webkit-mask:' in tape_css
-assert 'mask:' in tape_css
-for edge in ('32.35%','43.22%','35.40%','24.43%','37.47%'):
-    assert edge in tape_css,edge
+assert '-webkit-mask:' not in tape_css
+assert 'mask:' not in tape_css
+
 
 assert '.cassetteReelLeft{left:20.46%;top:32.06%}' in css
 assert '.cassetteReelRight{left:62.53%;top:32.06%;animation-duration:var(--takeup-reel-cycle)}' in css
