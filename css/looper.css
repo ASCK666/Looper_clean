@@ -137,7 +137,7 @@
 @keyframes looperReelSpin{to{transform:rotate(360deg)}}
 #looper .cassetteBeatName{
   z-index:3;top:8.40%;left:12.87%;width:74.71%;height:17.56%;display:flex;align-items:center;justify-content:center;overflow:hidden;
-  color:#1b1d1e;background:transparent;border:0;
+  color:#000;background:transparent;border:0;
   font:900 clamp(13px,1.82vw,26px)/1 var(--font-condensed,"Arial Narrow",Arial,sans-serif);letter-spacing:.015em;text-align:center;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px rgba(255,255,255,.35);
 }
 
