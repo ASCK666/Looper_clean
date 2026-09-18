@@ -39,7 +39,7 @@ with contextlib.ExitStack() as stack:
             box=mechanism.bounding_box()
             assert abs(box['width']/box['height']-435/262)<.001,(label,box)
             assert page.evaluate('document.body.scrollWidth <= innerWidth+2')
-            for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight','.cassetteBeatName'):
+            for selector in ('.cassetteUnderTape','.cassetteTape','.cassetteReelLeft','.cassetteReelRight','.cassetteBeatName'):
                 opacity=float(page.locator(selector).evaluate('el=>getComputedStyle(el).opacity'))
                 assert opacity==1,('empty',label,selector,opacity)
             assert page.locator('#cassetteBeatName').inner_text()=='NO BEAT LOADED'
@@ -77,18 +77,18 @@ with contextlib.ExitStack() as stack:
                   w:c.width/b.width,h:c.height/b.height,z:+s.zIndex,visible:s.visibility,filter:s.filter};
               });
             }''')
-            assert [m['z'] for m in metrics]==[1,1,2,3],metrics
+            assert [m['z'] for m in metrics]==[1,2,2,3,4],metrics
             assert all(m['visible']=='visible' and m['filter']=='none' for m in metrics),metrics
             for m in metrics:
                 assert m['x']>=-.001 and m['y']>=-.001 and m['x']+m['w']<=1.001 and m['y']+m['h']<=1.001,m
 
             # Centres match the reference-derived cassette body apertures.
             reel_center_y=.3206+(.1471*(435/262)/2)
-            for m,(cx,cy) in zip(metrics[0:2],((.2046+.1471/2,reel_center_y),(.6253+.1471/2,reel_center_y))):
+            for m,(cx,cy) in zip(metrics[1:3],((.2046+.1471/2,reel_center_y),(.6253+.1471/2,reel_center_y))):
                 assert abs(m['x']+m['w']/2-cx)<.002,(label,m,cx)
                 assert abs(m['y']+m['h']/2-cy)<.002,(label,m,cy)
                 assert abs(m['w']*box['width']-m['h']*box['height'])<.2,m
-            assert metrics[3]['y']+metrics[3]['h']<metrics[0]['y']
+            assert metrics[4]['y']+metrics[4]['h']<metrics[1]['y']
 
             if label in ('desktop','mobile'): capture(page,f'{label}-loaded')
 
