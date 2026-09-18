@@ -50,7 +50,7 @@ with contextlib.ExitStack() as stack:
               const tape=getComputedStyle(el.querySelector('.cassetteTape'));
               return {
                 before:{content:before.content,inset:[before.top,before.right,before.bottom,before.left],background:before.backgroundImage,z:+before.zIndex,mask:before.maskImage,webkitMask:before.webkitMaskImage},
-                after:{content:after.content,background:after.backgroundImage},
+                after:{content:after.content,background:after.backgroundImage,backgroundColor:after.backgroundColor},
                 mask:tape.maskImage,
                 webkitMask:tape.webkitMaskImage
               };
@@ -60,7 +60,7 @@ with contextlib.ExitStack() as stack:
             assert 'cassette-cavity.svg' in surface['before']['background'],surface
             assert surface['before']['z']==0,surface
             assert surface['before']['mask']!='none' or surface['before']['webkitMask']!='none',surface
-            assert surface['after']['content']!='none' and surface['after']['background']!='none',surface
+            assert surface['after']['content']!='none' and surface['after']['backgroundColor']=='rgb(11, 13, 13)',surface
             assert surface['mask']=='none' and surface['webkitMask']=='none',surface
 
             if label in ('desktop','mobile'): capture(page,f'{label}-empty')
