@@ -128,3 +128,9 @@ assert '--deck-amber-dim:' in CSS
 assert '.cassetteDeck.playing #playBeat' in CSS and 'background:linear-gradient(#414445,#272a2b' in CSS
 assert '.crateFilterButton[aria-pressed="true"]{--light-strength:0' in CSS
 assert 'min-height:1210px' in CSS and 'height:128px' in CSS
+
+# Clean-tape keeps visible Looper machine copy in one language.
+assert 'BEAT IMPORT' in HTML and 'IMPORT SAMPLES' not in HTML
+assert 'NO BEAT LOADED' in HTML+LOOPER+VIEW
+for french in ('Aucun beat chargé','Aucun beat disponible','CHARGEMENT…','PRÊT • APPUYER SUR PLAY'):
+    assert french not in HTML+LOOPER+VIEW,french

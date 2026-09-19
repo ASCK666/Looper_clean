@@ -28,8 +28,8 @@
     <div class="headerDeckPill">
       <div class="headerDeckIcon" aria-hidden="true"></div>
       <div class="headerDeckText">
-        <div id="deckTrack" class="headerDeckTitle">Aucun beat chargé</div>
-        <div id="deckInfo" class="headerDeckMeta">Importe un WAV/MP3 pour commencer.</div>
+        <div id="deckTrack" class="headerDeckTitle">NO BEAT LOADED</div>
+        <div id="deckInfo" class="headerDeckMeta">IMPORT A WAV/MP3 TO START.</div>
       </div>
       <button id="headerCrateToggle" class="headerDeckCaret" type="button" aria-label="Ouvrir la beat crate">▾</button>
     </div>
@@ -69,7 +69,7 @@
               <div class="deckReadoutTime"><small>TIME:</small><span id="deckTimeCurrent">00:00</span><span>/</span><span id="deckTimeDuration">00:00</span></div>
               <div class="deckReadoutMeter" aria-hidden="true"><i id="deckProgressFill"></i></div>
               <div class="deckReadoutRateRow"><small>RATE:</small><strong id="deckSpeedReadout" class="deckReadoutRate">+0.0%</strong></div>
-              <span id="deckReadoutHint" class="compatHidden">LOAD BEAT POUR COMMENCER</span>
+              <span id="deckReadoutHint" class="compatHidden">LOAD A BEAT TO START</span>
               <span class="compatHidden"><span id="deckSpeedEcho">100%</span><span id="deckAutoReadout">OFF</span><span id="autoLooperCompactStatus">OFF</span></span>
             </div>
 
@@ -93,7 +93,7 @@
             </div>
 
             <aside class="looperImportDock" aria-label="Chargement des beats">
-              <div class="deckImportTitle">IMPORT SAMPLES</div>
+              <div class="deckImportTitle">BEAT IMPORT</div>
               <div class="deckDropHint" aria-hidden="true"><span>DRAG &amp; DROP<br>AUDIO FILES HERE</span></div>
               <button id="importFolderBtn" class="deckLoadKey" type="button"><strong>IMPORT LIBRARY</strong></button>
               <button id="importBeatsBtn" class="deckLoadKey" type="button"><strong>IMPORT BEAT</strong></button>
@@ -143,9 +143,9 @@
       </div>
 
       <div id="deckTrackDetails" popover role="dialog" aria-labelledby="deckTrackDetailsLabel">
-        <strong id="deckTrackDetailsLabel">TITRE DU BEAT</strong>
-        <p id="deckFullTrackName">Aucun beat chargé</p>
-        <button class="btn" type="button" popovertarget="deckTrackDetails" popovertargetaction="hide">Fermer</button>
+        <strong id="deckTrackDetailsLabel">BEAT TITLE</strong>
+        <p id="deckFullTrackName">NO BEAT LOADED</p>
+        <button class="btn" type="button" popovertarget="deckTrackDetails" popovertargetaction="hide">CLOSE</button>
       </div>
       <input id="beatFiles" class="hidden" type="file" accept="audio/*" multiple>
       <input id="beatFolder" class="hidden" type="file" accept="audio/*" webkitdirectory multiple>
