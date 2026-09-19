@@ -165,6 +165,9 @@ assert '--cabin-glow-opacity' in CSS+LOOPER
 assert 'playing ? ".24" : ".16"' in LOOPER
 
 
-# Desktop reference overlay carries the same state-driven cabin light through its transparent areas.
-assert '.cassetteReferenceOverlay{' in CSS
-assert 'calc(var(--cabin-glow-opacity,.055) * .78)' in CSS
+# Desktop cabin light sits above the reference overlay while staying inside the cassette aperture.
+assert '#looper .cassetteDeck::after{' in CSS
+assert 'top:18.05%;left:44.06%;width:30.04%;aspect-ratio:435/262' in CSS
+assert ':is(.cassetteReferenceOverlay,.cassetteDeck::after){display:none}' in CSS
+
+assert '#looper :is(.deckReadoutState strong,.deckReadoutTime span,.deckReadoutRate){' in CSS
