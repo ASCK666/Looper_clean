@@ -37,16 +37,16 @@ assert max(reel.getpixel((32,32))[:3]) < 50
 
 overlay=Image.open(assets/'cassette-reference-overlay.webp').convert('RGBA')
 assert overlay.size == (542,347)
-# The overlay keeps continuous smoked-glass texture over both reel positions;
-# it contains neither opaque frozen hubs nor fully transparent holes.
+# The overlay is only the molded bezel plus a visibly reflective but still transparent glass pane.
+# Reel/cassette content must come from the live mechanism underneath, never baked artwork.
 for cx in (195,374):
     samples=[overlay.getpixel((cx,183)),overlay.getpixel((cx,160)),overlay.getpixel((cx,206))]
-    assert all(96<=pixel[3]<=128 for pixel in samples),samples
-    assert len({pixel[:3] for pixel in samples})>1,samples
-# The former title rectangle has been removed and rebuilt as continuous label texture.
-title_label=[overlay.getpixel((x,y)) for x,y in ((190,96),(290,106),(392,118))]
-assert all(pixel[3]==255 for pixel in title_label),title_label
-assert len({pixel[:3] for pixel in title_label})>1,title_label
+    assert all(24<=pixel[3]<=64 for pixel in samples),samples
+# Former cassette-label positions are also glass, not opaque replacement artwork.
+glass_samples=[overlay.getpixel((x,y)) for x,y in ((190,96),(290,106),(392,118),(271,290))]
+assert all(24<=pixel[3]<=64 for pixel in glass_samples),glass_samples
+# The physical plastic frame remains opaque.
+assert overlay.getpixel((20,20))[3]>=240
 
 assert 'aspect-ratio:435/262' in css
 assert 'cassette-cavity.svg' in css
@@ -67,6 +67,8 @@ assert 'color:#111' in title_css.group(1)
 assert 'text-shadow:none' in title_css.group(1)
 assert '.cassetteBeatName::after{' not in css
 assert '.cassetteDeck::before{' not in css
+assert '.cassetteCabinGlow{' not in css
+assert '--cabin-glow-opacity' not in css
 assert 'filter:brightness(.36)' not in css
 assert 'Clean foreground replacement for the baked brown window' not in css
 
@@ -84,4 +86,4 @@ assert 'animation:looperReelSpin var(--supply-reel-cycle) linear infinite' in cs
 assert 'animation-play-state:paused' in css
 assert re.search(r'\.cassetteDeck\.playing\s+\.cassetteReel\s*\{[^}]*animation-play-state\s*:\s*running',css,re.S)
 assert 'cassetteGlass' not in html+css
-print('OK: textured magnetic tape is baked into the cassette, white hub teeth stay native, reels animate without a darkening filter')
+print('OK: cassette glass is truly transparent, the molded bezel stays opaque, and live cassette/reel assets remain visible underneath')

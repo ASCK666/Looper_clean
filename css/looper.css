@@ -5,20 +5,21 @@
 #looper{
   position:relative!important;
   --deck-amber:#ffa31a;
+  --deck-amber-dim:#9b6728;
   --supply-reel-cycle:2.91s;
   --takeup-reel-cycle:1.46s;
 }
 #looper .looper66Shell{width:min(100%,1448px);margin-inline:auto;background:transparent}
 #looper :is(.looper66RearCables,.looper66DeckShell){position:absolute;z-index:0;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none}
-#looper .looper66DeckShell{background:linear-gradient(#121516 0 0) center 52%/92.5% 80.5% no-repeat}
+#looper .looper66DeckShell{background:linear-gradient(#121516 0 0) center 52%/92.5% 80.5% no-repeat;filter:drop-shadow(0 18px 16px rgba(0,0,0,.28))}
 #looper .looper66CassetteSupport{position:absolute;z-index:0;top:11.79%;left:39.99%;width:37.98%;height:auto;pointer-events:none;user-select:none}
 #looper .looper66ReadoutPanel{position:absolute;z-index:1;top:12.62%;left:4.14%;width:26.24%;height:auto;pointer-events:none;user-select:none}
 #looper .looper66Workspace{
   position:relative;display:block!important;width:100%;aspect-ratio:1448/1086;overflow:hidden;
   background:
-    radial-gradient(ellipse 62% 48% at 50% 46%,rgba(42,46,48,.42),transparent 72%),
+    radial-gradient(ellipse 62% 48% at 50% 46%,rgba(55,60,63,.48),transparent 72%),
     repeating-linear-gradient(135deg,rgba(255,255,255,.008) 0 1px,rgba(0,0,0,.008) 1px 3px),
-    linear-gradient(180deg,#1b1e20 0%,#141618 58%,#090a0b 100%);
+    linear-gradient(180deg,#1d2022 0%,#141618 60%,#090a0b 100%);
 }
 #looper .looperMainPanel,#looper .beatCratePanel{
   position:absolute!important;z-index:3;inset:0;display:block!important;min-height:0!important;
@@ -41,23 +42,25 @@
 #looper .deckReadoutTrack{
   position:absolute;top:7%;left:8%;width:84%;min-height:0;max-height:none;margin:0;padding:0;overflow:hidden;
   border:0!important;background:transparent!important;color:var(--deck-amber)!important;
-  font:500 clamp(11px,1.55vw,22px)/1.16 var(--font-mono,monospace)!important;letter-spacing:.015em;
+  font:600 clamp(11px,1.55vw,22px)/1.16 var(--font-mono,monospace)!important;letter-spacing:.01em;
   text-align:left!important;text-decoration:none!important;text-overflow:ellipsis;white-space:nowrap;
   cursor:pointer;pointer-events:auto;
 }
-#looper .deckReadoutTrack::before{content:"TRACK:";display:block;margin-bottom:.32em;color:#ffb333;font-size:.72em}
-#looper .deckReadoutState,#looper .deckReadoutTime,#looper .deckReadoutRateRow{
-  position:absolute;left:8%;width:84%;display:flex;align-items:center;color:var(--deck-amber);
+#looper .deckReadoutTrack::before{content:"TRACK:";display:block;margin-bottom:.32em;color:var(--deck-amber-dim);font-size:.68em;font-weight:600;letter-spacing:.08em}
+#looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow){
+  position:absolute;left:8%;width:84%;display:flex;align-items:center;color:var(--deck-amber-dim);
   font:500 clamp(9px,1.08vw,16px)/1 var(--font-mono,monospace);
 }
 #looper .deckReadoutState{top:35%;gap:8%}
 #looper .deckReadoutTime{top:49%;gap:.48em}
 #looper .deckReadoutRateRow{top:78%;gap:11%}
-#looper .deckReadoutState :is(small,strong),#looper .deckReadoutTime small,#looper .deckReadoutRateRow small,#looper .deckReadoutRate{color:inherit!important;font:inherit!important}
+#looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow) small{color:var(--deck-amber-dim)!important;font:600 .88em/1 var(--font-mono,monospace)!important;letter-spacing:.05em}
+#looper :is(.deckReadoutState strong,.deckReadoutTime span,.deckReadoutRate){color:var(--deck-amber)!important;font:600 1em/1 var(--font-mono,monospace)!important}
+#looper .deckReadoutTime span:nth-child(2){color:#65461f!important;font-weight:500!important}
 #looper .cassetteDeck.playing #deckTransportState{text-shadow:0 0 7px rgba(255,159,28,.4)}
 #looper .cassetteDeck.playing #deckTransportState::before{content:"▶ "}
-#looper .deckReadoutMeter{position:absolute;top:62%;left:8%;width:84%;height:7.5%;overflow:hidden;border:1px solid #8f5e0b;background:#111008;box-shadow:inset 0 0 0 1px #020200}
-#looper .deckReadoutMeter>i{display:block;width:0;height:100%;background:linear-gradient(90deg,#ffd16e,#ff9917);box-shadow:0 0 8px rgba(255,159,22,.3)}
+#looper .deckReadoutMeter{position:absolute;top:62%;left:8%;width:84%;height:7.5%;overflow:hidden;border:1px solid #6e4b18;background:repeating-linear-gradient(90deg,#24190d 0 8px,#070706 8px 11px);box-shadow:inset 0 0 0 1px #020200}
+#looper .deckReadoutMeter>i{display:block;width:0;height:100%;background:repeating-linear-gradient(90deg,#ffb13b 0 8px,transparent 8px 11px);box-shadow:0 0 5px rgba(255,159,22,.22)}
 
 /* VOLUME — real gain control over the mockup location. */
 #looper .deckUtilityPanel{
@@ -149,6 +152,19 @@
   position:absolute;z-index:19;top:11.51%;left:38.674%;width:38.26%;height:auto;
   display:block;pointer-events:none;user-select:none;
 }
+/* Cabin illumination: sits behind the cassette and glass, lighting the well instead of tinting the artwork. */
+#looper .cassetteDeck::after{
+  content:"";position:absolute;z-index:17;top:12.55%;left:40.15%;width:36.75%;aspect-ratio:550/366;
+  border-radius:8%;opacity:var(--cabin-light-opacity,.06);pointer-events:none;
+  background:
+    radial-gradient(ellipse 52% 18% at 50% 94%,rgba(255,210,158,.54),rgba(226,157,91,.15) 54%,transparent 80%),
+    radial-gradient(ellipse 15% 55% at 7% 55%,rgba(255,205,150,.26),rgba(214,139,76,.08) 58%,transparent 78%),
+    radial-gradient(ellipse 15% 55% at 93% 55%,rgba(255,205,150,.24),rgba(214,139,76,.07) 58%,transparent 78%),
+    radial-gradient(ellipse 46% 22% at 50% 12%,rgba(255,224,187,.12),transparent 72%);
+  box-shadow:inset 0 0 2.1cqw rgba(255,211,160,.07);
+  filter:blur(.16cqw) saturate(.72);
+  transition:opacity 160ms ease;
+}
 
 /* Shared physical light: key illumination plus a small spill on the chassis. */
 #looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton){--light-strength:0;--light-r:255;--light-g:163;--light-b:26;position:absolute;isolation:isolate;overflow:visible}
@@ -164,16 +180,16 @@
   pointer-events:auto;min-width:44px;min-height:44px;margin:0;padding:0;border:2px solid #090a0a;border-radius:.5cqw;
   background:linear-gradient(#383c3d,#222526 43%,#151718 100%);color:#e7e8e3;
   box-shadow:inset 0 1px #666a6b,inset 0 -3px #090a0a,inset 0 0 0 2px #1d2021,0 2px 4px #000;
-  font-family:var(--font-mono,monospace);cursor:pointer;transition:background 120ms ease,box-shadow 120ms ease,transform 80ms ease;
+  font-family:var(--font-condensed,var(--font-ui,sans-serif));cursor:pointer;transition:background 120ms ease,box-shadow 120ms ease,transform 80ms ease;
 }
 #looper #stopBeat{left:40.81%;top:45.95%;width:11.26%;height:8.75%}
 #looper #playBeat{left:52.62%;top:45.95%;width:10.22%;height:8.75%;--light-strength:.10}
 #looper #autoLooperToggle{left:63.12%;top:45.95%;width:13.78%;height:8.75%}
 #looper .deckKeySymbol{position:absolute;top:24%;left:50%;width:20%;height:26%;transform:translateX(-50%);fill:currentColor}
-#looper .deckKeyLabel{position:absolute;left:4%;right:4%;bottom:13%;color:inherit;font:700 clamp(8px,1.02vw,15px)/1 var(--font-mono,monospace);letter-spacing:.04em;text-align:center}
+#looper .deckKeyLabel{position:absolute;left:4%;right:4%;bottom:13%;color:inherit;font:750 clamp(8px,1.02vw,15px)/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.075em;text-align:center}
 #looper .cassetteDeck.playing #playBeat{
-  --light-strength:.82;background:linear-gradient(#ffc361,#f6a428 48%,#df810b 100%);color:#151515;border-color:#9f5705;
-  box-shadow:inset 0 1px #ffe6a6,inset 0 -3px #713800,inset 0 0 0 2px #e58a0c,0 2px 4px #000,0 0 14px rgba(255,158,25,.22),0 8px 22px rgba(255,137,10,.10);
+  --light-strength:.34;background:linear-gradient(#414445,#272a2b 48%,#17191a 100%);color:#ffb341;border-color:#8a5a22;
+  box-shadow:inset 0 1px #686c6d,inset 0 -3px #090a0a,inset 0 0 0 2px #1d2021,0 2px 4px #000,0 0 10px rgba(255,158,25,.18);
 }
 #looper .cassetteDeck.loaded:not(.playing) #stopBeat{--light-strength:.16}
 #looper .deckRateHotspot .deckKeyLabel{top:11%;bottom:auto;font-size:clamp(7px,.8vw,12px)}
@@ -187,12 +203,19 @@
 
 /* IMPORT — hit areas stay live; desktop lets the exact mockup button material show through. */
 #looper .looperImportDock{position:absolute;z-index:28;inset:0;display:block;border:0!important;background:transparent!important;box-shadow:none!important;pointer-events:none}
-#looper .deckImportTitle,#looper .deckDropHint,#looper .deckImportMeta{display:none!important}
-#looper .deckLoadKey{
-  pointer-events:auto;width:15.26%;height:4.60%;min-width:44px;min-height:44px;margin:0;padding:0 1%;border:2px solid #766b5b;border-radius:.35cqw;
-  background:linear-gradient(#f2eadc,#d8cdbc);color:#181818;box-shadow:inset 0 1px #fff8e8,inset 0 -2px #a99b88,0 2px 3px #000;font-family:var(--font-mono,monospace);cursor:pointer;
+#looper .deckImportTitle{
+  position:absolute;display:grid;place-items:center;left:80.25%;top:14.2%;width:14.45%;height:4.25%;
+  color:#dedbd2;background:var(--deck-texture) center/128px repeat,#242728;
+  box-shadow:inset 0 1px rgba(255,255,255,.035),0 0 0 1px rgba(0,0,0,.22);
+  font:750 clamp(9px,.98vw,14px)/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.075em;
+  pointer-events:none;
 }
-#looper .deckLoadKey strong{font:700 clamp(7px,.86vw,12px)/1 var(--font-mono,monospace);letter-spacing:.02em}
+#looper .deckDropHint,#looper .deckImportMeta{display:none!important}
+#looper .deckLoadKey{
+  pointer-events:auto;width:15.26%;height:4.60%;min-width:44px;min-height:44px;margin:0;padding:0 1%;border:2px solid #57544e;border-radius:.35cqw;
+  background:linear-gradient(#343638,#1d2021);color:#e8dcc5;box-shadow:inset 0 1px #565a5b,inset 0 -2px #0b0c0d,0 2px 3px #000;font-family:var(--font-condensed,var(--font-ui,sans-serif));cursor:pointer;
+}
+#looper .deckLoadKey strong{font:750 clamp(7px,.86vw,12px)/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.065em}
 #looper #importFolderBtn{left:79.77%;top:35.17%}
 #looper #importBeatsBtn{left:79.77%;top:40.88%}
 #looper .dragging #importBeatsBtn{--light-strength:.35}
@@ -208,9 +231,10 @@
   }
   #looper .deckLoadKey strong{
     position:absolute;inset:3px 4px;display:grid;place-items:center;visibility:visible;
-    border-radius:.2cqw;background:linear-gradient(#ede5d9,#d8cdbc);color:#181818!important;
-    font:500 clamp(9px,.86vw,13px)/1 var(--font-mono,monospace);letter-spacing:.01em;
-    forced-color-adjust:none;color-scheme:light;
+    border:1px solid #655f55;border-radius:.2cqw;background:linear-gradient(#343638,#1b1d1e);color:#e8dcc5!important;
+    box-shadow:inset 0 1px #565a5b,inset 0 -2px #0b0c0d;
+    font:750 clamp(9px,.86vw,13px)/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.065em;
+    forced-color-adjust:none;color-scheme:dark;
   }
 }
 
@@ -221,17 +245,17 @@
 #looper .beatListPanel{left:29.14%;top:57.55%;width:66.92%;height:33.61%}
 #looper .cratePanel h3,#looper .beatListPanel h3{
   display:flex;height:13%;margin:0;padding:0 6%;align-items:center;border-bottom:1px solid #33383a;background:linear-gradient(#292d2e,#181b1c);
-  color:#e6e5df;font:700 clamp(10px,1.2vw,18px)/1 var(--font-mono,monospace);letter-spacing:.03em;
+  color:#e6e5df;font:750 clamp(10px,1.2vw,18px)/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.075em;
 }
 #looper .beatListHeader{position:absolute;top:13%;left:0;right:0;height:9%;display:grid;grid-template-columns:8% 1fr 17%;align-items:center;padding:0 3%;border-bottom:1px solid #25292a;color:#959a98;font:500 clamp(7px,.72vw,11px)/1 var(--font-mono,monospace)}
 #looper .crateFilters{position:absolute;top:15%;left:6%;right:6%;bottom:12%;display:grid;align-content:start;gap:1%}
 #looper .crateFilterButton{
   position:relative;width:100%;min-height:38px;padding:0 7%;display:grid;grid-template-columns:1fr auto;align-items:center;border:0;border-bottom:1px solid #282c2d;border-radius:2px;
-  background:transparent;color:#c5c7c3;font:600 clamp(8px,.86vw,13px)/1 var(--font-mono,monospace);text-align:left;cursor:pointer;
+  background:transparent;color:#c5c7c3;font:700 clamp(8px,.86vw,13px)/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.045em;text-align:left;cursor:pointer;
 }
 #looper .crateFilterButton span:last-child{color:#747a78;font-weight:500}
-#looper .crateFilterButton[aria-pressed="true"]{--light-strength:.18;background:#2a2117;color:#ffad2f;box-shadow:inset 3px 0 #ff9e17}
-#looper .crateFilterButton[aria-pressed="true"] span:last-child{color:#d28a25}
+#looper .crateFilterButton[aria-pressed="true"]{--light-strength:0;background:#1a1d1e;color:#ffad2f;box-shadow:inset 3px 0 #ff9e17,inset 0 1px #282c2d}
+#looper .crateFilterButton[aria-pressed="true"] span:last-child{color:#b9853c}
 #looper .crateCount{position:absolute;left:8%;bottom:3%;color:#6f7472;font:500 clamp(7px,.7vw,10px)/1 var(--font-mono,monospace)}
 #looper .beatList{position:absolute;top:22%;left:2%;right:2%;bottom:3%;overflow:auto;scrollbar-width:thin;scrollbar-color:#626768 #171a1b}
 #looper .beatListRow{
@@ -239,12 +263,12 @@
   background:transparent;color:#bfc2be;font:500 clamp(8px,.82vw,12px)/1 var(--font-mono,monospace);text-align:left;cursor:pointer;
 }
 #looper .beatListRow:hover,#looper .beatListRow:focus-visible{background:#1d2021;color:#f1f1ec;outline:none}
-#looper .beatListRow[aria-current="true"]{background:linear-gradient(90deg,#f0a126,#d9860c);color:#171717;box-shadow:inset 0 1px #ffc15f,inset 0 -1px #92520a,0 0 10px rgba(255,153,18,.12)}
+#looper .beatListRow[aria-current="true"]{background:#191d1e;color:#f0d6aa;box-shadow:inset 3px 0 #ff9e17,inset 0 1px #303536,inset 0 -1px #090b0c}
 #looper .beatListName{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #looper .beatListLength{text-align:right;font-variant-numeric:tabular-nums}
 #looper .beatListDelete{display:inline-grid;place-items:center;width:26px;height:26px;margin-left:8px;border-radius:50%;color:inherit;opacity:.62;vertical-align:middle}
 #looper .beatListDelete:hover,#looper .beatListDelete:focus-visible{opacity:1;background:rgba(0,0,0,.16);outline:1px solid currentColor}
-#looper .beatListEmpty{padding:6% 3%;color:#858b88;font:500 clamp(8px,.85vw,12px)/1.5 var(--font-mono,monospace)}
+#looper .beatListEmpty{display:grid;height:100%;place-items:center;padding:0 8%;color:#737a78;font:600 clamp(8px,.85vw,12px)/1.55 var(--font-mono,monospace);letter-spacing:.055em;text-align:center;text-transform:uppercase}
 
 #looper #deckTrackDetails{max-width:min(92vw,520px);border:1px solid #4b4e4f;border-radius:8px;background:#171a1b;color:#e8e8e4;box-shadow:0 18px 50px rgba(0,0,0,.55)}
 #looper #deckTrackDetails::backdrop{background:rgba(0,0,0,.55)}
@@ -252,33 +276,37 @@
 
 @media (prefers-reduced-motion:reduce){
   #looper .cassetteReel{animation:none!important}
-  #looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton){transition:none!important}
+  #looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton,.cassetteDeck::after){transition:none!important}
 }
 
 /* Mobile is a functional reflow; desktop remains the exact approved scene. */
 @media (max-width:680px){
   #looper :is(.looper66RearCables,.looper66DeckShell,.looper66CassetteSupport,.looper66ReadoutPanel){display:none}
   #looper .looper66Shell{width:100%}
-  #looper .looper66Workspace{aspect-ratio:auto;min-height:1260px;background:#141618}
+  #looper .looper66Workspace{aspect-ratio:auto;min-height:1210px;background:#141618}
   #looper .looper66Workspace::before{content:"";position:absolute;z-index:0;top:22px;left:10px;right:10px;bottom:20px;border:3px solid #111314;border-radius:12px;background:#303233;box-shadow:inset 0 0 0 2px #55595a,inset 0 0 0 5px #1a1c1d,0 8px 14px rgba(0,0,0,.35);pointer-events:none}
   #looper :is(.deckReadout,.deckUtilityPanel,.deckPitchModule,.cassetteMechanism,.deckTransport,.looperImportDock,.cratePanel,.beatListPanel){z-index:4}
-  #looper .cassetteReferenceOverlay{display:none}
+  #looper :is(.cassetteReferenceOverlay,.cassetteDeck::after){display:none}
   #looper .deckReadout{top:52px;left:28px;width:calc(100% - 56px);height:190px;border:2px solid #575b5c!important;border-radius:7px;background:#030302!important;box-shadow:inset 0 0 18px #000!important}
   #looper .deckReadoutTrack{font-size:14px!important}
   #looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow){font-size:11px}
   #looper .deckUtilityPanel{top:254px;left:28px;width:132px;height:88px;border:1px solid #101213!important;border-radius:6px;background:#1c2021!important;box-shadow:inset 0 1px #55595a!important}
   #looper .deckVolumeControl{width:100%}
   #looper .deckVolumeKnob{left:29%;top:23%;width:44%}
-  #looper .deckVolumeControl::before{content:"VOLUME";position:absolute;top:8px;left:0;width:100%;color:#d8d9d5;font:700 10px/1 var(--font-mono,monospace);text-align:center}
+  #looper .deckVolumeControl::before{content:"VOLUME";position:absolute;top:8px;left:0;width:100%;color:#d8d9d5;font:750 10px/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.07em;text-align:center}
   #looper .deckPitchModule{top:254px;left:172px;width:calc(100% - 200px);height:88px;border:1px solid #101213!important;border-radius:6px;background:#1c2021!important;box-shadow:inset 0 1px #55595a!important}
-  #looper .deckPitchModule::before{content:"PITCH";position:absolute;top:8px;left:0;width:100%;color:#d8d9d5;font:700 10px/1 var(--font-mono,monospace);text-align:center}
+  #looper .deckPitchModule::before{content:"PITCH";position:absolute;top:8px;left:0;width:100%;color:#d8d9d5;font:750 10px/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.07em;text-align:center}
   #looper .deckPitchScale{display:none!important}
   #looper #deckPitch{top:34%;left:10%;width:80%;height:44px;writing-mode:horizontal-tb;direction:ltr;cursor:ew-resize}
   #looper #deckPitch::-webkit-slider-runnable-track{width:100%;height:8px;background:#080909;border-radius:5px}
   #looper #deckPitch::-moz-range-track{width:100%;height:8px;background:#080909;border-radius:5px}
   #looper #deckPitch::-webkit-slider-thumb{width:28px;height:34px;margin-top:-13px;margin-left:0}
   #looper .deckPitchHeader output{left:70%;bottom:7px;width:25%;height:20px;font-size:10px!important}
-  #looper .cassetteMechanism{top:365px;left:28px;width:calc(100% - 56px);height:auto;border-radius:9px;background:#071018;box-shadow:inset 0 0 0 3px #08090a}
+  #looper .cassetteMechanism{top:365px;left:28px;width:calc(100% - 56px);height:auto;border-radius:9px;background:
+    radial-gradient(ellipse 54% 18% at 50% 96%,rgba(255,205,150,.10),transparent 78%),
+    radial-gradient(ellipse 18% 54% at 5% 55%,rgba(255,201,145,.07),transparent 76%),
+    radial-gradient(ellipse 18% 54% at 95% 55%,rgba(255,201,145,.07),transparent 76%),
+    #071018;box-shadow:inset 0 0 0 3px #08090a}
   #looper .cassetteBeatName{top:calc(365px + clamp(11px,2.4vw,20px));left:25%;width:50%;height:clamp(34px,9vw,60px);font-size:clamp(13px,4vw,20px)}
   #looper #stopBeat,#looper #playBeat,#looper #autoLooperToggle{top:610px;height:78px;border-radius:7px}
   #looper #stopBeat{left:28px;width:92px}
@@ -287,17 +315,17 @@
   #looper .deckKeyLabel{font-size:10px}
   #looper .deckRateHotspot .deckKeyLabel{font-size:8px}
   #looper .deckRateNumbers i{font-size:7px}
-  #looper .looperImportDock{top:708px;left:28px;width:calc(100% - 56px);height:180px;border:1px solid #101213!important;border-radius:7px;background:#181c1d!important;box-shadow:inset 0 1px #55595a!important}
-  #looper .deckImportTitle{display:block!important;position:absolute;top:12px;left:14px;color:#ddd;font:700 11px/1 var(--font-mono,monospace)}
-  #looper .deckDropHint{display:block!important;position:absolute;top:38px;left:14px;width:45%;height:72px;border:1px dashed #8c9292;color:#bfc2be;font:500 9px/1.35 var(--font-mono,monospace);text-align:center;padding-top:18px}
-  #looper .deckImportMeta{display:block!important;position:absolute;left:14px;bottom:10px;color:#858b88;font:500 8px/1.35 var(--font-mono,monospace)}
-  #looper .deckLoadKey{position:absolute;width:43%;height:48px;min-height:48px}
-  #looper #importFolderBtn{left:53%;top:38px}
-  #looper #importBeatsBtn{left:53%;top:96px}
+  #looper .looperImportDock{top:708px;left:28px;width:calc(100% - 56px);height:128px;border:1px solid #101213!important;border-radius:7px;background:#181c1d!important;box-shadow:inset 0 1px #55595a!important}
+  #looper .deckImportTitle{display:block!important;position:absolute;top:12px;left:14px;width:auto;height:auto;color:#ddd;font:750 11px/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.07em;white-space:nowrap}
+  #looper .deckDropHint{display:none!important}
+  #looper .deckImportMeta{display:block!important;position:absolute;left:14px;right:14px;bottom:10px;color:#858b88;font:500 8px/1.35 var(--font-mono,monospace);text-align:right}
+  #looper .deckLoadKey{position:absolute;width:calc(50% - 21px);height:48px;min-height:48px}
+  #looper #importFolderBtn{left:14px;top:40px}
+  #looper #importBeatsBtn{left:auto;right:14px;top:40px}
   #looper .deckLoadKey strong{font-size:9px}
   #looper .cratePanel,#looper .beatListPanel{left:28px;width:calc(100% - 56px);border:1px solid #101213;border-radius:7px;background:#101314;box-shadow:inset 0 1px #55595a}
-  #looper .cratePanel{top:908px;height:140px}
-  #looper .beatListPanel{top:1060px;height:170px}
+  #looper .cratePanel{top:856px;height:140px}
+  #looper .beatListPanel{top:1008px;height:170px}
   #looper .cratePanel h3,#looper .beatListPanel h3{height:36px;padding:0 14px;font-size:12px}
   #looper .crateFilters{top:36px;left:10px;right:10px;bottom:10px;grid-template-columns:1fr 1fr;gap:6px}
   #looper .crateFilterButton{min-height:44px;font-size:9px}

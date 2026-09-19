@@ -26,7 +26,7 @@ assert re.search(r'<img\b[^>]*class="looper66ReadoutPanel"[^>]*src="assets/loope
 assert 'assets/looper-ui/120927/utility-panel.webp' in CSS
 assert 'assets/looper-ui/120927/pitch-panel.webp' in CSS
 assert '.looper66RearCables' in CSS
-assert '#1b1e20 0%,#141618 58%,#090a0b 100%' in CSS
+assert '#1d2022 0%,#141618 60%,#090a0b 100%' in CSS
 assert not (ROOT/'assets/looper-ui/120927/desk-surface.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/rear-cables.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/deck-shell.webp').exists()
@@ -89,8 +89,9 @@ for token in ('background:transparent!important','appearance:none','-moz-appeara
     assert token in desktop_css,token
 assert '.deckVolumeKnob{display:none}' in desktop_css
 assert '.deckLoadKey strong{' in desktop_css
-assert 'font:500 clamp(9px,.86vw,13px)' in desktop_css
-assert 'background:linear-gradient(#ede5d9,#d8cdbc)' in desktop_css
+assert 'font:750 clamp(9px,.86vw,13px)' in desktop_css
+assert 'background:linear-gradient(#343638,#1b1d1e)' in desktop_css
+assert 'color-scheme:dark' in desktop_css
 
 # Crates are real data filters, not invented genres.
 for label in ('ALL BEATS','LIBRARY','IMPORTS','RECENT'):
@@ -116,3 +117,56 @@ assert '--supply-reel-cycle' in LOOPER and '--takeup-reel-cycle' in LOOPER
 assert '@media (max-width:680px)' in CSS
 assert '@media (prefers-reduced-motion:reduce)' in CSS
 print('OK: approved 120927 Looper contract, mockup source and existing behavior preserved')
+
+# Clean-tape typography keeps physical labels separate from data/readout text.
+TOKENS=(ROOT/'css/tokens.css').read_text(encoding='utf-8')
+assert '--font-ui:' in TOKENS and '--font-condensed:' in TOKENS and '--font-mono:' in TOKENS
+assert 'font-family:var(--font-condensed' in CSS
+assert '--deck-amber-dim:' in CSS
+
+# Clean-tape visual hierarchy keeps active transport and imports hardware-dark.
+assert '.cassetteDeck.playing #playBeat' in CSS and 'background:linear-gradient(#414445,#272a2b' in CSS
+assert '.crateFilterButton[aria-pressed="true"]{--light-strength:0' in CSS
+assert 'min-height:1210px' in CSS and 'height:128px' in CSS
+
+# Clean-tape keeps visible Looper machine copy in one language.
+assert 'BEAT IMPORT' in HTML and 'IMPORT SAMPLES' not in HTML
+assert 'NO BEAT LOADED' in HTML+LOOPER+VIEW
+for french in ('Aucun beat chargé','Aucun beat disponible','CHARGEMENT…','PRÊT • APPUYER SUR PLAY'):
+    assert french not in HTML+LOOPER+VIEW,french
+
+# Clean-tape selected beat uses hardware-dark selection instead of a full amber fill.
+assert '.beatListRow[aria-current="true"]{background:#191d1e' in CSS
+assert 'background:linear-gradient(90deg,#f0a126,#d9860c)' not in CSS
+
+# Clean-tape readout progress renders as discrete hardware segments.
+assert 'background:repeating-linear-gradient(90deg,#24190d 0 8px' in CSS
+assert 'background:repeating-linear-gradient(90deg,#ffb13b 0 8px' in CSS
+
+# Clean-tape mode navigation reads as a compact hardware selector.
+BASE=(ROOT/'css/base.css').read_text(encoding='utf-8')
+assert 'width: min(100%,720px) !important' in BASE
+assert 'min-height: 44px !important' in BASE
+assert 'border-radius: 50%' in BASE
+assert 'inset 3px 0 #c77f20' in BASE
+assert 'rgba(255,160,24,.09)' not in BASE
+
+
+# Clean-tape keeps the import title live on desktop instead of relying on baked copy.
+assert '#looper .deckImportTitle{' in CSS
+assert 'display:grid;place-items:center;left:80.25%;top:14.2%' in CSS
+assert '#looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow){' in CSS
+
+
+# Clean-tape cabin illumination lives behind cassette/glass instead of washing over the artwork.
+assert 'cassetteCabinGlow' not in HTML+CSS
+assert '--cabin-glow-opacity' not in CSS+LOOPER
+assert '--cabin-light-opacity' in CSS+LOOPER
+assert 'playing ? ".18" : ".13"' in LOOPER
+assert '#looper .cassetteDeck::after{' in CSS
+assert 'z-index:17;top:12.55%;left:40.15%;width:36.75%;aspect-ratio:550/366' in CSS
+assert 'radial-gradient(ellipse 52% 18% at 50% 94%' in CSS
+assert 'mix-blend-mode:screen' not in re.search(r'#looper \.cassetteDeck::after\{([^}]*)\}',CSS,re.S).group(1)
+assert ':is(.cassetteReferenceOverlay,.cassetteDeck::after){display:none}' in CSS
+
+assert '#looper :is(.deckReadoutState strong,.deckReadoutTime span,.deckReadoutRate){' in CSS

@@ -165,7 +165,7 @@ with tempfile.TemporaryDirectory() as td:
         page.wait_for_function("document.querySelector('#library .track.active .danger') !== null")
         page.evaluate("document.querySelector('#library .track.active .danger').click()")
         page.wait_for_function('currentTrack === null && deckBuffer === null')
-        assert page.locator('#deckTrack').inner_text() == 'Aucun beat chargé'
+        assert page.locator('#deckTrack').inner_text() == 'NO BEAT LOADED'
         page.click('#playBeat')
         page.wait_for_timeout(120)
         assert page.evaluate('deckSource === null') is True

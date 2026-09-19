@@ -31,6 +31,28 @@ with contextlib.ExitStack() as stack:
             page.wait_for_function('window.__SP?.ui120927Ready === true')
             page.wait_for_function('window.__SP?.ui120927CssReady === true')
             page.wait_for_function("[...document.querySelectorAll('.cassetteMechanism img')].every(i=>i.complete && i.naturalWidth>0)")
+            overlay=page.locator('.cassetteReferenceOverlay')
+            assert overlay.count()==1
+            overlay_alpha=overlay.evaluate("""async el=>{
+              await el.decode();
+              const c=document.createElement('canvas');
+              c.width=el.naturalWidth;c.height=el.naturalHeight;
+              const ctx=c.getContext('2d');
+              ctx.drawImage(el,0,0);
+              const px=(x,y)=>ctx.getImageData(x,y,1,1).data[3];
+              return {
+                w:el.naturalWidth,h:el.naturalHeight,
+                center:px(271,180),
+                leftGlass:px(100,180),
+                bottomGlass:px(271,290),
+                frame:px(20,20)
+              };
+            }""")
+            assert overlay_alpha['w']==542 and overlay_alpha['h']==347,overlay_alpha
+            assert 24<=overlay_alpha['center']<=64,overlay_alpha
+            assert 24<=overlay_alpha['leftGlass']<=80,overlay_alpha
+            assert 24<=overlay_alpha['bottomGlass']<=80,overlay_alpha
+            assert overlay_alpha['frame']>=240,overlay_alpha
 
             assert page.locator('.looper66DeskSurface').count()==0
             workspace=page.locator('.looper66Workspace')
@@ -46,6 +68,13 @@ with contextlib.ExitStack() as stack:
                 assert workspace_bg.count('gradient')>=3,workspace_bg
                 assert cable_state['display']!='none' and cable_state['visibility']!='hidden' and cable_state['opacity']>.95,cable_state
                 assert abs(cable_state['rw']/cable_state['rh']-1448/1086)<.001,cable_state
+                cabin_light=page.locator('.cassetteDeck').evaluate("""el=>{
+                  const s=getComputedStyle(el,'::after');
+                  return {content:s.content,display:s.display,opacity:Number(s.opacity),background:s.backgroundImage,z:s.zIndex};
+                }""")
+                assert cabin_light['content']!='none' and cabin_light['display']!='none',cabin_light
+                assert cabin_light['background'].count('radial-gradient')==4,cabin_light
+                assert cabin_light['z']=='17',cabin_light
 
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight'):
                 asset=page.locator(selector)
@@ -60,11 +89,33 @@ with contextlib.ExitStack() as stack:
             assert title_box['x']+title_box['width'] <= cassette_box['x']+cassette_box['width']
             assert cassette_box['y'] <= title_box['y']
             assert title_box['y']+title_box['height'] <= cassette_box['y']+cassette_box['height']*.35
+            assert page.locator('.cassetteCabinGlow').count()==0
+            empty_light=float(page.locator('.cassetteDeck').evaluate("el=>getComputedStyle(el,'::after').opacity"))
+            if width>680: assert abs(empty_light-.06)<.005,empty_light
 
             assert page.locator('#deckVolume').count()==1
             assert page.locator('#crateFilters').count()==1
             assert page.locator('#beatList').count()==1
             assert page.locator('#autoLooperToggle .deckRateVisualSegments i').count()==5
+            tabs=page.locator('.mainModeTabs')
+            tabs_box=tabs.bounding_box()
+            tab_boxes=page.locator('.mainModeTabs .tab').evaluate_all("els=>els.map(el=>{const r=el.getBoundingClientRect();return {w:r.width,h:r.height}})")
+            assert tabs_box and tabs_box['width'] <= min(width,722)
+            assert len(tab_boxes)==2 and all(box['h']>=44 for box in tab_boxes),tab_boxes
+            tabs.screenshot(path=str(ARTIFACTS/f'mode-tabs-{label}.png'))
+            import_title=page.locator('.deckImportTitle')
+            assert import_title.is_visible()
+            assert import_title.inner_text()=='BEAT IMPORT'
+            import_box=import_title.bounding_box()
+            workspace_box=workspace.bounding_box()
+            assert import_box and workspace_box
+            if width>680:
+                assert import_box['x'] >= workspace_box['x'] + workspace_box['width']*.75,import_box
+                assert import_box['y'] < workspace_box['y'] + workspace_box['height']*.25,import_box
+            else:
+                assert import_box['width'] > 60,import_box
+                assert import_box['height'] < 20,import_box
+
             assert not errors,errors
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-empty.png'))
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-empty.png'))
@@ -75,6 +126,9 @@ with contextlib.ExitStack() as stack:
             }""")
             page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('loaded')")
             assert page.locator('#cassetteBeatName').inner_text()=='MIDNIGHT SESSION'
+            page.wait_for_timeout(200)
+            loaded_light=float(page.locator('.cassetteDeck').evaluate("el=>getComputedStyle(el,'::after').opacity"))
+            if width>680: assert abs(loaded_light-.13)<.01,loaded_light
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-loaded.png'))
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-loaded.png'))
 
@@ -82,6 +136,8 @@ with contextlib.ExitStack() as stack:
             page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('playing')")
             page.wait_for_timeout(250)
             assert page.locator('.cassetteReel').evaluate_all("els=>els.every(el=>getComputedStyle(el).animationPlayState==='running')")
+            playing_light=float(page.locator('.cassetteDeck').evaluate("el=>getComputedStyle(el,'::after').opacity"))
+            if width>680: assert abs(playing_light-.18)<.01,playing_light
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-playing.png'))
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-playing.png'))
             if label=='desktop': page.locator('.deckTransport').screenshot(path=str(ARTIFACTS/'120927-transport-playing.png'))
