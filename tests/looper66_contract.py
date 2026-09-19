@@ -150,3 +150,9 @@ assert 'min-height: 44px !important' in BASE
 assert 'border-radius: 50%' in BASE
 assert 'inset 3px 0 #c77f20' in BASE
 assert 'rgba(255,160,24,.09)' not in BASE
+
+
+# Clean-tape keeps the import title live on desktop instead of relying on baked copy.
+assert '#looper .deckImportTitle{' in CSS
+assert 'display:grid;place-items:center;left:80.25%;top:14.2%' in CSS
+assert '#looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow){' in CSS

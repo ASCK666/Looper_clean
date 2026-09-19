@@ -47,7 +47,7 @@
   cursor:pointer;pointer-events:auto;
 }
 #looper .deckReadoutTrack::before{content:"TRACK:";display:block;margin-bottom:.32em;color:var(--deck-amber-dim);font-size:.68em;font-weight:600;letter-spacing:.08em}
-#looper .deckReadoutState,#looper .deckReadoutTime,#looper .deckReadoutRateRow{
+#looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow){
   position:absolute;left:8%;width:84%;display:flex;align-items:center;color:var(--deck-amber-dim);
   font:500 clamp(9px,1.08vw,16px)/1 var(--font-mono,monospace);
 }
@@ -190,7 +190,14 @@
 
 /* IMPORT — hit areas stay live; desktop lets the exact mockup button material show through. */
 #looper .looperImportDock{position:absolute;z-index:28;inset:0;display:block;border:0!important;background:transparent!important;box-shadow:none!important;pointer-events:none}
-#looper .deckImportTitle,#looper .deckDropHint,#looper .deckImportMeta{display:none!important}
+#looper .deckImportTitle{
+  display:grid;place-items:center;left:80.25%;top:14.2%;width:14.45%;height:4.25%;
+  color:#dedbd2;background:var(--deck-texture) center/128px repeat,#242728;
+  box-shadow:inset 0 1px rgba(255,255,255,.035),0 0 0 1px rgba(0,0,0,.22);
+  font:750 clamp(9px,.98vw,14px)/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.075em;
+  pointer-events:none;
+}
+#looper .deckDropHint,#looper .deckImportMeta{display:none!important}
 #looper .deckLoadKey{
   pointer-events:auto;width:15.26%;height:4.60%;min-width:44px;min-height:44px;margin:0;padding:0 1%;border:2px solid #57544e;border-radius:.35cqw;
   background:linear-gradient(#343638,#1d2021);color:#e8dcc5;box-shadow:inset 0 1px #565a5b,inset 0 -2px #0b0c0d,0 2px 3px #000;font-family:var(--font-condensed,var(--font-ui,sans-serif));cursor:pointer;

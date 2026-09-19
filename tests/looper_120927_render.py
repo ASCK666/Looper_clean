@@ -71,6 +71,9 @@ with contextlib.ExitStack() as stack:
             assert tabs_box and tabs_box['width'] <= min(width,722)
             assert len(tab_boxes)==2 and all(box['h']>=44 for box in tab_boxes),tab_boxes
             tabs.screenshot(path=str(ARTIFACTS/f'mode-tabs-{label}.png'))
+            import_title=page.locator('.deckImportTitle')
+            assert import_title.is_visible()
+            assert import_title.inner_text()=='BEAT IMPORT'
 
             assert not errors,errors
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-empty.png'))
