@@ -78,6 +78,16 @@ assert '.cassetteDeck.playing #playBeat' in CSS
 assert 'rgba(var(--light-r),var(--light-g),var(--light-b)' in CSS
 assert 'mix-blend-mode:screen' in CSS
 
+# Desktop interaction layers reveal the exact baked mockup controls and cannot
+# be recolored by Firefox dark mode or native form-control appearance.
+desktop_controls=re.search(r'@media \(min-width:681px\)\s*\{(.*?)\n\}',CSS,re.S)
+assert desktop_controls,desktop_controls
+desktop_css=desktop_controls.group(1)
+for token in ('background:transparent!important','appearance:none','-moz-appearance:none','forced-color-adjust:none','color-scheme:light'):
+    assert token in desktop_css,token
+assert '.deckVolumeKnob{display:none}' in desktop_css
+assert '.deckLoadKey strong{visibility:hidden}' in desktop_css
+
 # Crates are real data filters, not invented genres.
 for label in ('ALL BEATS','LIBRARY','IMPORTS','RECENT'):
     assert label in VIEW
