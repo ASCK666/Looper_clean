@@ -37,14 +37,14 @@ assert max(reel.getpixel((32,32))[:3]) < 50
 
 overlay=Image.open(assets/'cassette-reference-overlay.webp').convert('RGBA')
 assert overlay.size == (542,347)
-# The overlay is now only the molded bezel plus a genuinely transparent glass pane.
+# The overlay is only the molded bezel plus a visibly reflective but still transparent glass pane.
 # Reel/cassette content must come from the live mechanism underneath, never baked artwork.
 for cx in (195,374):
     samples=[overlay.getpixel((cx,183)),overlay.getpixel((cx,160)),overlay.getpixel((cx,206))]
-    assert all(pixel[3]<=16 for pixel in samples),samples
+    assert all(24<=pixel[3]<=64 for pixel in samples),samples
 # Former cassette-label positions are also glass, not opaque replacement artwork.
 glass_samples=[overlay.getpixel((x,y)) for x,y in ((190,96),(290,106),(392,118),(271,290))]
-assert all(pixel[3]<=16 for pixel in glass_samples),glass_samples
+assert all(24<=pixel[3]<=64 for pixel in glass_samples),glass_samples
 # The physical plastic frame remains opaque.
 assert overlay.getpixel((20,20))[3]>=240
 
