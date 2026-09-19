@@ -94,15 +94,17 @@ with contextlib.ExitStack() as stack:
                   w:c.width/b.width,h:c.height/b.height,z:+s.zIndex,visible:s.visibility,filter:s.filter};
               });
             }''')
-            assert [m['z'] for m in metrics]==[1,1,2],metrics
+            assert [m['z'] for m in metrics]==[3,1,1,2],metrics
+            assert metrics[0]['name']=='cassetteCabinGlow',metrics
+            assert metrics[0]['filter']!='none',metrics
             assert all(m['visible']=='visible' for m in metrics),metrics
-            assert all(m['filter']=='none' for m in metrics),metrics
+            assert all(m['filter']=='none' for m in metrics[1:]),metrics
             for m in metrics:
                 assert m['x']>=-.001 and m['y']>=-.001 and m['x']+m['w']<=1.001 and m['y']+m['h']<=1.001,m
 
             # Centres match the reference-derived cassette body apertures.
             reel_center_y=.3206+(.1471*(435/262)/2)
-            for m,(cx,cy) in zip(metrics[0:2],((.2046+.1471/2,reel_center_y),(.6253+.1471/2,reel_center_y))):
+            for m,(cx,cy) in zip(metrics[1:3],((.2046+.1471/2,reel_center_y),(.6253+.1471/2,reel_center_y))):
                 assert abs(m['x']+m['w']/2-cx)<.002,(label,m,cx)
                 assert abs(m['y']+m['h']/2-cy)<.002,(label,m,cy)
                 assert abs(m['w']*box['width']-m['h']*box['height'])<.2,m
