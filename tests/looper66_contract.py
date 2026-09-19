@@ -134,3 +134,7 @@ assert 'BEAT IMPORT' in HTML and 'IMPORT SAMPLES' not in HTML
 assert 'NO BEAT LOADED' in HTML+LOOPER+VIEW
 for french in ('Aucun beat chargé','Aucun beat disponible','CHARGEMENT…','PRÊT • APPUYER SUR PLAY'):
     assert french not in HTML+LOOPER+VIEW,french
+
+# Clean-tape selected beat uses hardware-dark selection instead of a full amber fill.
+assert '.beatListRow[aria-current="true"]{background:#191d1e' in CSS
+assert 'background:linear-gradient(90deg,#f0a126,#d9860c)' not in CSS

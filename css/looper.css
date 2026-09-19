@@ -243,7 +243,7 @@
   background:transparent;color:#bfc2be;font:500 clamp(8px,.82vw,12px)/1 var(--font-mono,monospace);text-align:left;cursor:pointer;
 }
 #looper .beatListRow:hover,#looper .beatListRow:focus-visible{background:#1d2021;color:#f1f1ec;outline:none}
-#looper .beatListRow[aria-current="true"]{background:linear-gradient(90deg,#f0a126,#d9860c);color:#171717;box-shadow:inset 0 1px #ffc15f,inset 0 -1px #92520a,0 0 10px rgba(255,153,18,.12)}
+#looper .beatListRow[aria-current="true"]{background:#191d1e;color:#f0d6aa;box-shadow:inset 3px 0 #ff9e17,inset 0 1px #303536,inset 0 -1px #090b0c}
 #looper .beatListName{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #looper .beatListLength{text-align:right;font-variant-numeric:tabular-nums}
 #looper .beatListDelete{display:inline-grid;place-items:center;width:26px;height:26px;margin-left:8px;border-radius:50%;color:inherit;opacity:.62;vertical-align:middle}
