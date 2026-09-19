@@ -47,7 +47,7 @@ with contextlib.ExitStack() as stack:
             }""")
             if width>680:
                 assert glass['z']==19 and glass['display']!='none' and glass['opacity']==1,glass
-                assert glass['src'].endswith('cassette-reference-overlay.webp'),glass
+                assert glass['src'].split('?')[0].endswith('cassette-reference-overlay.webp'),glass
             else:
                 assert glass['display']=='none',glass
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight','.cassetteBeatName'):
