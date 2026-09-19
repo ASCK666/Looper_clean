@@ -17,6 +17,7 @@ EXPECTED_VISUALS={
     'looper-ui/120927/utility-panel.webp',
     'looper-ui/120927/pitch-panel.webp',
     'looper-ui/120927/reader-mechanism.webp',
+    'looper-ui/120927/cassette-door.svg',
     'looper-ui/120927/cassette-cavity.svg',
     'looper-ui/120927/cassette.webp',
     'looper-ui/120927/reel-animation.webp',

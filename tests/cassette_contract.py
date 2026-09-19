@@ -11,6 +11,8 @@ assets=ROOT/'assets/looper-ui/120927'
 assert 'reader-mechanism.webp' in html
 assert html.count('reel-animation.webp') == 2
 assert 'cassette.webp' in html
+assert 'cassette-door.svg' in html
+assert html.count('class="cassetteDoor"') == 1
 assert 'id="cassetteBeatName"' in html
 assert 'cassetteReferenceOverlay' not in html+css
 assert 'cassette-reference-overlay' not in html+css
@@ -44,11 +46,10 @@ assert '-webkit-mask:' in before.group(1) and 'mask:' in before.group(1)
 for token in ('27.82%','69.89%','44.27%'):
     assert token in before.group(1),token
 assert '.cassetteMechanism::after{' not in css
-glass=re.search(r'\.cassetteDeck::before\s*\{([^}]*)\}',css,re.S)
-assert glass,glass
-assert 'z-index:19' in glass.group(1)
-assert 'linear-gradient' in glass.group(1)
-assert 'clip-path:' in glass.group(1)
+door=re.search(r'\.cassetteDoor\s*\{([^}]*)\}',css,re.S)
+assert door,door
+assert 'z-index:19' in door.group(1)
+assert '.cassetteDeck::before{' not in css
 assert 'filter:brightness(.36)' not in css
 assert 'Clean foreground replacement for the baked brown window' not in css
 

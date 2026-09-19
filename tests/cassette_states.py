@@ -40,13 +40,14 @@ with contextlib.ExitStack() as stack:
             assert abs(box['width']/box['height']-435/262)<.001,(label,box)
             assert page.evaluate('document.body.scrollWidth <= innerWidth+2')
             assert page.locator('.cassetteReferenceOverlay').count()==0
-            glass=page.locator('.cassetteDeck').evaluate("""el=>{
-              const s=getComputedStyle(el,'::before');
-              return {content:s.content,z:+s.zIndex,background:s.backgroundImage,clip:s.clipPath,display:s.display};
+            assert page.locator('.cassetteDoor').count()==1
+            glass=page.locator('.cassetteDoor').evaluate("""el=>{
+              const s=getComputedStyle(el);
+              return {z:+s.zIndex,display:s.display,opacity:Number(s.opacity),src:el.getAttribute('src')};
             }""")
             if width>680:
-                assert glass['content']!='none' and glass['z']==19 and glass['display']!='none',glass
-                assert 'gradient' in glass['background'] and glass['clip']!='none',glass
+                assert glass['z']==19 and glass['display']!='none' and glass['opacity']==1,glass
+                assert glass['src'].endswith('cassette-door.svg'),glass
             else:
                 assert glass['display']=='none',glass
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight','.cassetteBeatName'):
