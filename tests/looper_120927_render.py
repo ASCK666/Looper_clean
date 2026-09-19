@@ -98,6 +98,7 @@ with contextlib.ExitStack() as stack:
             }""")
             page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('loaded')")
             assert page.locator('#cassetteBeatName').inner_text()=='MIDNIGHT SESSION'
+            page.wait_for_timeout(200)
             loaded_glow=float(glow.evaluate("el=>getComputedStyle(el).opacity"))
             assert abs(loaded_glow-.16)<.01,loaded_glow
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-loaded.png'))
