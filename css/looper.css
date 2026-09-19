@@ -142,8 +142,8 @@
   font:700 clamp(13px,1.72vw,25px)/1 var(--font-condensed,"Arial Narrow",Arial,sans-serif);letter-spacing:.01em;text-align:center;text-overflow:ellipsis;white-space:nowrap;
   text-shadow:0 1px rgba(255,255,255,.25),0 -1px rgba(0,0,0,.25);
 }
-#looper .cassetteDoor{
-  position:absolute;z-index:19;top:11.79%;left:39.99%;width:37.98%;height:auto;
+#looper .cassetteReferenceOverlay{
+  position:absolute;z-index:19;top:11.51%;left:38.674%;width:38.26%;height:auto;
   display:block;pointer-events:none;user-select:none;
 }
 
@@ -242,7 +242,7 @@
   #looper .looper66Workspace{aspect-ratio:auto;min-height:1260px;background:#633219}
   #looper .looper66Workspace::before{content:"";position:absolute;z-index:0;top:22px;left:10px;right:10px;bottom:20px;border:3px solid #111314;border-radius:12px;background:#303233;box-shadow:inset 0 0 0 2px #55595a,inset 0 0 0 5px #1a1c1d,0 8px 14px rgba(0,0,0,.35);pointer-events:none}
   #looper :is(.deckReadout,.deckUtilityPanel,.deckPitchModule,.cassetteMechanism,.deckTransport,.looperImportDock,.cratePanel,.beatListPanel){z-index:4}
-  #looper .cassetteDoor{display:none}
+  #looper .cassetteReferenceOverlay{display:none}
   #looper .deckReadout{top:52px;left:28px;width:calc(100% - 56px);height:190px;border:2px solid #575b5c!important;border-radius:7px;background:#030302!important;box-shadow:inset 0 0 18px #000!important}
   #looper .deckReadoutTrack{font-size:14px!important}
   #looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow){font-size:11px}

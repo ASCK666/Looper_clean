@@ -39,15 +39,15 @@ with contextlib.ExitStack() as stack:
             box=mechanism.bounding_box()
             assert abs(box['width']/box['height']-435/262)<.001,(label,box)
             assert page.evaluate('document.body.scrollWidth <= innerWidth+2')
-            assert page.locator('.cassetteReferenceOverlay').count()==0
-            assert page.locator('.cassetteDoor').count()==1
-            glass=page.locator('.cassetteDoor').evaluate("""el=>{
+            assert page.locator('.cassetteDoor').count()==0
+            assert page.locator('.cassetteReferenceOverlay').count()==1
+            glass=page.locator('.cassetteReferenceOverlay').evaluate("""el=>{
               const s=getComputedStyle(el);
               return {z:+s.zIndex,display:s.display,opacity:Number(s.opacity),src:el.getAttribute('src')};
             }""")
             if width>680:
                 assert glass['z']==19 and glass['display']!='none' and glass['opacity']==1,glass
-                assert glass['src'].endswith('cassette-door.svg'),glass
+                assert glass['src'].endswith('cassette-reference-overlay.webp'),glass
             else:
                 assert glass['display']=='none',glass
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight','.cassetteBeatName'):

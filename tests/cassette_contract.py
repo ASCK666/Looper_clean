@@ -11,11 +11,9 @@ assets=ROOT/'assets/looper-ui/120927'
 assert 'reader-mechanism.webp' in html
 assert html.count('reel-animation.webp') == 2
 assert 'cassette.webp' in html
-assert 'cassette-door.svg' in html
-assert html.count('class="cassetteDoor"') == 1
+assert 'cassette-reference-overlay.webp' in html
+assert html.count('class="cassetteReferenceOverlay"') == 1
 assert 'id="cassetteBeatName"' in html
-assert 'cassetteReferenceOverlay' not in html+css
-assert 'cassette-reference-overlay' not in html+css
 
 reader=Image.open(assets/'reader-mechanism.webp').convert('RGBA')
 cassette=Image.open(assets/'cassette.webp').convert('RGBA')
@@ -37,6 +35,15 @@ assert reel.getpixel((32,32))[3] == 255
 assert sum(reel.getpixel((32,8))[:3])/3 > 200
 assert max(reel.getpixel((32,32))[:3]) < 50
 
+overlay=Image.open(assets/'cassette-reference-overlay.webp').convert('RGBA')
+assert overlay.size == (542,347)
+# The overlay keeps continuous smoked-glass texture over both reel positions;
+# it contains neither opaque frozen hubs nor fully transparent holes.
+for cx in (195,385):
+    samples=[overlay.getpixel((cx,189)),overlay.getpixel((cx,166)),overlay.getpixel((cx,212))]
+    assert all(0<pixel[3]<96 for pixel in samples),samples
+    assert len({pixel[:3] for pixel in samples})>1,samples
+
 assert 'aspect-ratio:435/262' in css
 assert 'cassette-cavity.svg' in css
 before=re.search(r'\.cassetteMechanism::before\s*\{([^}]*)\}',css,re.S)
@@ -46,9 +53,9 @@ assert '-webkit-mask:' in before.group(1) and 'mask:' in before.group(1)
 for token in ('27.82%','69.89%','44.27%'):
     assert token in before.group(1),token
 assert '.cassetteMechanism::after{' not in css
-door=re.search(r'\.cassetteDoor\s*\{([^}]*)\}',css,re.S)
-assert door,door
-assert 'z-index:19' in door.group(1)
+overlay_css=re.search(r'\.cassetteReferenceOverlay\s*\{([^}]*)\}',css,re.S)
+assert overlay_css,overlay_css
+assert 'z-index:19' in overlay_css.group(1)
 assert '.cassetteDeck::before{' not in css
 assert 'filter:brightness(.36)' not in css
 assert 'Clean foreground replacement for the baked brown window' not in css
