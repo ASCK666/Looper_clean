@@ -39,6 +39,16 @@ with contextlib.ExitStack() as stack:
             box=mechanism.bounding_box()
             assert abs(box['width']/box['height']-435/262)<.001,(label,box)
             assert page.evaluate('document.body.scrollWidth <= innerWidth+2')
+            assert page.locator('.cassetteReferenceOverlay').count()==0
+            glass=page.locator('.cassetteDeck').evaluate("""el=>{
+              const s=getComputedStyle(el,'::before');
+              return {content:s.content,z:+s.zIndex,background:s.backgroundImage,clip:s.clipPath,display:s.display};
+            }""")
+            if width>680:
+                assert glass['content']!='none' and glass['z']==19 and glass['display']!='none',glass
+                assert 'gradient' in glass['background'] and glass['clip']!='none',glass
+            else:
+                assert glass['display']=='none',glass
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight','.cassetteBeatName'):
                 opacity=float(page.locator(selector).evaluate('el=>getComputedStyle(el).opacity'))
                 assert opacity==1,('empty',label,selector,opacity)

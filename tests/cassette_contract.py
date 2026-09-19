@@ -12,6 +12,8 @@ assert 'reader-mechanism.webp' in html
 assert html.count('reel-animation.webp') == 2
 assert 'cassette.webp' in html
 assert 'id="cassetteBeatName"' in html
+assert 'cassetteReferenceOverlay' not in html+css
+assert 'cassette-reference-overlay' not in html+css
 
 reader=Image.open(assets/'reader-mechanism.webp').convert('RGBA')
 cassette=Image.open(assets/'cassette.webp').convert('RGBA')
@@ -42,6 +44,11 @@ assert '-webkit-mask:' in before.group(1) and 'mask:' in before.group(1)
 for token in ('27.82%','69.89%','44.27%'):
     assert token in before.group(1),token
 assert '.cassetteMechanism::after{' not in css
+glass=re.search(r'\.cassetteDeck::before\s*\{([^}]*)\}',css,re.S)
+assert glass,glass
+assert 'z-index:19' in glass.group(1)
+assert 'linear-gradient' in glass.group(1)
+assert 'clip-path:' in glass.group(1)
 assert 'filter:brightness(.36)' not in css
 assert 'Clean foreground replacement for the baked brown window' not in css
 
