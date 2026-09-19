@@ -58,7 +58,7 @@ with contextlib.ExitStack() as stack:
               const s=getComputedStyle(el);
               return {z:+s.zIndex,color:s.color,textShadow:s.textShadow};
             }""")
-            assert title_style=={'z':18,'color':'rgb(17, 17, 17)','textShadow':'none'},title_style
+            assert title_style=={'z':20,'color':'rgb(17, 17, 17)','textShadow':'none'},title_style
 
             surface=mechanism.evaluate("""el=>{
               const before=getComputedStyle(el,'::before');

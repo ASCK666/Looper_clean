@@ -41,12 +41,12 @@ assert overlay.size == (542,347)
 # it contains neither opaque frozen hubs nor fully transparent holes.
 for cx in (195,374):
     samples=[overlay.getpixel((cx,183)),overlay.getpixel((cx,160)),overlay.getpixel((cx,206))]
-    assert all(0<pixel[3]<96 for pixel in samples),samples
+    assert all(96<=pixel[3]<=128 for pixel in samples),samples
     assert len({pixel[:3] for pixel in samples})>1,samples
-# The title slot is smoked glass, not the former fully transparent rectangle.
-title_glass=[overlay.getpixel((x,y)) for x,y in ((190,96),(290,106),(392,118))]
-assert all(128<=pixel[3]<=192 for pixel in title_glass),title_glass
-assert len({pixel[:3] for pixel in title_glass})>1,title_glass
+# The former title rectangle has been removed and rebuilt as continuous label texture.
+title_label=[overlay.getpixel((x,y)) for x,y in ((190,96),(290,106),(392,118))]
+assert all(pixel[3]==255 for pixel in title_label),title_label
+assert len({pixel[:3] for pixel in title_label})>1,title_label
 
 assert 'aspect-ratio:435/262' in css
 assert 'cassette-cavity.svg' in css
@@ -62,9 +62,10 @@ assert overlay_css,overlay_css
 assert 'z-index:19' in overlay_css.group(1)
 title_css=re.search(r'\.cassetteBeatName\s*\{([^}]*)\}',css,re.S)
 assert title_css,title_css
-assert 'z-index:18' in title_css.group(1)
+assert 'z-index:20' in title_css.group(1)
 assert 'color:#111' in title_css.group(1)
 assert 'text-shadow:none' in title_css.group(1)
+assert '.cassetteBeatName::after{' in css
 assert '.cassetteDeck::before{' not in css
 assert 'filter:brightness(.36)' not in css
 assert 'Clean foreground replacement for the baked brown window' not in css

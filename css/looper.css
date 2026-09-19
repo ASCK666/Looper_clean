@@ -136,11 +136,15 @@
 #looper .cassetteDeck.playing .cassetteReel { animation-play-state:running; }
 @keyframes looperReelSpin{to{transform:rotate(360deg)}}
 #looper .cassetteBeatName{
-  position:absolute;z-index:18;top:19.35%;left:51.20%;width:15.75%;height:4.0%;
+  position:absolute;z-index:20;top:19.35%;left:51.20%;width:15.75%;height:4.0%;
   display:flex;align-items:center;justify-content:center;overflow:hidden;pointer-events:none;user-select:none;
   color:#111;background:transparent;border:0;
   font:700 clamp(13px,1.72vw,25px)/1 var(--font-condensed,"Arial Narrow",Arial,sans-serif);letter-spacing:.01em;text-align:center;text-overflow:ellipsis;white-space:nowrap;
   text-shadow:none;
+}
+#looper .cassetteBeatName::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(108deg,rgba(255,255,255,.12),transparent 38%,rgba(255,255,255,.04) 72%,transparent);
 }
 #looper .cassetteReferenceOverlay{
   position:absolute;z-index:19;top:11.51%;left:38.674%;width:38.26%;height:auto;
