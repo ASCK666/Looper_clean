@@ -74,6 +74,12 @@ with contextlib.ExitStack() as stack:
             import_title=page.locator('.deckImportTitle')
             assert import_title.is_visible()
             assert import_title.inner_text()=='BEAT IMPORT'
+            import_box=import_title.bounding_box()
+            workspace_box=workspace.bounding_box()
+            assert import_box and workspace_box
+            if width>680:
+                assert import_box['x'] >= workspace_box['x'] + workspace_box['width']*.75,import_box
+                assert import_box['y'] < workspace_box['y'] + workspace_box['height']*.25,import_box
 
             assert not errors,errors
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-empty.png'))

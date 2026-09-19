@@ -191,7 +191,7 @@
 /* IMPORT — hit areas stay live; desktop lets the exact mockup button material show through. */
 #looper .looperImportDock{position:absolute;z-index:28;inset:0;display:block;border:0!important;background:transparent!important;box-shadow:none!important;pointer-events:none}
 #looper .deckImportTitle{
-  display:grid;place-items:center;left:80.25%;top:14.2%;width:14.45%;height:4.25%;
+  position:absolute;display:grid;place-items:center;left:80.25%;top:14.2%;width:14.45%;height:4.25%;
   color:#dedbd2;background:var(--deck-texture) center/128px repeat,#242728;
   box-shadow:inset 0 1px rgba(255,255,255,.035),0 0 0 1px rgba(0,0,0,.22);
   font:750 clamp(9px,.98vw,14px)/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.075em;

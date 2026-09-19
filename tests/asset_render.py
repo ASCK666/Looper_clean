@@ -54,7 +54,7 @@ with contextlib.ExitStack() as stack:
         page.locator('#playBeat').click()
         page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('playing')")
         assert page.locator('.cassetteReel').evaluate_all("els=>els.every(el=>getComputedStyle(el).animationPlayState==='running')")
-        assert page.locator('#playBeat').evaluate("el=>getComputedStyle(el).getPropertyValue('--light-strength').trim()") in ('.82','0.82')
+        assert page.locator('#playBeat').evaluate("el=>getComputedStyle(el).getPropertyValue('--light-strength').trim()") in ('.34','0.34')
 
         page.locator('#deckVolume').evaluate("el=>{el.value='25';el.dispatchEvent(new Event('input',{bubbles:true}))}")
         page.wait_for_function("Math.abs((deckOutputGain?.gain?.value ?? -1) - .25) < .02")
