@@ -65,6 +65,13 @@ with contextlib.ExitStack() as stack:
             assert page.locator('#crateFilters').count()==1
             assert page.locator('#beatList').count()==1
             assert page.locator('#autoLooperToggle .deckRateVisualSegments i').count()==5
+            tabs=page.locator('.mainModeTabs')
+            tabs_box=tabs.bounding_box()
+            tab_boxes=page.locator('.mainModeTabs .tab').evaluate_all("els=>els.map(el=>{const r=el.getBoundingClientRect();return {w:r.width,h:r.height}})")
+            assert tabs_box and tabs_box['width'] <= min(width,722)
+            assert len(tab_boxes)==2 and all(box['h']>=44 for box in tab_boxes),tab_boxes
+            tabs.screenshot(path=str(ARTIFACTS/f'mode-tabs-{label}.png'))
+
             assert not errors,errors
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-empty.png'))
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-empty.png'))
