@@ -88,7 +88,7 @@ with contextlib.ExitStack() as stack:
                   w:c.width/b.width,h:c.height/b.height,z:+s.zIndex,visible:s.visibility,filter:s.filter};
               });
             }''')
-            assert [m['z'] for m in metrics]==[1,1,2,3],metrics
+            assert [m['z'] for m in metrics]==[1,1,2],metrics
             assert all(m['visible']=='visible' for m in metrics),metrics
             assert all(m['filter']=='none' for m in metrics),metrics
             for m in metrics:
@@ -100,7 +100,11 @@ with contextlib.ExitStack() as stack:
                 assert abs(m['x']+m['w']/2-cx)<.002,(label,m,cx)
                 assert abs(m['y']+m['h']/2-cy)<.002,(label,m,cy)
                 assert abs(m['w']*box['width']-m['h']*box['height'])<.2,m
-            assert metrics[3]['y']+metrics[3]['h']<metrics[0]['y']
+            assert page.locator('#cassetteBeatName').evaluate('''title=>{
+              const t=title.getBoundingClientRect();
+              const reel=document.querySelector('.cassetteReelLeft').getBoundingClientRect();
+              return t.bottom<reel.top;
+            }''')
 
             if label in ('desktop','mobile'): capture(page,f'{label}-loaded')
 
