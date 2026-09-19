@@ -54,6 +54,11 @@ with contextlib.ExitStack() as stack:
                 opacity=float(page.locator(selector).evaluate('el=>getComputedStyle(el).opacity'))
                 assert opacity==1,('empty',label,selector,opacity)
             assert page.locator('#cassetteBeatName').inner_text()=='NO BEAT LOADED'
+            title_style=page.locator('#cassetteBeatName').evaluate("""el=>{
+              const s=getComputedStyle(el);
+              return {z:+s.zIndex,color:s.color,textShadow:s.textShadow};
+            }""")
+            assert title_style=={'z':18,'color':'rgb(17, 17, 17)','textShadow':'none'},title_style
 
             surface=mechanism.evaluate("""el=>{
               const before=getComputedStyle(el,'::before');
