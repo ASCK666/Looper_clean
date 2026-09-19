@@ -142,3 +142,11 @@ assert 'background:linear-gradient(90deg,#f0a126,#d9860c)' not in CSS
 # Clean-tape readout progress renders as discrete hardware segments.
 assert 'background:repeating-linear-gradient(90deg,#24190d 0 8px' in CSS
 assert 'background:repeating-linear-gradient(90deg,#ffb13b 0 8px' in CSS
+
+# Clean-tape mode navigation reads as a compact hardware selector.
+BASE=(ROOT/'css/base.css').read_text(encoding='utf-8')
+assert 'width: min(100%,720px) !important' in BASE
+assert 'min-height: 44px !important' in BASE
+assert 'border-radius: 50%' in BASE
+assert 'inset 3px 0 #c77f20' in BASE
+assert 'rgba(255,160,24,.09)' not in BASE
