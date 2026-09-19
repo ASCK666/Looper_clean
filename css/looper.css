@@ -203,7 +203,12 @@
     appearance:none;-moz-appearance:none;forced-color-adjust:none;color-scheme:light;
     border:0!important;background:transparent!important;box-shadow:none!important;color:transparent!important;
   }
-  #looper .deckLoadKey strong{visibility:hidden}
+  #looper .deckLoadKey strong{
+    position:absolute;inset:3px 4px;display:grid;place-items:center;visibility:visible;
+    border-radius:.2cqw;background:linear-gradient(#ede5d9,#d8cdbc);color:#181818!important;
+    font:500 clamp(9px,.86vw,13px)/1 var(--font-mono,monospace);letter-spacing:.01em;
+    forced-color-adjust:none;color-scheme:light;
+  }
 }
 
 /* CRATES / BEATS — opaque live panels mask every baked demo row. */

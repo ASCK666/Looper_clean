@@ -86,7 +86,9 @@ desktop_css=desktop_controls.group(1)
 for token in ('background:transparent!important','appearance:none','-moz-appearance:none','forced-color-adjust:none','color-scheme:light'):
     assert token in desktop_css,token
 assert '.deckVolumeKnob{display:none}' in desktop_css
-assert '.deckLoadKey strong{visibility:hidden}' in desktop_css
+assert '.deckLoadKey strong{' in desktop_css
+assert 'font:500 clamp(9px,.86vw,13px)' in desktop_css
+assert 'background:linear-gradient(#ede5d9,#d8cdbc)' in desktop_css
 
 # Crates are real data filters, not invented genres.
 for label in ('ALL BEATS','LIBRARY','IMPORTS','RECENT'):
