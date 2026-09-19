@@ -80,6 +80,9 @@ with contextlib.ExitStack() as stack:
             if width>680:
                 assert import_box['x'] >= workspace_box['x'] + workspace_box['width']*.75,import_box
                 assert import_box['y'] < workspace_box['y'] + workspace_box['height']*.25,import_box
+            else:
+                assert import_box['width'] > 60,import_box
+                assert import_box['height'] < 20,import_box
 
             assert not errors,errors
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-empty.png'))
