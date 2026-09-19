@@ -161,6 +161,10 @@
 #looper .cassetteReferenceOverlay{
   position:absolute;z-index:19;top:11.51%;left:38.674%;width:38.26%;height:auto;
   display:block;pointer-events:none;user-select:none;
+  background:
+    radial-gradient(ellipse 46% 24% at 50% 76%,rgb(255 176 82 / calc(var(--cabin-glow-opacity,.055) * .78)),transparent 76%),
+    radial-gradient(ellipse 16% 45% at 13% 54%,rgb(255 154 62 / calc(var(--cabin-glow-opacity,.055) * .42)),transparent 72%),
+    radial-gradient(ellipse 16% 45% at 87% 54%,rgb(255 154 62 / calc(var(--cabin-glow-opacity,.055) * .42)),transparent 72%);
 }
 
 /* Shared physical light: key illumination plus a small spill on the chassis. */

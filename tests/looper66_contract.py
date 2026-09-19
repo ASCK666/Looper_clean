@@ -163,3 +163,8 @@ assert '<span class="cassetteCabinGlow"></span>' in HTML
 assert '#looper .cassetteCabinGlow{' in CSS
 assert '--cabin-glow-opacity' in CSS+LOOPER
 assert 'playing ? ".24" : ".16"' in LOOPER
+
+
+# Desktop reference overlay carries the same state-driven cabin light through its transparent areas.
+assert '.cassetteReferenceOverlay{' in CSS
+assert 'calc(var(--cabin-glow-opacity,.055) * .78)' in CSS

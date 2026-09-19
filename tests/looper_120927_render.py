@@ -46,6 +46,8 @@ with contextlib.ExitStack() as stack:
                 assert workspace_bg.count('gradient')>=3,workspace_bg
                 assert cable_state['display']!='none' and cable_state['visibility']!='hidden' and cable_state['opacity']>.95,cable_state
                 assert abs(cable_state['rw']/cable_state['rh']-1448/1086)<.001,cable_state
+                overlay_bg=page.locator('.cassetteReferenceOverlay').evaluate("el=>getComputedStyle(el).backgroundImage")
+                assert overlay_bg.count('radial-gradient')==3,overlay_bg
 
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight'):
                 asset=page.locator(selector)
