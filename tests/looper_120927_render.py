@@ -60,6 +60,10 @@ with contextlib.ExitStack() as stack:
             assert title_box['x']+title_box['width'] <= cassette_box['x']+cassette_box['width']
             assert cassette_box['y'] <= title_box['y']
             assert title_box['y']+title_box['height'] <= cassette_box['y']+cassette_box['height']*.35
+            glow=page.locator('.cassetteCabinGlow')
+            assert glow.count()==1
+            empty_glow=float(glow.evaluate("el=>getComputedStyle(el).opacity"))
+            assert abs(empty_glow-.055)<.005,empty_glow
 
             assert page.locator('#deckVolume').count()==1
             assert page.locator('#crateFilters').count()==1
@@ -94,6 +98,8 @@ with contextlib.ExitStack() as stack:
             }""")
             page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('loaded')")
             assert page.locator('#cassetteBeatName').inner_text()=='MIDNIGHT SESSION'
+            loaded_glow=float(glow.evaluate("el=>getComputedStyle(el).opacity"))
+            assert abs(loaded_glow-.16)<.01,loaded_glow
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-loaded.png'))
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-loaded.png'))
 
@@ -101,6 +107,8 @@ with contextlib.ExitStack() as stack:
             page.wait_for_function("document.querySelector('.cassetteDeck').classList.contains('playing')")
             page.wait_for_timeout(250)
             assert page.locator('.cassetteReel').evaluate_all("els=>els.every(el=>getComputedStyle(el).animationPlayState==='running')")
+            playing_glow=float(glow.evaluate("el=>getComputedStyle(el).opacity"))
+            assert abs(playing_glow-.24)<.01,playing_glow
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-playing.png'))
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-playing.png'))
             if label=='desktop': page.locator('.deckTransport').screenshot(path=str(ARTIFACTS/'120927-transport-playing.png'))

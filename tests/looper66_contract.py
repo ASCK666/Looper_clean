@@ -156,3 +156,10 @@ assert 'rgba(255,160,24,.09)' not in BASE
 assert '#looper .deckImportTitle{' in CSS
 assert 'display:grid;place-items:center;left:80.25%;top:14.2%' in CSS
 assert '#looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow){' in CSS
+
+
+# Clean-tape cabin backlight is a real state-driven layer behind cassette artwork.
+assert '<span class="cassetteCabinGlow"></span>' in HTML
+assert '#looper .cassetteCabinGlow{' in CSS
+assert '--cabin-glow-opacity' in CSS+LOOPER
+assert 'playing ? ".24" : ".16"' in LOOPER
