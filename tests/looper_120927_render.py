@@ -32,13 +32,9 @@ with contextlib.ExitStack() as stack:
             page.wait_for_function('window.__SP?.ui120927CssReady === true')
             page.wait_for_function("[...document.querySelectorAll('.cassetteMechanism img')].every(i=>i.complete && i.naturalWidth>0)")
 
-            desk=page.locator('.looper66DeskSurface')
-            assert desk.count()==1
-            desk_state=desk.evaluate("""el => {
-              const r=el.getBoundingClientRect(),s=getComputedStyle(el);
-              return {complete:el.complete,w:el.naturalWidth,h:el.naturalHeight,display:s.display,visibility:s.visibility,opacity:Number(s.opacity),rw:r.width,rh:r.height};
-            }""")
-            assert desk_state['complete'] and desk_state['w']==1448 and desk_state['h']==1086,desk_state
+            assert page.locator('.looper66DeskSurface').count()==0
+            workspace=page.locator('.looper66Workspace')
+            workspace_bg=workspace.evaluate("el=>getComputedStyle(el).backgroundImage")
             cables=page.locator('.looper66RearCables')
             assert cables.count()==1
             cable_state=cables.evaluate("""el => {
@@ -47,8 +43,7 @@ with contextlib.ExitStack() as stack:
             }""")
             assert cable_state['complete'] and cable_state['w']==1448 and cable_state['h']==1086,cable_state
             if width>680:
-                assert desk_state['display']!='none' and desk_state['visibility']!='hidden' and desk_state['opacity']>.95,desk_state
-                assert abs(desk_state['rw']/desk_state['rh']-1448/1086)<.001,desk_state
+                assert workspace_bg.count('gradient')>=3,workspace_bg
                 assert cable_state['display']!='none' and cable_state['visibility']!='hidden' and cable_state['opacity']>.95,cable_state
                 assert abs(cable_state['rw']/cable_state['rh']-1448/1086)<.001,cable_state
 

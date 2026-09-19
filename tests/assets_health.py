@@ -10,7 +10,6 @@ EXPECTED_VISUALS={
     'deck-black-ui-texture.png',
     'looper-ui/chopper-looper-button-off-alpha-6920266c.webp',
     'looper-ui/120927/mockup-reference.png',
-    'looper-ui/120927/desk-surface.webp',
     'looper-ui/120927/rear-cables.webp',
     'looper-ui/120927/deck-shell.webp',
     'looper-ui/120927/readout-panel.webp',

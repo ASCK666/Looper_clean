@@ -43,7 +43,6 @@ for rel in [
     "js/events.js",
     "assets/deck-black-ui-texture.png",
     "assets/looper-ui/120927/mockup-reference.png",
-    "assets/looper-ui/120927/desk-surface.webp",
     "assets/looper-ui/120927/rear-cables.webp",
     "assets/looper-ui/120927/deck-shell.webp",
     "assets/looper-ui/120927/readout-panel.webp",

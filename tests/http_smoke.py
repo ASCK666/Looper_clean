@@ -77,7 +77,6 @@ try:
             assert response.read().strip(), (path, "empty stylesheet")
 
     for asset,mime,min_size in (
-        ("/assets/looper-ui/120927/desk-surface.webp","image/webp",10_000),
         ("/assets/looper-ui/120927/rear-cables.webp","image/webp",10_000),
         ("/assets/looper-ui/120927/deck-shell.webp","image/webp",100_000),
         ("/assets/looper-ui/120927/readout-panel.webp","image/webp",20_000),

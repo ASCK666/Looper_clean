@@ -15,17 +15,19 @@ for control in ('playBeat','stopBeat','importFolderBtn','importBeatsBtn','autoLo
 assert 'deckAutoToggle' not in HTML+EVENTS
 
 # The approved mockup is a non-runtime golden reference. The first migrated
-# production owner is a desk-only surface at the same native geometry.
+# production scene keeps the approved deck geometry on a neutral web background.
 assert 'assets/looper-ui/120927/' in HTML
-assert re.search(r'<img\b[^>]*class="looper66DeskSurface"[^>]*src="assets/looper-ui/120927/desk-surface\.webp"[^>]*width="1448"[^>]*height="1086"',HTML)
+assert 'looper66DeskSurface' not in HTML+CSS
+assert 'desk-surface.webp' not in HTML+CSS
 assert re.search(r'<img\b[^>]*class="looper66RearCables"[^>]*src="assets/looper-ui/120927/rear-cables\.webp"[^>]*width="1448"[^>]*height="1086"',HTML)
 assert re.search(r'<img\b[^>]*class="looper66DeckShell"[^>]*src="assets/looper-ui/120927/deck-shell\.webp"[^>]*width="1448"[^>]*height="1086"',HTML)
 assert re.search(r'<img\b[^>]*class="looper66CassetteSupport"[^>]*src="assets/looper-ui/120927/reader-mechanism\.webp"[^>]*width="550"[^>]*height="366"',HTML)
 assert re.search(r'<img\b[^>]*class="looper66ReadoutPanel"[^>]*src="assets/looper-ui/120927/readout-panel\.webp"[^>]*width="380"[^>]*height="355"',HTML)
 assert 'assets/looper-ui/120927/utility-panel.webp' in CSS
 assert 'assets/looper-ui/120927/pitch-panel.webp' in CSS
-assert '.looper66DeskSurface' in CSS and '.looper66RearCables' in CSS
-assert (ROOT/'assets/looper-ui/120927/desk-surface.webp').exists()
+assert '.looper66RearCables' in CSS
+assert '#1b1e20 0%,#141618 58%,#090a0b 100%' in CSS
+assert not (ROOT/'assets/looper-ui/120927/desk-surface.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/rear-cables.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/deck-shell.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/readout-panel.webp').exists()

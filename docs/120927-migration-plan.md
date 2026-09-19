@@ -33,7 +33,7 @@ For every asset below:
 
 ## Migration steps — one asset per step
 
-1. **Desk/table** — `desk-surface.webp`: walnut tabletop only; exact grain, warmth and proportions; no deck/cables baked in.
+1. **Site stage** — CSS charcoal background: neutral, low-noise and free of photographic furniture texture.
 2. **Rear cables** — `rear-cables.webp`: one power cable + two XLR-style cables; transparent; exact placement and scale.
 3. **Deck chassis** — `deck-shell.webp`: graphite chassis, chassis screws, panel relief/borders and fixed labels only; no dynamic controls/data.
 4. **Readout background** — `readout-panel.webp`: static screen/frame material only; live HTML owns TRACK/STATE/TIME/progress/RATE.
