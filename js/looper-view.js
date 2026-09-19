@@ -42,8 +42,8 @@
       stopDeck();
       currentTrack=null;
       deckBuffer=null;
-      $("deckTrack").textContent="Aucun beat chargé";
-      $("deckInfo").textContent="Importe un WAV/MP3 pour commencer.";
+      $("deckTrack").textContent="NO BEAT LOADED";
+      $("deckInfo").textContent="IMPORT A WAV/MP3 TO START.";
       refreshCassetteUI();
     }
     await dbDelete(row.id);
@@ -140,10 +140,10 @@
       const empty=document.createElement("div");
       empty.className="beatListEmpty";
       empty.textContent=crateState.value==="imports"
-        ? "Aucun beat importé. Utilise IMPORT BEAT."
+        ? "NO IMPORTED BEATS — USE IMPORT BEAT."
         : crateState.value==="library"
-          ? "Aucune library connectée. Utilise IMPORT LIBRARY."
-          : "Aucun beat disponible.";
+          ? "NO LIBRARY CONNECTED — USE IMPORT LIBRARY."
+          : "NO BEATS AVAILABLE — IMPORT OR CONNECT A LIBRARY.";
       list.replaceChildren(empty);
       return;
     }

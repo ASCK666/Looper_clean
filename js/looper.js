@@ -60,10 +60,11 @@ function refreshCassetteUI(){
   const loaded=!!deckBuffer;
   const playing=!!deckSource;
   const hint=$("deckReadoutHint");
-  if(hint)hint.textContent=zone.getAttribute("aria-busy")==="true" ? "CHARGEMENT…" : !loaded ? "LOAD BEAT POUR COMMENCER" : playing ? "EN LECTURE" : "PRÊT • APPUYER SUR PLAY";
+  if(hint)hint.textContent=zone.getAttribute("aria-busy")==="true" ? "LOADING…" : !loaded ? "LOAD A BEAT TO START" : playing ? "PLAYING" : "READY • PRESS PLAY";
 
   zone.classList.toggle("loaded",loaded);
   zone.classList.toggle("playing",playing);
+  zone.style.setProperty("--cabin-glow-opacity",!loaded ? ".055" : playing ? ".24" : ".16");
   if(transportState)transportState.textContent=!loaded ? "EMPTY" : playing ? "PLAYING" : "READY";
   const formattedRate=formatDeckRate();
   if(speedReadout)speedReadout.textContent=formattedRate;
@@ -430,7 +431,7 @@ async function importBeatFiles(files){
   const loadRequest=++trackLoadSequence;
   $("looperDropzoneBtn")?.removeAttribute("aria-busy");
   const hint=$("deckReadoutHint");
-  if(hint)hint.textContent="IMPORT EN COURS…";
+  if(hint)hint.textContent="IMPORTING…";
   let firstImported=null;
   let imported=0;
   let skipped=selected.length-items.length;
@@ -524,8 +525,8 @@ function createBeatSpine(row){
         stopDeck();
         currentTrack=null;
         deckBuffer=null;
-        $("deckTrack").textContent="Aucun beat chargé";
-        $("deckInfo").textContent="Importe un WAV/MP3 pour commencer.";
+        $("deckTrack").textContent="NO BEAT LOADED";
+        $("deckInfo").textContent="IMPORT A WAV/MP3 TO START.";
         refreshCassetteUI();
       }
       await dbDelete(row.id);
