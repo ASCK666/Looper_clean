@@ -67,6 +67,8 @@ assert 'color:#111' in title_css.group(1)
 assert 'text-shadow:none' in title_css.group(1)
 assert '.cassetteBeatName::after{' not in css
 assert '.cassetteDeck::before{' not in css
+assert '.cassetteCabinGlow{' not in css
+assert '--cabin-glow-opacity' not in css
 assert 'filter:brightness(.36)' not in css
 assert 'Clean foreground replacement for the baked brown window' not in css
 

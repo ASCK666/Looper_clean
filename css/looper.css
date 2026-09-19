@@ -119,16 +119,6 @@
   background:transparent;box-shadow:none;isolation:isolate;container-type:inline-size;pointer-events:none;
 }
 #looper .cassetteMechanism>*{position:absolute;pointer-events:none;user-select:none}
-#looper .cassetteCabinGlow{
-  z-index:3;inset:2.5% 2% 1.5%;border-radius:12%;opacity:var(--cabin-glow-opacity,.055);
-  background:
-    radial-gradient(ellipse 58% 34% at 50% 86%,rgba(255,176,86,.70),rgba(210,106,34,.30) 48%,transparent 76%),
-    radial-gradient(ellipse 20% 62% at 3% 54%,rgba(255,160,70,.28),transparent 72%),
-    radial-gradient(ellipse 20% 62% at 97% 54%,rgba(255,160,70,.28),transparent 72%);
-  box-shadow:inset 0 -2cqw 5cqw rgba(255,171,75,.10);
-  filter:blur(.28cqw) saturate(.88);mix-blend-mode:screen;transform:scale(.985);
-  transition:opacity 160ms ease;
-}
 /* Opaque cavity backing: above the desk, behind reels and cassette artwork.
    It prevents the table from showing through any transparent cassette opening. */
 #looper .cassetteMechanism::before{
@@ -162,15 +152,17 @@
   position:absolute;z-index:19;top:11.51%;left:38.674%;width:38.26%;height:auto;
   display:block;pointer-events:none;user-select:none;
 }
+/* Cabin illumination: sits behind the cassette and glass, lighting the well instead of tinting the artwork. */
 #looper .cassetteDeck::after{
-  content:"";position:absolute;z-index:19;top:18.05%;left:44.06%;width:30.04%;aspect-ratio:435/262;
-  border-radius:10%;opacity:var(--cabin-glow-opacity,.055);pointer-events:none;
+  content:"";position:absolute;z-index:17;top:12.55%;left:40.15%;width:36.75%;aspect-ratio:550/366;
+  border-radius:8%;opacity:var(--cabin-light-opacity,.06);pointer-events:none;
   background:
-    radial-gradient(ellipse 58% 30% at 50% 88%,rgba(255,178,82,.72),rgba(213,106,34,.26) 48%,transparent 76%),
-    radial-gradient(ellipse 18% 58% at 4% 58%,rgba(255,156,62,.30),transparent 72%),
-    radial-gradient(ellipse 18% 58% at 96% 58%,rgba(255,156,62,.30),transparent 72%);
-  box-shadow:inset 0 -1.6cqw 4.8cqw rgba(255,174,77,.10);
-  filter:blur(.22cqw) saturate(.90);mix-blend-mode:screen;transform:scale(.985);
+    radial-gradient(ellipse 52% 18% at 50% 94%,rgba(255,210,158,.54),rgba(226,157,91,.15) 54%,transparent 80%),
+    radial-gradient(ellipse 15% 55% at 7% 55%,rgba(255,205,150,.26),rgba(214,139,76,.08) 58%,transparent 78%),
+    radial-gradient(ellipse 15% 55% at 93% 55%,rgba(255,205,150,.24),rgba(214,139,76,.07) 58%,transparent 78%),
+    radial-gradient(ellipse 46% 22% at 50% 12%,rgba(255,224,187,.12),transparent 72%);
+  box-shadow:inset 0 0 2.1cqw rgba(255,211,160,.07);
+  filter:blur(.16cqw) saturate(.72);
   transition:opacity 160ms ease;
 }
 
@@ -284,7 +276,7 @@
 
 @media (prefers-reduced-motion:reduce){
   #looper .cassetteReel{animation:none!important}
-  #looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton,.cassetteCabinGlow,.cassetteDeck::after){transition:none!important}
+  #looper :is(.deckHotspot,.deckLoadKey,.crateFilterButton,.cassetteDeck::after){transition:none!important}
 }
 
 /* Mobile is a functional reflow; desktop remains the exact approved scene. */
@@ -310,7 +302,11 @@
   #looper #deckPitch::-moz-range-track{width:100%;height:8px;background:#080909;border-radius:5px}
   #looper #deckPitch::-webkit-slider-thumb{width:28px;height:34px;margin-top:-13px;margin-left:0}
   #looper .deckPitchHeader output{left:70%;bottom:7px;width:25%;height:20px;font-size:10px!important}
-  #looper .cassetteMechanism{top:365px;left:28px;width:calc(100% - 56px);height:auto;border-radius:9px;background:#071018;box-shadow:inset 0 0 0 3px #08090a}
+  #looper .cassetteMechanism{top:365px;left:28px;width:calc(100% - 56px);height:auto;border-radius:9px;background:
+    radial-gradient(ellipse 54% 18% at 50% 96%,rgba(255,205,150,.10),transparent 78%),
+    radial-gradient(ellipse 18% 54% at 5% 55%,rgba(255,201,145,.07),transparent 76%),
+    radial-gradient(ellipse 18% 54% at 95% 55%,rgba(255,201,145,.07),transparent 76%),
+    #071018;box-shadow:inset 0 0 0 3px #08090a}
   #looper .cassetteBeatName{top:calc(365px + clamp(11px,2.4vw,20px));left:25%;width:50%;height:clamp(34px,9vw,60px);font-size:clamp(13px,4vw,20px)}
   #looper #stopBeat,#looper #playBeat,#looper #autoLooperToggle{top:610px;height:78px;border-radius:7px}
   #looper #stopBeat{left:28px;width:92px}
