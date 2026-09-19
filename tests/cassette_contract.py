@@ -39,8 +39,8 @@ overlay=Image.open(assets/'cassette-reference-overlay.webp').convert('RGBA')
 assert overlay.size == (542,347)
 # The overlay keeps continuous smoked-glass texture over both reel positions;
 # it contains neither opaque frozen hubs nor fully transparent holes.
-for cx in (195,385):
-    samples=[overlay.getpixel((cx,189)),overlay.getpixel((cx,166)),overlay.getpixel((cx,212))]
+for cx in (195,374):
+    samples=[overlay.getpixel((cx,183)),overlay.getpixel((cx,160)),overlay.getpixel((cx,206))]
     assert all(0<pixel[3]<96 for pixel in samples),samples
     assert len({pixel[:3] for pixel in samples})>1,samples
 
