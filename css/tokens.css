@@ -8,8 +8,9 @@
   --amber: #e2ad5f;
 
   /* Typography */
-  --font-mono: ui-monospace,SFMono-Regular,Consolas,monospace;
-  --font-condensed: "Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --font-ui: ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono: "Cascadia Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;
+  --font-condensed: "Aptos Narrow","Arial Narrow","Roboto Condensed","Helvetica Neue",Arial,var(--font-ui);
 
   /* Shared physical surface */
   --deck-key-text: #e8dcc5;

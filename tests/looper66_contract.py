@@ -116,3 +116,9 @@ assert '--supply-reel-cycle' in LOOPER and '--takeup-reel-cycle' in LOOPER
 assert '@media (max-width:680px)' in CSS
 assert '@media (prefers-reduced-motion:reduce)' in CSS
 print('OK: approved 120927 Looper contract, mockup source and existing behavior preserved')
+
+# Clean-tape typography keeps physical labels separate from data/readout text.
+TOKENS=(ROOT/'css/tokens.css').read_text(encoding='utf-8')
+assert '--font-ui:' in TOKENS and '--font-condensed:' in TOKENS and '--font-mono:' in TOKENS
+assert 'font-family:var(--font-condensed' in CSS
+assert '--deck-amber-dim:' in CSS

@@ -5,6 +5,7 @@
 #looper{
   position:relative!important;
   --deck-amber:#ffa31a;
+  --deck-amber-dim:#9b6728;
   --supply-reel-cycle:2.91s;
   --takeup-reel-cycle:1.46s;
 }
@@ -41,19 +42,21 @@
 #looper .deckReadoutTrack{
   position:absolute;top:7%;left:8%;width:84%;min-height:0;max-height:none;margin:0;padding:0;overflow:hidden;
   border:0!important;background:transparent!important;color:var(--deck-amber)!important;
-  font:500 clamp(11px,1.55vw,22px)/1.16 var(--font-mono,monospace)!important;letter-spacing:.015em;
+  font:600 clamp(11px,1.55vw,22px)/1.16 var(--font-mono,monospace)!important;letter-spacing:.01em;
   text-align:left!important;text-decoration:none!important;text-overflow:ellipsis;white-space:nowrap;
   cursor:pointer;pointer-events:auto;
 }
-#looper .deckReadoutTrack::before{content:"TRACK:";display:block;margin-bottom:.32em;color:#ffb333;font-size:.72em}
+#looper .deckReadoutTrack::before{content:"TRACK:";display:block;margin-bottom:.32em;color:var(--deck-amber-dim);font-size:.68em;font-weight:600;letter-spacing:.08em}
 #looper .deckReadoutState,#looper .deckReadoutTime,#looper .deckReadoutRateRow{
-  position:absolute;left:8%;width:84%;display:flex;align-items:center;color:var(--deck-amber);
+  position:absolute;left:8%;width:84%;display:flex;align-items:center;color:var(--deck-amber-dim);
   font:500 clamp(9px,1.08vw,16px)/1 var(--font-mono,monospace);
 }
 #looper .deckReadoutState{top:35%;gap:8%}
 #looper .deckReadoutTime{top:49%;gap:.48em}
 #looper .deckReadoutRateRow{top:78%;gap:11%}
-#looper .deckReadoutState :is(small,strong),#looper .deckReadoutTime small,#looper .deckReadoutRateRow small,#looper .deckReadoutRate{color:inherit!important;font:inherit!important}
+#looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow) small{color:var(--deck-amber-dim)!important;font:600 .88em/1 var(--font-mono,monospace)!important;letter-spacing:.05em}
+#looper .deckReadoutState strong,#looper .deckReadoutTime span,#looper .deckReadoutRate{color:var(--deck-amber)!important;font:600 1em/1 var(--font-mono,monospace)!important}
+#looper .deckReadoutTime span:nth-child(2){color:#65461f!important;font-weight:500!important}
 #looper .cassetteDeck.playing #deckTransportState{text-shadow:0 0 7px rgba(255,159,28,.4)}
 #looper .cassetteDeck.playing #deckTransportState::before{content:"▶ "}
 #looper .deckReadoutMeter{position:absolute;top:62%;left:8%;width:84%;height:7.5%;overflow:hidden;border:1px solid #8f5e0b;background:#111008;box-shadow:inset 0 0 0 1px #020200}
@@ -164,13 +167,13 @@
   pointer-events:auto;min-width:44px;min-height:44px;margin:0;padding:0;border:2px solid #090a0a;border-radius:.5cqw;
   background:linear-gradient(#383c3d,#222526 43%,#151718 100%);color:#e7e8e3;
   box-shadow:inset 0 1px #666a6b,inset 0 -3px #090a0a,inset 0 0 0 2px #1d2021,0 2px 4px #000;
-  font-family:var(--font-mono,monospace);cursor:pointer;transition:background 120ms ease,box-shadow 120ms ease,transform 80ms ease;
+  font-family:var(--font-condensed,var(--font-ui,sans-serif));cursor:pointer;transition:background 120ms ease,box-shadow 120ms ease,transform 80ms ease;
 }
 #looper #stopBeat{left:40.81%;top:45.95%;width:11.26%;height:8.75%}
 #looper #playBeat{left:52.62%;top:45.95%;width:10.22%;height:8.75%;--light-strength:.10}
 #looper #autoLooperToggle{left:63.12%;top:45.95%;width:13.78%;height:8.75%}
 #looper .deckKeySymbol{position:absolute;top:24%;left:50%;width:20%;height:26%;transform:translateX(-50%);fill:currentColor}
-#looper .deckKeyLabel{position:absolute;left:4%;right:4%;bottom:13%;color:inherit;font:700 clamp(8px,1.02vw,15px)/1 var(--font-mono,monospace);letter-spacing:.04em;text-align:center}
+#looper .deckKeyLabel{position:absolute;left:4%;right:4%;bottom:13%;color:inherit;font:750 clamp(8px,1.02vw,15px)/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.075em;text-align:center}
 #looper .cassetteDeck.playing #playBeat{
   --light-strength:.82;background:linear-gradient(#ffc361,#f6a428 48%,#df810b 100%);color:#151515;border-color:#9f5705;
   box-shadow:inset 0 1px #ffe6a6,inset 0 -3px #713800,inset 0 0 0 2px #e58a0c,0 2px 4px #000,0 0 14px rgba(255,158,25,.22),0 8px 22px rgba(255,137,10,.10);
@@ -190,9 +193,9 @@
 #looper .deckImportTitle,#looper .deckDropHint,#looper .deckImportMeta{display:none!important}
 #looper .deckLoadKey{
   pointer-events:auto;width:15.26%;height:4.60%;min-width:44px;min-height:44px;margin:0;padding:0 1%;border:2px solid #766b5b;border-radius:.35cqw;
-  background:linear-gradient(#f2eadc,#d8cdbc);color:#181818;box-shadow:inset 0 1px #fff8e8,inset 0 -2px #a99b88,0 2px 3px #000;font-family:var(--font-mono,monospace);cursor:pointer;
+  background:linear-gradient(#f2eadc,#d8cdbc);color:#181818;box-shadow:inset 0 1px #fff8e8,inset 0 -2px #a99b88,0 2px 3px #000;font-family:var(--font-condensed,var(--font-ui,sans-serif));cursor:pointer;
 }
-#looper .deckLoadKey strong{font:700 clamp(7px,.86vw,12px)/1 var(--font-mono,monospace);letter-spacing:.02em}
+#looper .deckLoadKey strong{font:750 clamp(7px,.86vw,12px)/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.065em}
 #looper #importFolderBtn{left:79.77%;top:35.17%}
 #looper #importBeatsBtn{left:79.77%;top:40.88%}
 #looper .dragging #importBeatsBtn{--light-strength:.35}
@@ -221,13 +224,13 @@
 #looper .beatListPanel{left:29.14%;top:57.55%;width:66.92%;height:33.61%}
 #looper .cratePanel h3,#looper .beatListPanel h3{
   display:flex;height:13%;margin:0;padding:0 6%;align-items:center;border-bottom:1px solid #33383a;background:linear-gradient(#292d2e,#181b1c);
-  color:#e6e5df;font:700 clamp(10px,1.2vw,18px)/1 var(--font-mono,monospace);letter-spacing:.03em;
+  color:#e6e5df;font:750 clamp(10px,1.2vw,18px)/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.075em;
 }
 #looper .beatListHeader{position:absolute;top:13%;left:0;right:0;height:9%;display:grid;grid-template-columns:8% 1fr 17%;align-items:center;padding:0 3%;border-bottom:1px solid #25292a;color:#959a98;font:500 clamp(7px,.72vw,11px)/1 var(--font-mono,monospace)}
 #looper .crateFilters{position:absolute;top:15%;left:6%;right:6%;bottom:12%;display:grid;align-content:start;gap:1%}
 #looper .crateFilterButton{
   position:relative;width:100%;min-height:38px;padding:0 7%;display:grid;grid-template-columns:1fr auto;align-items:center;border:0;border-bottom:1px solid #282c2d;border-radius:2px;
-  background:transparent;color:#c5c7c3;font:600 clamp(8px,.86vw,13px)/1 var(--font-mono,monospace);text-align:left;cursor:pointer;
+  background:transparent;color:#c5c7c3;font:700 clamp(8px,.86vw,13px)/1 var(--font-condensed,var(--font-ui,sans-serif));letter-spacing:.045em;text-align:left;cursor:pointer;
 }
 #looper .crateFilterButton span:last-child{color:#747a78;font-weight:500}
 #looper .crateFilterButton[aria-pressed="true"]{--light-strength:.18;background:#2a2117;color:#ffad2f;box-shadow:inset 3px 0 #ff9e17}
