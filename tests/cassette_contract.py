@@ -37,16 +37,16 @@ assert max(reel.getpixel((32,32))[:3]) < 50
 
 overlay=Image.open(assets/'cassette-reference-overlay.webp').convert('RGBA')
 assert overlay.size == (542,347)
-# The overlay keeps continuous smoked-glass texture over both reel positions;
-# it contains neither opaque frozen hubs nor fully transparent holes.
+# The overlay is now only the window bezel plus nearly-clear glass.
+# The cassette artwork and animated reels must remain visible underneath.
 for cx in (195,374):
     samples=[overlay.getpixel((cx,183)),overlay.getpixel((cx,160)),overlay.getpixel((cx,206))]
-    assert all(96<=pixel[3]<=128 for pixel in samples),samples
-    assert len({pixel[:3] for pixel in samples})>1,samples
-# The former title rectangle has been removed and rebuilt as continuous label texture.
+    assert all(0<pixel[3]<=32 for pixel in samples),samples
+# Outside the bezel/glass treatment, the former fake cassette facade stays transparent.
 title_label=[overlay.getpixel((x,y)) for x,y in ((190,96),(290,106),(392,118))]
-assert all(pixel[3]==255 for pixel in title_label),title_label
-assert len({pixel[:3] for pixel in title_label})>1,title_label
+assert all(pixel[3]<=32 for pixel in title_label),title_label
+# The physical bezel itself remains opaque.
+assert overlay.getpixel((271,20))[3] >= 240
 
 assert 'aspect-ratio:435/262' in css
 assert 'cassette-cavity.svg' in css
