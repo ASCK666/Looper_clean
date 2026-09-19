@@ -1,6 +1,6 @@
 """Capture the approved 120927 deck at reviewable desktop/mobile sizes."""
 from pathlib import Path
-import contextlib, http.server, os, socketserver, threading
+import base64, contextlib, http.server, os, socketserver, threading
 try:
     from playwright.sync_api import sync_playwright
 except ImportError:
@@ -31,6 +31,17 @@ with contextlib.ExitStack() as stack:
             page.wait_for_function('window.__SP?.ui120927Ready === true')
             page.wait_for_function('window.__SP?.ui120927CssReady === true')
             page.wait_for_function("[...document.querySelectorAll('.cassetteMechanism img')].every(i=>i.complete && i.naturalWidth>0)")
+            if label=='desktop':
+                overlay_png=page.evaluate("""async()=>{
+                  const img=new Image();
+                  img.src='assets/looper-ui/120927/cassette-reference-overlay.webp';
+                  await img.decode();
+                  const canvas=document.createElement('canvas');
+                  canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+                  canvas.getContext('2d').drawImage(img,0,0);
+                  return canvas.toDataURL('image/png').split(',')[1];
+                }""")
+                (ARTIFACTS/'cassette-reference-overlay-source.png').write_bytes(base64.b64decode(overlay_png))
 
             assert page.locator('.looper66DeskSurface').count()==0
             workspace=page.locator('.looper66Workspace')
