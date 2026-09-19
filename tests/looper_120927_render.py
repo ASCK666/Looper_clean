@@ -1,6 +1,6 @@
 """Capture the approved 120927 deck at reviewable desktop/mobile sizes."""
 from pathlib import Path
-import base64, contextlib, http.server, os, socketserver, threading
+import contextlib, http.server, os, socketserver, threading
 try:
     from playwright.sync_api import sync_playwright
 except ImportError:
@@ -31,17 +31,28 @@ with contextlib.ExitStack() as stack:
             page.wait_for_function('window.__SP?.ui120927Ready === true')
             page.wait_for_function('window.__SP?.ui120927CssReady === true')
             page.wait_for_function("[...document.querySelectorAll('.cassetteMechanism img')].every(i=>i.complete && i.naturalWidth>0)")
-            if label=='desktop':
-                overlay_png=page.evaluate("""async()=>{
-                  const img=new Image();
-                  img.src='assets/looper-ui/120927/cassette-reference-overlay.webp';
-                  await img.decode();
-                  const canvas=document.createElement('canvas');
-                  canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
-                  canvas.getContext('2d').drawImage(img,0,0);
-                  return canvas.toDataURL('image/png').split(',')[1];
-                }""")
-                (ARTIFACTS/'cassette-reference-overlay-source.png').write_bytes(base64.b64decode(overlay_png))
+            overlay=page.locator('.cassetteReferenceOverlay')
+            assert overlay.count()==1
+            overlay_alpha=overlay.evaluate("""async el=>{
+              await el.decode();
+              const c=document.createElement('canvas');
+              c.width=el.naturalWidth;c.height=el.naturalHeight;
+              const ctx=c.getContext('2d');
+              ctx.drawImage(el,0,0);
+              const px=(x,y)=>ctx.getImageData(x,y,1,1).data[3];
+              return {
+                w:el.naturalWidth,h:el.naturalHeight,
+                center:px(271,180),
+                leftGlass:px(100,180),
+                bottomGlass:px(271,290),
+                frame:px(20,20)
+              };
+            }""")
+            assert overlay_alpha['w']==542 and overlay_alpha['h']==347,overlay_alpha
+            assert overlay_alpha['center']<=16,overlay_alpha
+            assert overlay_alpha['leftGlass']<=24,overlay_alpha
+            assert overlay_alpha['bottomGlass']<=24,overlay_alpha
+            assert overlay_alpha['frame']>=240,overlay_alpha
 
             assert page.locator('.looper66DeskSurface').count()==0
             workspace=page.locator('.looper66Workspace')
