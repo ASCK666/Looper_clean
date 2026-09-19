@@ -39,10 +39,26 @@ with contextlib.ExitStack() as stack:
             box=mechanism.bounding_box()
             assert abs(box['width']/box['height']-435/262)<.001,(label,box)
             assert page.evaluate('document.body.scrollWidth <= innerWidth+2')
+            assert page.locator('.cassetteDoor').count()==0
+            assert page.locator('.cassetteReferenceOverlay').count()==1
+            glass=page.locator('.cassetteReferenceOverlay').evaluate("""el=>{
+              const s=getComputedStyle(el);
+              return {z:+s.zIndex,display:s.display,opacity:Number(s.opacity),src:el.getAttribute('src')};
+            }""")
+            if width>680:
+                assert glass['z']==19 and glass['display']!='none' and glass['opacity']==1,glass
+                assert glass['src'].split('?')[0].endswith('cassette-reference-overlay.webp'),glass
+            else:
+                assert glass['display']=='none',glass
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight','.cassetteBeatName'):
                 opacity=float(page.locator(selector).evaluate('el=>getComputedStyle(el).opacity'))
                 assert opacity==1,('empty',label,selector,opacity)
             assert page.locator('#cassetteBeatName').inner_text()=='NO BEAT LOADED'
+            title_style=page.locator('#cassetteBeatName').evaluate("""el=>{
+              const s=getComputedStyle(el);
+              return {z:+s.zIndex,color:s.color,textShadow:s.textShadow};
+            }""")
+            assert title_style=={'z':20,'color':'rgb(17, 17, 17)','textShadow':'none'},title_style
 
             surface=mechanism.evaluate("""el=>{
               const before=getComputedStyle(el,'::before');
@@ -60,7 +76,7 @@ with contextlib.ExitStack() as stack:
             assert 'cassette-cavity.svg' in surface['before']['background'],surface
             assert surface['before']['z']==0,surface
             assert surface['before']['mask']!='none' or surface['before']['webkitMask']!='none',surface
-            assert surface['after']['content']!='none' and surface['after']['backgroundColor']=='rgb(11, 13, 13)',surface
+            assert surface['after']['content']=='none' and surface['after']['background']=='none',surface
             assert surface['mask']=='none' and surface['webkitMask']=='none',surface
 
             if label in ('desktop','mobile'): capture(page,f'{label}-empty')
@@ -78,10 +94,9 @@ with contextlib.ExitStack() as stack:
                   w:c.width/b.width,h:c.height/b.height,z:+s.zIndex,visible:s.visibility,filter:s.filter};
               });
             }''')
-            assert [m['z'] for m in metrics]==[1,1,2,4],metrics
+            assert [m['z'] for m in metrics]==[1,1,2],metrics
             assert all(m['visible']=='visible' for m in metrics),metrics
-            assert all(m['filter']!='none' for m in metrics[:2]),metrics
-            assert all(m['filter']=='none' for m in metrics[2:]),metrics
+            assert all(m['filter']=='none' for m in metrics),metrics
             for m in metrics:
                 assert m['x']>=-.001 and m['y']>=-.001 and m['x']+m['w']<=1.001 and m['y']+m['h']<=1.001,m
 
@@ -91,7 +106,11 @@ with contextlib.ExitStack() as stack:
                 assert abs(m['x']+m['w']/2-cx)<.002,(label,m,cx)
                 assert abs(m['y']+m['h']/2-cy)<.002,(label,m,cy)
                 assert abs(m['w']*box['width']-m['h']*box['height'])<.2,m
-            assert metrics[3]['y']+metrics[3]['h']<metrics[0]['y']
+            assert page.locator('#cassetteBeatName').evaluate('''title=>{
+              const t=title.getBoundingClientRect();
+              const reel=document.querySelector('.cassetteReelLeft').getBoundingClientRect();
+              return t.bottom<reel.top;
+            }''')
 
             if label in ('desktop','mobile'): capture(page,f'{label}-loaded')
 
@@ -119,4 +138,4 @@ with contextlib.ExitStack() as stack:
             assert page.locator('#cassetteBeatName').inner_text()=='NO BEAT LOADED'
             assert not errors,errors
             page.close()
-print('OK: cassette states, dark reels, local central window cover, stable geometry and reel animation')
+print('OK: cassette states, native white hub teeth, baked magnetic tape, stable geometry and reel animation')

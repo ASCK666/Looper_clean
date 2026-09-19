@@ -15,17 +15,19 @@ for control in ('playBeat','stopBeat','importFolderBtn','importBeatsBtn','autoLo
 assert 'deckAutoToggle' not in HTML+EVENTS
 
 # The approved mockup is a non-runtime golden reference. The first migrated
-# production owner is a desk-only surface at the same native geometry.
+# production scene keeps the approved deck geometry on a neutral web background.
 assert 'assets/looper-ui/120927/' in HTML
-assert re.search(r'<img\b[^>]*class="looper66DeskSurface"[^>]*src="assets/looper-ui/120927/desk-surface\.webp"[^>]*width="1448"[^>]*height="1086"',HTML)
+assert 'looper66DeskSurface' not in HTML+CSS
+assert 'desk-surface.webp' not in HTML+CSS
 assert re.search(r'<img\b[^>]*class="looper66RearCables"[^>]*src="assets/looper-ui/120927/rear-cables\.webp"[^>]*width="1448"[^>]*height="1086"',HTML)
 assert re.search(r'<img\b[^>]*class="looper66DeckShell"[^>]*src="assets/looper-ui/120927/deck-shell\.webp"[^>]*width="1448"[^>]*height="1086"',HTML)
 assert re.search(r'<img\b[^>]*class="looper66CassetteSupport"[^>]*src="assets/looper-ui/120927/reader-mechanism\.webp"[^>]*width="550"[^>]*height="366"',HTML)
 assert re.search(r'<img\b[^>]*class="looper66ReadoutPanel"[^>]*src="assets/looper-ui/120927/readout-panel\.webp"[^>]*width="380"[^>]*height="355"',HTML)
 assert 'assets/looper-ui/120927/utility-panel.webp' in CSS
 assert 'assets/looper-ui/120927/pitch-panel.webp' in CSS
-assert '.looper66DeskSurface' in CSS and '.looper66RearCables' in CSS
-assert (ROOT/'assets/looper-ui/120927/desk-surface.webp').exists()
+assert '.looper66RearCables' in CSS
+assert '#1b1e20 0%,#141618 58%,#090a0b 100%' in CSS
+assert not (ROOT/'assets/looper-ui/120927/desk-surface.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/rear-cables.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/deck-shell.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/readout-panel.webp').exists()
@@ -78,6 +80,18 @@ assert '.cassetteDeck.playing #playBeat' in CSS
 assert 'rgba(var(--light-r),var(--light-g),var(--light-b)' in CSS
 assert 'mix-blend-mode:screen' in CSS
 
+# Desktop interaction layers reveal the exact baked mockup controls and cannot
+# be recolored by Firefox dark mode or native form-control appearance.
+desktop_controls=re.search(r'@media \(min-width:681px\)\s*\{(.*?)\n\}',CSS,re.S)
+assert desktop_controls,desktop_controls
+desktop_css=desktop_controls.group(1)
+for token in ('background:transparent!important','appearance:none','-moz-appearance:none','forced-color-adjust:none','color-scheme:light'):
+    assert token in desktop_css,token
+assert '.deckVolumeKnob{display:none}' in desktop_css
+assert '.deckLoadKey strong{' in desktop_css
+assert 'font:500 clamp(9px,.86vw,13px)' in desktop_css
+assert 'background:linear-gradient(#ede5d9,#d8cdbc)' in desktop_css
+
 # Crates are real data filters, not invented genres.
 for label in ('ALL BEATS','LIBRARY','IMPORTS','RECENT'):
     assert label in VIEW
@@ -93,7 +107,8 @@ assert 'animation-duration:var(--takeup-reel-cycle)' in CSS
 assert 'height:auto' in CSS
 assert 'cassette-cavity.svg' in CSS
 assert '.cassetteMechanism::before{' in CSS
-assert '.cassetteMechanism::after{' in CSS and 'background:#0b0d0d' in CSS
+assert '.cassetteMechanism::after{' not in CSS
+assert 'filter:brightness(.36)' not in CSS
 assert '.cassetteReelLeft{left:20.46%;top:32.06%}' in CSS
 assert '.cassetteReelRight{left:62.53%;top:32.06%;animation-duration:var(--takeup-reel-cycle)}' in CSS
 assert '--supply-reel-cycle' in LOOPER and '--takeup-reel-cycle' in LOOPER

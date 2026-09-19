@@ -5,7 +5,7 @@ Golden reference: the approved 1448×1086 mockup.
 Asset contract:
 - Every touched visual asset must use the approved mockup as the visual source of truth.
 - Export at the target geometry/aspect ratio; no non-uniform scaling, warping or object-fit: fill.
-- Desktop desk texture is assets/looper-ui/120927/desk-surface.webp at native 1448×1086.
+- The desktop uses a CSS charcoal stage; no photographic desk texture is loaded.
 - Rear cables are assets/looper-ui/120927/rear-cables.webp at native 1448×1086 with transparent alpha; it contains no desk or chassis pixels.
 - Deck chassis is assets/looper-ui/120927/deck-shell.webp at native 1448×1086 with transparent apertures for every separately-owned module.
 - Readout frame is assets/looper-ui/120927/readout-panel.webp at native 380×355; its clean glass contains no baked state or track data.
