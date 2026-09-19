@@ -58,6 +58,14 @@ with contextlib.ExitStack() as stack:
                 dims=asset.evaluate('el=>({complete:el.complete,w:el.naturalWidth,h:el.naturalHeight})')
                 assert dims['complete'] and dims['w']>0 and dims['h']>0,(selector,dims)
 
+            cassette_box=page.locator('.cassetteMechanism').bounding_box()
+            title_box=page.locator('#cassetteBeatName').bounding_box()
+            assert cassette_box and title_box
+            assert cassette_box['x'] <= title_box['x']
+            assert title_box['x']+title_box['width'] <= cassette_box['x']+cassette_box['width']
+            assert cassette_box['y'] <= title_box['y']
+            assert title_box['y']+title_box['height'] <= cassette_box['y']+cassette_box['height']*.35
+
             assert page.locator('#deckVolume').count()==1
             assert page.locator('#crateFilters').count()==1
             assert page.locator('#beatList').count()==1
