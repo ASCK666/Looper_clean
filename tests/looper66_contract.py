@@ -26,7 +26,7 @@ assert re.search(r'<img\b[^>]*class="looper66ReadoutPanel"[^>]*src="assets/loope
 assert 'assets/looper-ui/120927/utility-panel.webp' in CSS
 assert 'assets/looper-ui/120927/pitch-panel.webp' in CSS
 assert '.looper66RearCables' in CSS
-assert '#1b1e20 0%,#141618 58%,#090a0b 100%' in CSS
+assert '#1d2022 0%,#141618 60%,#090a0b 100%' in CSS
 assert not (ROOT/'assets/looper-ui/120927/desk-surface.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/rear-cables.webp').exists()
 assert (ROOT/'assets/looper-ui/120927/deck-shell.webp').exists()
@@ -89,8 +89,9 @@ for token in ('background:transparent!important','appearance:none','-moz-appeara
     assert token in desktop_css,token
 assert '.deckVolumeKnob{display:none}' in desktop_css
 assert '.deckLoadKey strong{' in desktop_css
-assert 'font:500 clamp(9px,.86vw,13px)' in desktop_css
-assert 'background:linear-gradient(#ede5d9,#d8cdbc)' in desktop_css
+assert 'font:750 clamp(9px,.86vw,13px)' in desktop_css
+assert 'background:linear-gradient(#343638,#1b1d1e)' in desktop_css
+assert 'color-scheme:dark' in desktop_css
 
 # Crates are real data filters, not invented genres.
 for label in ('ALL BEATS','LIBRARY','IMPORTS','RECENT'):
@@ -122,3 +123,8 @@ TOKENS=(ROOT/'css/tokens.css').read_text(encoding='utf-8')
 assert '--font-ui:' in TOKENS and '--font-condensed:' in TOKENS and '--font-mono:' in TOKENS
 assert 'font-family:var(--font-condensed' in CSS
 assert '--deck-amber-dim:' in CSS
+
+# Clean-tape visual hierarchy keeps active transport and imports hardware-dark.
+assert '.cassetteDeck.playing #playBeat' in CSS and 'background:linear-gradient(#414445,#272a2b' in CSS
+assert '.crateFilterButton[aria-pressed="true"]{--light-strength:0' in CSS
+assert 'min-height:1210px' in CSS and 'height:128px' in CSS
