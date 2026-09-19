@@ -138,3 +138,7 @@ for french in ('Aucun beat chargé','Aucun beat disponible','CHARGEMENT…','PR�
 # Clean-tape selected beat uses hardware-dark selection instead of a full amber fill.
 assert '.beatListRow[aria-current="true"]{background:#191d1e' in CSS
 assert 'background:linear-gradient(90deg,#f0a126,#d9860c)' not in CSS
+
+# Clean-tape readout progress renders as discrete hardware segments.
+assert 'background:repeating-linear-gradient(90deg,#24190d 0 8px' in CSS
+assert 'background:repeating-linear-gradient(90deg,#ffb13b 0 8px' in CSS
