@@ -163,7 +163,7 @@ assert 'cassetteCabinGlow' not in HTML+CSS
 assert '<span class="cassetteCabinLight" aria-hidden="true"></span>' in HTML
 assert '--cabin-glow-opacity' not in CSS+LOOPER
 assert '--cabin-light-opacity' in CSS+LOOPER
-assert 'playing ? ".48" : ".32"' in LOOPER
+assert 'playing ? ".68" : ".46"' in LOOPER
 assert '#looper .cassetteCabinLight{' in CSS
 assert '#looper .cassetteDeck::after{' not in CSS
 assert 'z-index:18;top:12.55%;left:40.15%;width:36.75%;aspect-ratio:550/366' in CSS
