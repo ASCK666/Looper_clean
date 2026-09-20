@@ -1,7 +1,7 @@
 """Cassette contract for the approved 120927 three-asset deck."""
 from pathlib import Path
 import re
-from PIL import Image
+from PIL import Image, ImageChops, ImageOps
 
 ROOT=Path(__file__).resolve().parents[1]
 html=(ROOT/'index.html').read_text(encoding='utf-8')
@@ -37,6 +37,7 @@ assert max(reel.getpixel((32,32))[:3]) < 50
 
 overlay=Image.open(assets/'cassette-reference-overlay.webp').convert('RGBA')
 assert overlay.size == (542,347)
+assert ImageChops.difference(overlay,ImageOps.mirror(overlay)).getbbox() is None
 # The overlay is only the molded bezel plus a visibly reflective but still transparent glass pane.
 # Reel/cassette content must come from the live mechanism underneath, never baked artwork.
 for cx in (195,374):
@@ -60,6 +61,9 @@ assert '.cassetteMechanism::after{' not in css
 overlay_css=re.search(r'\.cassetteReferenceOverlay\s*\{([^}]*)\}',css,re.S)
 assert overlay_css,overlay_css
 assert 'z-index:19' in overlay_css.group(1)
+assert 'top:12.663%' in overlay_css.group(1)
+assert 'left:40.265%' in overlay_css.group(1)
+assert 'width:37.431%' in overlay_css.group(1)
 title_css=re.search(r'\.cassetteBeatName\s*\{([^}]*)\}',css,re.S)
 assert title_css,title_css
 assert 'z-index:20' in title_css.group(1)

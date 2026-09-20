@@ -1,7 +1,6 @@
 """Capture the approved 120927 deck at reviewable desktop/mobile sizes."""
 from pathlib import Path
 import contextlib, http.server, os, socketserver, threading
-from PIL import Image
 try:
     from playwright.sync_api import sync_playwright
 except ImportError:
@@ -11,10 +10,6 @@ except ImportError:
 ROOT=Path(__file__).resolve().parents[1]
 ARTIFACTS=ROOT/'test-artifacts'
 ARTIFACTS.mkdir(exist_ok=True)
-for source_name in ('cassette-reference-overlay.webp','deck-shell.webp','reader-mechanism.webp','cassette.webp'):
-    source_path=ROOT/'assets'/'looper-ui'/'120927'/source_name
-    Image.open(source_path).convert('RGBA').save(ARTIFACTS/f'source-{source_path.stem}.png')
-
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self,*_args): pass
 
@@ -36,7 +31,8 @@ with contextlib.ExitStack() as stack:
             page.wait_for_function('window.__SP?.ui120927CssReady === true')
             page.wait_for_function("[...document.querySelectorAll('.cassetteMechanism img')].every(i=>i.complete && i.naturalWidth>0)")
             overlay=page.locator('.cassetteReferenceOverlay')
-            assert overlay.count()==1
+            support=page.locator('.looper66CassetteSupport')
+            assert overlay.count()==1 and support.count()==1
             overlay_alpha=overlay.evaluate("""async el=>{
               await el.decode();
               const c=document.createElement('canvas');
@@ -57,6 +53,17 @@ with contextlib.ExitStack() as stack:
             assert 24<=overlay_alpha['leftGlass']<=80,overlay_alpha
             assert 24<=overlay_alpha['bottomGlass']<=80,overlay_alpha
             assert overlay_alpha['frame']>=240,overlay_alpha
+            if width>680:
+                overlay_box=overlay.bounding_box()
+                support_box=support.bounding_box()
+                assert overlay_box and support_box
+                overlay_center=overlay_box['x']+overlay_box['width']/2
+                support_center=support_box['x']+support_box['width']/2
+                assert abs(overlay_center-support_center)<1, (overlay_box,support_box)
+                assert overlay_box['x']>=support_box['x'], (overlay_box,support_box)
+                assert overlay_box['x']+overlay_box['width']<=support_box['x']+support_box['width'], (overlay_box,support_box)
+                assert overlay_box['y']>=support_box['y'], (overlay_box,support_box)
+                assert overlay_box['y']+overlay_box['height']<=support_box['y']+support_box['height'], (overlay_box,support_box)
 
             assert page.locator('.looper66DeskSurface').count()==0
             workspace=page.locator('.looper66Workspace')
