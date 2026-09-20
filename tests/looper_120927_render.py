@@ -1,6 +1,7 @@
 """Capture the approved 120927 deck at reviewable desktop/mobile sizes."""
 from pathlib import Path
 import contextlib, http.server, os, socketserver, threading
+from PIL import Image
 try:
     from playwright.sync_api import sync_playwright
 except ImportError:
@@ -10,6 +11,9 @@ except ImportError:
 ROOT=Path(__file__).resolve().parents[1]
 ARTIFACTS=ROOT/'test-artifacts'
 ARTIFACTS.mkdir(exist_ok=True)
+for source_name in ('cassette-reference-overlay.webp','deck-shell.webp','reader-mechanism.webp','cassette.webp'):
+    source_path=ROOT/'assets'/'looper-ui'/'120927'/source_name
+    Image.open(source_path).convert('RGBA').save(ARTIFACTS/f'source-{source_path.stem}.png')
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self,*_args): pass
