@@ -152,19 +152,20 @@
   position:absolute;z-index:19;top:11.51%;left:38.674%;width:38.26%;height:auto;
   display:block;pointer-events:none;user-select:none;
 }
-/* Cabin illumination: explicit HTML layer behind the cassette and glass, never over the artwork. */
+/* Cabin illumination: explicit HTML spill between the cassette mechanics and the glass. */
 #looper .cassetteCabinLight{
-  position:absolute;z-index:17;top:12.55%;left:40.15%;width:36.75%;aspect-ratio:550/366;
+  position:absolute;z-index:18;top:12.55%;left:40.15%;width:36.75%;aspect-ratio:550/366;
   display:block;border-radius:8%;opacity:var(--cabin-light-opacity,.12);pointer-events:none;user-select:none;
   background:
     radial-gradient(ellipse 56% 22% at 50% 94%,rgba(255,218,166,.92),rgba(231,151,74,.40) 52%,transparent 82%),
     radial-gradient(ellipse 18% 60% at 6% 56%,rgba(255,210,153,.64),rgba(220,136,63,.20) 58%,transparent 80%),
     radial-gradient(ellipse 18% 60% at 94% 56%,rgba(255,210,153,.60),rgba(220,136,63,.18) 58%,transparent 80%),
-    radial-gradient(ellipse 52% 28% at 50% 10%,rgba(255,231,198,.34),rgba(234,169,99,.10) 58%,transparent 78%);
+    radial-gradient(ellipse 52% 28% at 50% 10%,rgba(255,231,198,.34),rgba(234,169,99,.10) 58%,transparent 78%),
+    radial-gradient(ellipse 66% 54% at 50% 52%,rgba(255,190,105,.24),transparent 74%);
   box-shadow:
     inset 0 -1.5cqw 4.5cqw rgba(255,190,111,.22),
     inset 0 0 2.8cqw rgba(255,220,177,.18);
-  filter:blur(.12cqw) saturate(.96);
+  filter:blur(.10cqw) saturate(1.04);
   transition:opacity 160ms ease;
 }
 

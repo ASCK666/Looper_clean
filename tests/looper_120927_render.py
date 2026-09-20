@@ -75,8 +75,8 @@ with contextlib.ExitStack() as stack:
                   return {display:s.display,opacity:Number(s.opacity),background:s.backgroundImage,z:s.zIndex};
                 }""")
                 assert cabin_light['display']!='none',cabin_light
-                assert cabin_light['background'].count('radial-gradient')==4,cabin_light
-                assert cabin_light['z']=='17',cabin_light
+                assert cabin_light['background'].count('radial-gradient')==5,cabin_light
+                assert cabin_light['z']=='18',cabin_light
 
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight'):
                 asset=page.locator(selector)
