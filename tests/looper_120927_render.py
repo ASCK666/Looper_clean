@@ -75,7 +75,7 @@ with contextlib.ExitStack() as stack:
                   return {display:s.display,opacity:Number(s.opacity),background:s.backgroundImage,z:s.zIndex};
                 }""")
                 assert cabin_light['display']!='none',cabin_light
-                assert cabin_light['background'].count('radial-gradient')==5,cabin_light
+                assert cabin_light['background'].count('radial-gradient')==7,cabin_light
                 assert cabin_light['z']=='18',cabin_light
 
             for selector in ('.cassetteTape','.cassetteReelLeft','.cassetteReelRight'):
@@ -94,7 +94,7 @@ with contextlib.ExitStack() as stack:
             assert page.locator('.cassetteCabinGlow').count()==0
             assert page.locator('.cassetteCabinLight').count()==1
             empty_light=float(page.locator('.cassetteCabinLight').evaluate("el=>getComputedStyle(el).opacity"))
-            if width>680: assert abs(empty_light-.18)<.005,empty_light
+            if width>680: assert abs(empty_light-.28)<.005,empty_light
 
             assert page.locator('#deckVolume').count()==1
             assert page.locator('#crateFilters').count()==1
@@ -131,7 +131,7 @@ with contextlib.ExitStack() as stack:
             assert page.locator('#cassetteBeatName').inner_text()=='MIDNIGHT SESSION'
             page.wait_for_timeout(200)
             loaded_light=float(page.locator('.cassetteCabinLight').evaluate("el=>getComputedStyle(el).opacity"))
-            if width>680: assert abs(loaded_light-.46)<.01,loaded_light
+            if width>680: assert abs(loaded_light-.75)<.01,loaded_light
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-loaded.png'))
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-loaded.png'))
 
@@ -140,7 +140,7 @@ with contextlib.ExitStack() as stack:
             page.wait_for_timeout(250)
             assert page.locator('.cassetteReel').evaluate_all("els=>els.every(el=>getComputedStyle(el).animationPlayState==='running')")
             playing_light=float(page.locator('.cassetteCabinLight').evaluate("el=>getComputedStyle(el).opacity"))
-            if width>680: assert abs(playing_light-.68)<.01,playing_light
+            if width>680: assert abs(playing_light-1)<.01,playing_light
             page.locator('#looper').screenshot(path=str(ARTIFACTS/f'120927-{label}-playing.png'))
             page.locator('.cassetteMechanism').screenshot(path=str(ARTIFACTS/f'cassette-120927-{label}-playing.png'))
             if label=='desktop': page.locator('.deckTransport').screenshot(path=str(ARTIFACTS/'120927-transport-playing.png'))

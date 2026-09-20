@@ -64,7 +64,7 @@ function refreshCassetteUI(){
 
   zone.classList.toggle("loaded",loaded);
   zone.classList.toggle("playing",playing);
-  zone.style.setProperty("--cabin-light-opacity",!loaded ? ".18" : playing ? ".68" : ".46");
+  zone.style.setProperty("--cabin-light-opacity",!loaded ? ".28" : playing ? "1" : ".75");
   if(transportState)transportState.textContent=!loaded ? "EMPTY" : playing ? "PLAYING" : "READY";
   const formattedRate=formatDeckRate();
   if(speedReadout)speedReadout.textContent=formattedRate;
