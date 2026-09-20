@@ -1,0 +1,39 @@
+name: Temporary cassette overlay symmetrizer
+
+on:
+  push:
+    branches:
+      - clean-tape
+
+permissions:
+  contents: write
+
+jobs:
+  symmetrize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout clean-tape
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Pillow
+        run: python -m pip install pillow
+
+      - name: Symmetrize overlay
+        run: python tools/symmetrize_cassette_overlay.py
+
+      - name: Commit binary asset when changed
+        run: |
+          if git diff --quiet -- assets/looper-ui/120927/cassette-reference-overlay.webp; then
+            echo "No asset change needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/looper-ui/120927/cassette-reference-overlay.webp
+          git commit -m "style(looper): symmetrize cassette overlay asset"
+          git push origin HEAD:clean-tape
