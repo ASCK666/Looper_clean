@@ -158,15 +158,17 @@ assert 'display:grid;place-items:center;left:80.25%;top:14.2%' in CSS
 assert '#looper :is(.deckReadoutState,.deckReadoutTime,.deckReadoutRateRow){' in CSS
 
 
-# Clean-tape cabin illumination lives behind cassette/glass instead of washing over the artwork.
+# Clean-tape cabin illumination is a real HTML/CSS layer behind cassette/glass.
 assert 'cassetteCabinGlow' not in HTML+CSS
+assert '<span class="cassetteCabinLight" aria-hidden="true"></span>' in HTML
 assert '--cabin-glow-opacity' not in CSS+LOOPER
 assert '--cabin-light-opacity' in CSS+LOOPER
 assert 'playing ? ".18" : ".13"' in LOOPER
-assert '#looper .cassetteDeck::after{' in CSS
+assert '#looper .cassetteCabinLight{' in CSS
+assert '#looper .cassetteDeck::after{' not in CSS
 assert 'z-index:17;top:12.55%;left:40.15%;width:36.75%;aspect-ratio:550/366' in CSS
 assert 'radial-gradient(ellipse 52% 18% at 50% 94%' in CSS
-assert 'mix-blend-mode:screen' not in re.search(r'#looper \.cassetteDeck::after\{([^}]*)\}',CSS,re.S).group(1)
-assert ':is(.cassetteReferenceOverlay,.cassetteDeck::after){display:none}' in CSS
+assert 'mix-blend-mode:screen' not in re.search(r'#looper \.cassetteCabinLight\{([^}]*)\}',CSS,re.S).group(1)
+assert ':is(.cassetteReferenceOverlay,.cassetteCabinLight){display:none}' in CSS
 
 assert '#looper :is(.deckReadoutState strong,.deckReadoutTime span,.deckReadoutRate){' in CSS
