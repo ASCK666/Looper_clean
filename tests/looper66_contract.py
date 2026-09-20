@@ -163,11 +163,11 @@ assert 'cassetteCabinGlow' not in HTML+CSS
 assert '<span class="cassetteCabinLight" aria-hidden="true"></span>' in HTML
 assert '--cabin-glow-opacity' not in CSS+LOOPER
 assert '--cabin-light-opacity' in CSS+LOOPER
-assert 'playing ? ".18" : ".13"' in LOOPER
+assert 'playing ? ".48" : ".32"' in LOOPER
 assert '#looper .cassetteCabinLight{' in CSS
 assert '#looper .cassetteDeck::after{' not in CSS
 assert 'z-index:17;top:12.55%;left:40.15%;width:36.75%;aspect-ratio:550/366' in CSS
-assert 'radial-gradient(ellipse 52% 18% at 50% 94%' in CSS
+assert 'radial-gradient(ellipse 56% 22% at 50% 94%' in CSS
 assert 'mix-blend-mode:screen' not in re.search(r'#looper \.cassetteCabinLight\{([^}]*)\}',CSS,re.S).group(1)
 assert ':is(.cassetteReferenceOverlay,.cassetteCabinLight){display:none}' in CSS
 
